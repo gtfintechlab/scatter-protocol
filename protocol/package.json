@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "deploy": "ts-node deploy.ts"
+    "deploy": "npx hardhat run --network goerli deploy.ts",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,sol}\""
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.0",
@@ -14,6 +15,8 @@
     "ethereum-waffle": "^3.4.4",
     "ethers": "^5.7.2",
     "hardhat": "^2.12.3",
+    "prettier": "^2.8.1",
+    "prettier-plugin-solidity": "^1.0.0",
     "ts-node": "^10.9.1",
     "tslib": "^2.4.1",
     "typescript": "^4.9.3"
