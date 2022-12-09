@@ -9,7 +9,8 @@ async function deployContract() {
       "ScatterToken"
     )) as ContractFactory;
   const scatterToken: Contract = (await scatterTokenContract.deploy(
-    1000
+    BigInt(100000000000 * Math.pow(10, 18)),
+    100
   )) as Contract;
   return {
     address: scatterToken.address,
