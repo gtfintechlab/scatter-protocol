@@ -1,1 +1,2 @@
-## Scatter Protocol: A privacy-centered federated learning blockchain for training machine learning models at scale.
+## Scatter Protocol
+An incentivized, privacy-centered federated learning blockchain for collaborative machine learning
