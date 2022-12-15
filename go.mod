@@ -1,4 +1,4 @@
-module scatterchain
+module scatterprotocol
 
 go 1.19
 
