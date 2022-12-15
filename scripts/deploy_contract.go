@@ -60,7 +60,7 @@ func main() {
 	auth.Value = big.NewInt(0)     // in wei
 	auth.GasLimit = uint64(300000) // in units
 	auth.GasPrice = gasPrice
-	fmt.Println(fromAddress)
+
 	address, transaction, _, err := scattertoken.DeployScattertoken(auth, client, big.NewInt(int64(100000000000*math.Pow(10, 18))), big.NewInt(int64(100)))
 	if err != nil {
 		log.Fatal(err)
