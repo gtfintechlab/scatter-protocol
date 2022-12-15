@@ -11,13 +11,13 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
     uint256 public blockReward;
     mapping(address => uint256) internal stakes;
 
-    constructor(uint256 cap, uint256 reward)
-        ERC20("ScatterToken", "ST")
-        ERC20Capped(cap * (10**decimals()))
-    {
+    constructor(
+        uint256 cap,
+        uint256 reward
+    ) ERC20("ScatterToken", "ST") ERC20Capped(cap * (10 ** decimals())) {
         owner = payable(msg.sender);
-        _mint(owner, 70000000 * (10**decimals()));
-        blockReward = reward * (10**decimals());
+        _mint(owner, 70000000 * (10 ** decimals()));
+        blockReward = reward * (10 ** decimals());
     }
 
     function addStake(uint256 amount) public {
@@ -38,15 +38,18 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
         stakes[msg.sender] -= amount;
     }
 
-    function getStake() public view returns (uint256) {
+    function getOwnStake() public view returns (uint256) {
         return stakes[msg.sender];
     }
 
-    function _mint(address account, uint256 amount)
-        internal
-        virtual
-        override(ERC20Capped, ERC20)
-    {
+    function getAccountStake(address account) public view returns (uint256) {
+        return stakes[account];
+    }
+
+    function _mint(
+        address account,
+        uint256 amount
+    ) internal virtual override(ERC20Capped, ERC20) {
         require(
             ERC20.totalSupply() + amount <= cap(),
             "ERC20Capped: cap exceeded"
@@ -55,7 +58,7 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
     }
 
     function setBlockReward(uint256 reward) public onlyOwner {
-        blockReward = reward * (10**decimals());
+        blockReward = reward * (10 ** decimals());
     }
 
     function _mintMinerReward() internal {

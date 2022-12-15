@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "contract:install": "npm i @openzeppelin/contracts",
+    "contract:compile": "solc contracts/ScatterToken.sol --overwrite --bin --abi -o build --base-path '/' --include-path 'node_modules/'",
+    "contract:generate": "abigen --bin=./build/ScatterToken.bin --abi=./build/ScatterToken.abi --pkg=scattertoken --out=node/contracts/ScatterToken.go",
+    "contract:push": "go run node/scripts/deploy.go",
+    "deploy": "npm run contract:install && npm run contract:compile && npm run contract:generate && npm run contract:push",
+    "format": "prettier --write \"**/*.{sol,}\""
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.8.0"
+  },
+  "devDependencies": {
+    "prettier": "^2.8.1",
+    "prettier-plugin-solidity": "^1.0.0"
+  }
+}
