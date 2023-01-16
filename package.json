@@ -2,7 +2,7 @@
   "scripts": {
     "contract:install": "npm i @openzeppelin/contracts",
     "contract:compile": "solc contracts/ScatterToken.sol --overwrite --bin --abi -o build --base-path '/' --include-path 'node_modules/'",
-    "contract:generate": "abigen --bin=./build/ScatterToken.bin --abi=./build/ScatterToken.abi --pkg=scattertoken --out=node/contracts/ScatterToken.go",
+    "contract:generate": "abigen --bin=./build/ScatterToken.bin --abi=./build/ScatterToken.abi --pkg=scattertoken --out=token/ScatterToken.go",
     "contract:push": "go run scripts/deploy_contract.go",
     "deploy": "npm run contract:install && npm run contract:compile && npm run contract:generate && npm run contract:push",
     "format": "prettier --write \"**/*.{sol,}\""

@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	scattertoken "github.com/gtfintechlab/scatter-protocol/node/contracts"
+	scattertoken "github.com/gtfintechlab/scatter-protocol/token"
 	"github.com/joho/godotenv"
 )
 

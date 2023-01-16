@@ -1,9 +1,15 @@
 ## Scatter Protocol
 
-An incentivized, privacy-centered federated learning blockchain for collaborative machine learning
+An incentivized, privacy-centered federated learning protocol for collaborative machine learning
 
-## Run the client
+## Run a bootstrap node
 
 ```
-go run node/client.go
+go run main.go --type bootstrap
+```
+
+## Run a peer node
+
+```
+go run main.go --type peer
 ```

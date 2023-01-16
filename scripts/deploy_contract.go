@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/joho/godotenv"
 
-	scattertoken "github.com/gtfintechlab/scatter-protocol/node/contracts"
+	scattertoken "github.com/gtfintechlab/scatter-protocol/token"
 )
 
 const (
