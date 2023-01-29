@@ -23,3 +23,5 @@ go.work
 .env
 build/
 node_modules/
+
+*.pem

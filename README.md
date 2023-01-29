@@ -2,6 +2,13 @@
 
 An incentivized, privacy-centered federated learning protocol for collaborative machine learning
 
+## Generate Node Keys
+
+```
+
+go run main.go --util keygen
+```
+
 ## Run a bootstrap node
 
 ```

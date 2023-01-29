@@ -3,11 +3,12 @@ package node
 import (
 	"context"
 	"fmt"
+	"log"
 
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 	libp2p "github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
-	core "github.com/libp2p/go-libp2p/core"
+	peer "github.com/libp2p/go-libp2p/core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
@@ -17,9 +18,17 @@ func InitPeerNode() {
 	table, _ := dht.New(context.Background(), node)
 	// The multiaddress of the bootstrap node
 	bootstrapAddr, _ := multiaddr.NewMultiaddr(utils.BOOTSTRAP_NODE_MULTIADDR)
-	node.Connect(context.Background(), core.PeerAddrInfo{Addrs: []multiaddr.Multiaddr{bootstrapAddr}})
+	peerInfo, _ := peer.AddrInfoFromP2pAddr(bootstrapAddr)
+	err := node.Connect(context.Background(), *peerInfo)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 	table.Bootstrap(context.Background())
+	fmt.Println("Peer Node:", node.ID())
 
-	fmt.Println(node.Addrs())
+	stream, _ := node.NewStream(context.Background(),
+		peerInfo.ID, utils.PROTOCOL_IDENTIFIER)
 
+	stream.Write([]byte("Hello, peer!"))
 }
