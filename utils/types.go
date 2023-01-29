@@ -11,3 +11,12 @@ var NODE_PEER string = "peer"
 var UTIL_GENERATE_KEYS = "keygen"
 
 var PROTOCOL_IDENTIFIER protocol.ID = "/scatter-protocol/1.0.0"
+
+const (
+	MESSAGE_CODE_JOIN_NETWORK = "join network"
+)
+
+type Message struct {
+	MessageType string
+	Payload     map[string]interface{}
+}

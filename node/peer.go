@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 	libp2p "github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -29,6 +30,7 @@ func InitPeerNode() {
 
 	stream, _ := node.NewStream(context.Background(),
 		peerInfo.ID, utils.PROTOCOL_IDENTIFIER)
+	networking.SendMessage(&stream, networking.MESSAGE_JOIN_NETWORK)
 
-	stream.Write([]byte("Hello, peer!"))
+	select {}
 }

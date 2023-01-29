@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"io/ioutil"
 
 	"github.com/libp2p/go-libp2p/core/crypto"
@@ -9,7 +8,6 @@ import (
 
 func GenerateKeys() {
 	privateKey, publicKey, _ := crypto.GenerateKeyPair(crypto.RSA, 2048)
-	fmt.Println(privateKey)
 	privateMarshaled, _ := crypto.MarshalPrivateKey(privateKey)
 	publicMarshaled, _ := crypto.MarshalPublicKey(publicKey)
 	ioutil.WriteFile("node/privateKey.pem", privateMarshaled, 0644)

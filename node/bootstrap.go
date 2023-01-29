@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 	libp2p "github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -28,5 +29,9 @@ func InitBootstrapNode() {
 }
 
 func bootstrapStreamHandler(stream network.Stream) {
-	fmt.Println("Peer connected:", stream.Conn().RemotePeer())
+	message := networking.DecodeMessage(&stream)
+	switch messageType := message.MessageType; messageType {
+	case utils.MESSAGE_CODE_JOIN_NETWORK:
+		fmt.Println("Peer connected:", stream.Conn().RemotePeer())
+	}
 }
