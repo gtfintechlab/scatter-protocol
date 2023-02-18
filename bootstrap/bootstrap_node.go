@@ -1,10 +1,10 @@
-package node
+package bootstrap
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/gtfintechlab/scatter-protocol/networking"
+	networking "github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 	libp2p "github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
