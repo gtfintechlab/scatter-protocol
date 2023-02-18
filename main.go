@@ -11,12 +11,25 @@ import (
 func main() {
 	var util string
 	var nodeType string
+
 	flag.StringVar(&nodeType, "type", "", "Type of node you want to run (peer or bootstrap)")
 	flag.StringVar(&util, "utils", "", "Run a utility script")
 	flag.Parse()
 
 	if nodeType == utils.NODE_BOOTSTRAP {
-		bootstrap.InitBootstrapNode()
+		var tcpPort string
+		var ipv4Address string
+		flag.StringVar(&tcpPort, "tcpPort", "7001",
+			"The TCP port you want this node to listen on")
+
+		flag.StringVar(&ipv4Address, "ipv4Address", "127.0.0.1",
+			"The IPV4 address you want this node to listen on")
+
+		flag.Parse()
+
+		bootstrapNode := bootstrap.InitBootstrapNode(ipv4Address, tcpPort)
+		bootstrapNode.Start(bootstrapNode)
+
 	} else if nodeType == utils.NODE_PEER {
 		var peerType string
 		var extAddress string

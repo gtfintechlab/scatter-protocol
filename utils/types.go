@@ -40,7 +40,7 @@ type PeerNode struct {
 	Start            func(*PeerNode)
 	ExternalServer   *http.Server
 	PeerToPeerServer *host.Host
-	Topics           []string
+	Topics           map[string]string
 }
 
 type BootstrapNode struct {
@@ -55,4 +55,9 @@ type ValidatorNode struct {
 type CosmosNode struct {
 	NodeType string
 	Start    func(*CosmosNode)
+}
+
+type AddTopicRequestBody struct {
+	Topic string  `json:"topic"`
+	Path  *string `json:"path,omitempty"`
 }

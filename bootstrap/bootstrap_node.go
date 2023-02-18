@@ -9,25 +9,33 @@ import (
 	libp2p "github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	network "github.com/libp2p/go-libp2p/core/network"
-	multiaddr "github.com/multiformats/go-multiaddr"
+	"github.com/multiformats/go-multiaddr"
 )
 
-func InitBootstrapNode() {
+func InitBootstrapNode(ipv4Address string, tcpPort string) *utils.BootstrapNode {
 	privateKey, _ := utils.LoadKeys()
 
 	node, _ := libp2p.New(libp2p.Identity(privateKey),
-		libp2p.ListenAddrStrings("/ip4/127.0.0.1/tcp/7001"))
+		libp2p.ListenAddrStrings("/ip4/"+ipv4Address+"/tcp/"+tcpPort))
 	// Create a new DHT
 	dht.New(context.Background(), node)
 	fmt.Println("Bootstrap Node:", node.ID())
 
-	// Listen for incoming connections
-	addr, _ := multiaddr.NewMultiaddr(utils.BOOTSTRAP_NODE_MULTIADDR)
+	// Set stream handler
 	node.SetStreamHandler(utils.PROTOCOL_IDENTIFIER, bootstrapStreamHandler)
-	node.Network().Listen(addr)
-	select {}
+	bootstrapNode := utils.BootstrapNode{
+		Start:            StartBootstrap,
+		PeerToPeerServer: &node,
+	}
+	return &bootstrapNode
 }
 
+func StartBootstrap(node *utils.BootstrapNode) {
+	addr, _ := multiaddr.NewMultiaddr(utils.BOOTSTRAP_NODE_MULTIADDR)
+	go (*node.PeerToPeerServer).Network().Listen(addr)
+	select {}
+
+}
 func bootstrapStreamHandler(stream network.Stream) {
 	message := networking.DecodeMessage(&stream)
 	switch messageType := message.MessageType; messageType {

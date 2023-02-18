@@ -42,6 +42,7 @@ func InitPeerNode(peerType string, serverAddress string) *utils.PeerNode {
 			Addr: serverAddress,
 		},
 		PeerToPeerServer: &node,
+		Topics:           map[string]string{},
 	}
 
 	return &peerNode
@@ -65,5 +66,6 @@ func networkStreamHandler(stream network.Stream) {
 
 // "Private" method handlers for you to communicate with your own node
 func externalServerHandlers(node *utils.PeerNode) {
-	http.HandleFunc("/node/switchRole", switchPeerNodeRole(node))
+	http.HandleFunc("/node/role/switch", switchPeerNodeRole(node))
+	http.HandleFunc("/node/topic/add", addTopic(node))
 }

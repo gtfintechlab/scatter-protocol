@@ -5,7 +5,9 @@
     "contract:generate": "abigen --bin=./build/ScatterToken.bin --abi=./build/ScatterToken.abi --pkg=scattertoken --out=token/ScatterToken.go",
     "contract:push": "go run scripts/deploy_contract.go",
     "deploy": "npm run contract:install && npm run contract:compile && npm run contract:generate && npm run contract:push",
-    "format": "prettier --write \"**/*.{sol,}\""
+    "format": "prettier --write \"**/*.{sol,}\"",
+    "bootstrap": "go run main.go --type bootstrap",
+    "peer": "go run main.go --type peer"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.8.0"
