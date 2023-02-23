@@ -7,10 +7,12 @@
     "deploy": "npm run contract:install && npm run contract:compile && npm run contract:generate && npm run contract:push",
     "format": "prettier --write \"**/*.{sol,}\"",
     "bootstrap": "go run main.go --type bootstrap",
-    "peer": "go run main.go --type peer"
+    "peer": "go run main.go --type peer",
+    "peer:requestor": "go run main.go --type peer --peerType requestor",
+    "peer:trainer": "go run main.go --type peer --peerType trainer"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.0"
+    "@openzeppelin/contracts": "^4.8.1"
   },
   "devDependencies": {
     "prettier": "^2.8.1",

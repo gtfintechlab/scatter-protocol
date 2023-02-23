@@ -61,3 +61,7 @@ type AddTopicRequestBody struct {
 	Topic string  `json:"topic"`
 	Path  *string `json:"path,omitempty"`
 }
+
+type PublishTopicRequestBody struct {
+	Topic string `json:"topic"`
+}

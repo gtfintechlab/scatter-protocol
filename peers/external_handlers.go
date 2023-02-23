@@ -49,3 +49,11 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 		fmt.Print(node.Topics)
 	}
 }
+
+func publishTopic(node *utils.PeerNode) http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		if node.PeerType == utils.PEER_REQUESTOR {
+
+		}
+	}
+}
