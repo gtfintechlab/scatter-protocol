@@ -49,21 +49,25 @@ const (
 
 type Message struct {
 	MessageType string
-	Payload     any
+	Payload     map[string]interface{}
+}
+
+type InformationBox struct {
+	CosmosTopics *map[string]map[string]bool
 }
 
 type PeerNode struct {
-	PeerType             string
-	NodeId               peer.ID
-	Start                func(*PeerNode)
-	ExternalServer       *http.Server
-	PeerToPeerServer     *host.Host
-	Topics               map[string]string
-	DistributedHashTable *dht.IpfsDHT
-	PubSubService        *pubsub.PubSub
-	PubSubTopics         *map[string]*pubsub.Topic
-	TopicTrainerMap      map[string][]string
-	CosmosTopics         any // Will fix all any types later lol
+	PeerType             string                    // Type of Peer (requestor or trainer)
+	NodeId               peer.ID                   // ID of Node
+	Start                func(*PeerNode)           // Start Function for node
+	ExternalServer       *http.Server              // Http Server to communicate with node
+	PeerToPeerServer     *host.Host                // Peer2Peer server to communicate with network
+	TopicToDataPath      *map[string]string        // Topics to Data Path Mapping
+	DistributedHashTable *dht.IpfsDHT              // Distributed hash table for peer discovery
+	PubSubService        *pubsub.PubSub            // PubSub Service for the node
+	PubSubTopics         *map[string]*pubsub.Topic // PubSub Topics for topics we have subscribed to
+	TopicTrainerMap      map[string][]string       // Map of the topic --> list of trainer nodes
+	InformationBox       *InformationBox           // Network Information
 }
 
 type BootstrapNode struct {

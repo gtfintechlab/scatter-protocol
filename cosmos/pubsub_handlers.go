@@ -29,9 +29,14 @@ func HandleUniversalCosmosMessage(message *pubsub.Message, node *utils.Celestial
 		networkStream, _ := (*node.PeerToPeerServer).NewStream(context.Background(),
 			message.ReceivedFrom, utils.PROTOCOL_IDENTIFIER)
 
+		var unmarshaledData map[string]interface{}
+
+		jsonData, _ := json.Marshal(node.NodeTopicMappings)
+		json.Unmarshal(jsonData, &unmarshaledData)
+
 		networking.SendMessage(&networkStream, utils.Message{
 			MessageType: utils.PEER_GET_TOPICS,
-			Payload:     node.NodeTopicMappings,
+			Payload:     unmarshaledData,
 		})
 	}
 }

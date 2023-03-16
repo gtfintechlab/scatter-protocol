@@ -9,12 +9,13 @@ import (
 	"github.com/gtfintechlab/scatter-protocol/cosmos"
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
+	"golang.org/x/exp/maps"
 )
 
 func health() http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
-		healthy := map[string]string{
+		healthy := map[string]interface{}{
 			"Hello": "World",
 		}
 
@@ -34,7 +35,7 @@ func switchPeerNodeRole(node *utils.PeerNode) http.HandlerFunc {
 			node.PeerType = utils.PEER_REQUESTOR
 		}
 
-		networking.SendJson(response, map[string]any{
+		networking.SendJson(response, map[string]interface{}{
 			"success": true,
 			"newRole": node.PeerType,
 		})
@@ -49,7 +50,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 		case utils.PEER_REQUESTOR:
 			var requestBody utils.AddTopicRequestBody
 			json.NewDecoder(request.Body).Decode(&requestBody)
-			node.Topics[requestBody.Topic] = requestBody.Topic
+			(*node.TopicToDataPath)[requestBody.Topic] = ""
 			cs := cosmos.CreateCosmos(node, context.Background(), requestBody.Topic)
 			go func() {
 				for {
@@ -60,7 +61,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 
 			cosmos.AddTopicToUniversalCosmos(node, requestBody.Topic)
 
-			networking.SendJson(response, map[string]any{
+			networking.SendJson(response, map[string]interface{}{
 				"success":    true,
 				"cosmosId":   cs.CosmosId,
 				"cosmosName": cs.CosmosName,
@@ -76,7 +77,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				return
 			}
 
-			node.Topics[requestBody.Topic] = *requestBody.Path
+			(*node.TopicToDataPath)[requestBody.Topic] = *requestBody.Path
 
 			cosmos.JoinCosmos(context.Background(), node, requestBody.Topic)
 		}
@@ -86,9 +87,9 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 func getOwnTopics(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
-		networking.SendJson(response, map[string]any{
+		networking.SendJson(response, map[string]interface{}{
 			"success": true,
-			"topics":  node.Topics,
+			"topics":  maps.Keys((*node.TopicToDataPath)),
 		})
 	}
 }
@@ -98,9 +99,9 @@ func getCosmosTopics(node *utils.PeerNode) http.HandlerFunc {
 		networking.GetValidator(request, response)
 
 		cosmos.GetTopicsFromUniversalCosmos(node)
-		networking.SendJson(response, map[string]any{
+		networking.SendJson(response, map[string]interface{}{
 			"success": true,
-			"topics":  node.CosmosTopics,
+			"topics":  *(node.InformationBox.CosmosTopics),
 		})
 	}
 }

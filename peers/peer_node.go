@@ -2,6 +2,7 @@ package peers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -53,10 +54,12 @@ func InitPeerNode(peerType string, serverAddress string, useBoostrap bool) *util
 		PeerToPeerServer:     &node,
 		DistributedHashTable: table,
 		PubSubService:        ps,
-		Topics:               map[string]string{},
+		TopicToDataPath:      &map[string]string{},
 		TopicTrainerMap:      map[string][]string{},
-		CosmosTopics:         map[string]map[string]bool{},
 		PubSubTopics:         &map[string]*pubsub.Topic{},
+		InformationBox: &utils.InformationBox{
+			CosmosTopics: &map[string]map[string]bool{},
+		},
 	}
 
 	node.SetStreamHandler(utils.PROTOCOL_IDENTIFIER, peerStreamHandler(&peerNode))
@@ -81,7 +84,10 @@ func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 		message := networking.DecodeMessage(&stream)
 		switch messageType := message.MessageType; messageType {
 		case utils.PEER_GET_TOPICS:
-			node.CosmosTopics = message.Payload
+			var topicList map[string]map[string]bool
+			jsonData, _ := json.Marshal(message.Payload)
+			json.Unmarshal(jsonData, &topicList)
+			node.InformationBox.CosmosTopics = &topicList
 		}
 	}
 }

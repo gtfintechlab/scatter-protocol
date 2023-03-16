@@ -22,7 +22,7 @@ func GetValidator(request *http.Request, response http.ResponseWriter) {
 	}
 }
 
-func SendJson(response http.ResponseWriter, jsonData any) {
+func SendJson(response http.ResponseWriter, jsonData map[string]interface{}) {
 	response.Header().Set("Content-Type", "application/json")
 	response.WriteHeader(http.StatusCreated)
 	json.NewEncoder(response).Encode(jsonData)

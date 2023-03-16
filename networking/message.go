@@ -25,6 +25,6 @@ func DecodeMessage(stream *network.Stream) utils.Message {
 
 	return utils.Message{
 		MessageType: message["MessageType"].(string),
-		Payload:     message["Payload"],
+		Payload:     message["Payload"].(map[string]interface{}),
 	}
 }
