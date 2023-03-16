@@ -1,13 +1,26 @@
 package peers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/gtfintechlab/scatter-protocol/cosmos"
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 )
+
+func health() http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		networking.GetValidator(request, response)
+		healthy := map[string]string{
+			"Hello": "World",
+		}
+
+		networking.SendJson(response, healthy)
+	}
+}
 
 func switchPeerNodeRole(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
@@ -20,6 +33,11 @@ func switchPeerNodeRole(node *utils.PeerNode) http.HandlerFunc {
 		case utils.PEER_TRAINER:
 			node.PeerType = utils.PEER_REQUESTOR
 		}
+
+		networking.SendJson(response, map[string]any{
+			"success": true,
+			"newRole": node.PeerType,
+		})
 	}
 }
 
@@ -32,6 +50,21 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			var requestBody utils.AddTopicRequestBody
 			json.NewDecoder(request.Body).Decode(&requestBody)
 			node.Topics[requestBody.Topic] = requestBody.Topic
+			cs := cosmos.CreateCosmos(node, context.Background(), requestBody.Topic)
+			go func() {
+				for {
+					message, _ := cs.Subscription.Next(context.Background())
+					HandleCosmosMessage(message, node)
+				}
+			}()
+
+			cosmos.AddTopicToUniversalCosmos(node, requestBody.Topic)
+
+			networking.SendJson(response, map[string]any{
+				"success":    true,
+				"cosmosId":   cs.CosmosId,
+				"cosmosName": cs.CosmosName,
+			})
 		case utils.PEER_TRAINER:
 			var requestBody utils.AddTopicRequestBody
 			json.NewDecoder(request.Body).Decode(&requestBody)
@@ -44,16 +77,30 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			}
 
 			node.Topics[requestBody.Topic] = *requestBody.Path
-		}
 
-		fmt.Print(node.Topics)
+			cosmos.JoinCosmos(context.Background(), node, requestBody.Topic)
+		}
 	}
 }
 
-func publishTopic(node *utils.PeerNode) http.HandlerFunc {
+func getOwnTopics(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
-		if node.PeerType == utils.PEER_REQUESTOR {
+		networking.GetValidator(request, response)
+		networking.SendJson(response, map[string]any{
+			"success": true,
+			"topics":  node.Topics,
+		})
+	}
+}
 
-		}
+func getCosmosTopics(node *utils.PeerNode) http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		networking.GetValidator(request, response)
+
+		cosmos.GetTopicsFromUniversalCosmos(node)
+		networking.SendJson(response, map[string]any{
+			"success": true,
+			"topics":  node.CosmosTopics,
+		})
 	}
 }

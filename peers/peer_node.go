@@ -7,10 +7,12 @@ import (
 
 	"net/http"
 
+	"github.com/gtfintechlab/scatter-protocol/cosmos"
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 	libp2p "github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
+	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	network "github.com/libp2p/go-libp2p/core/network"
 	peer "github.com/libp2p/go-libp2p/core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
@@ -35,37 +37,56 @@ func InitPeerNode(peerType string, serverAddress string) *utils.PeerNode {
 		peerInfo.ID, utils.PROTOCOL_IDENTIFIER)
 	networking.SendMessage(&stream, networking.MESSAGE_JOIN_NETWORK)
 
+	ps, _ := pubsub.NewGossipSub(context.Background(), node)
+
 	peerNode := utils.PeerNode{
 		PeerType: peerType,
 		Start:    StartPeer,
+		NodeId:   node.ID(),
 		ExternalServer: &http.Server{
 			Addr: serverAddress,
 		},
-		PeerToPeerServer: &node,
-		Topics:           map[string]string{},
+		PeerToPeerServer:     &node,
+		DistributedHashTable: table,
+		PubSubService:        ps,
+		Topics:               map[string]string{},
+		TopicTrainerMap:      map[string][]string{},
+		CosmosTopics:         map[string]map[string]bool{},
+		PubSubTopics:         &map[string]*pubsub.Topic{},
 	}
+
+	node.SetStreamHandler(utils.PROTOCOL_IDENTIFIER, peerStreamHandler(&peerNode))
 
 	return &peerNode
 }
 
 func StartPeer(node *utils.PeerNode) {
 	externalServerHandlers(node)
-	go node.ExternalServer.ListenAndServe()
+	utils.InitializePeerDiscovery(node.PeerToPeerServer)
 
+	universalCosmosTopic := cosmos.JoinCosmos(context.Background(), node, utils.UNIVERSAL_COSMOS)
+	(*node.PubSubTopics)[utils.UNIVERSAL_COSMOS] = universalCosmosTopic
+
+	go node.ExternalServer.ListenAndServe()
 	select {}
 }
 
-// "Public" method handlers for peers to communicate with your node
-func networkStreamHandler(stream network.Stream) {
-	message := networking.DecodeMessage(&stream)
-	switch messageType := message.MessageType; messageType {
-	case utils.PEER_SWITCH_ROLE:
-
+func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
+	// "Public" method handlers for peers to communicate with your node
+	return func(stream network.Stream) {
+		message := networking.DecodeMessage(&stream)
+		switch messageType := message.MessageType; messageType {
+		case utils.PEER_GET_TOPICS:
+			node.CosmosTopics = message.Payload
+		}
 	}
 }
 
 // "Private" method handlers for you to communicate with your own node
 func externalServerHandlers(node *utils.PeerNode) {
+	http.HandleFunc("/node/health", health())
 	http.HandleFunc("/node/role/switch", switchPeerNodeRole(node))
 	http.HandleFunc("/node/topic/add", addTopic(node))
+	http.HandleFunc("/node/topics/get", getOwnTopics(node))
+	http.HandleFunc("/cosmos/topics/get", getCosmosTopics(node))
 }

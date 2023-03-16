@@ -4,6 +4,7 @@ import (
 	"flag"
 
 	bootstrap "github.com/gtfintechlab/scatter-protocol/bootstrap"
+	"github.com/gtfintechlab/scatter-protocol/cosmos"
 	peer "github.com/gtfintechlab/scatter-protocol/peers"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 )
@@ -17,7 +18,7 @@ func main() {
 	var extAddress string
 
 	// All nodes
-	flag.StringVar(&nodeType, "type", "", "Type of node you want to run (peer or bootstrap)")
+	flag.StringVar(&nodeType, "type", "", "Type of node you want to run (peer, bootstrap, or celestial)")
 	flag.StringVar(&util, "utils", "", "Run a utility script")
 
 	// Bootstrap Node Options
@@ -40,6 +41,9 @@ func main() {
 	} else if nodeType == utils.NODE_PEER {
 		peerNode := peer.InitPeerNode(peerType, extAddress)
 		peerNode.Start(peerNode)
+	} else if nodeType == utils.NODE_CELESTIAL {
+		celestialNode := cosmos.InitCelestialNode()
+		celestialNode.Start(celestialNode)
 	}
 
 	if util == utils.UTIL_GENERATE_KEYS {

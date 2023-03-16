@@ -11,7 +11,7 @@ Scatter Protocol is an incentivized, privacy-centered federated learning protoco
 | Nodes: Persistent Peer2Peer Hashing                   | ✅ COMPLETE ✅    |
 | Smart Contracts: ERC-20 Scatter Token                 | ✅ COMPLETE ✅    |
 | Bootstrap Nodes: Distributed Hash Table Functionality | 🚧 IN PROGRESS 🚧 |
-| Nodes: Distributed Hash Table Sharing                 | 🚧 IN PROGRESS 🚧 |
+| Nodes: Peer Discovery Mechanism                       | 🚧 IN PROGRESS 🚧 |
 | Peer Nodes: Intialize Training Request                |                   |
 | Peer Nodes: Smart Contract Interactions               |                   |
 | Peer Nodes: Federated Learning Execution              |                   |

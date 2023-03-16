@@ -53,7 +53,7 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
 
     function elevateToCosmosValidator() public {
         require (addressToStake[msg.sender] >= requiredCosmosValidatorStake,
-            "To become a cosmos validator, you must have 500,000 Scatter Token staked"
+            "To become a cosmos validator, you must have 100,000 Scatter Token staked"
         );
 
         addressToRoles[msg.sender] = roles.CosmosValidator;
