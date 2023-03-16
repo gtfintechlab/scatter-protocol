@@ -3,7 +3,6 @@ package cosmos
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/gtfintechlab/scatter-protocol/networking"
 	"github.com/gtfintechlab/scatter-protocol/utils"
@@ -27,11 +26,9 @@ func HandleUniversalCosmosMessage(message *pubsub.Message, node *utils.Celestial
 		delete(node.NodeTopicMappings[message.ReceivedFrom.String()], cosmosMessage.Message)
 
 	case utils.PEER_GET_TOPICS:
-		fmt.Println("HERE")
 		networkStream, _ := (*node.PeerToPeerServer).NewStream(context.Background(),
 			message.ReceivedFrom, utils.PROTOCOL_IDENTIFIER)
 
-		fmt.Println("HERE")
 		networking.SendMessage(&networkStream, utils.Message{
 			MessageType: utils.PEER_GET_TOPICS,
 			Payload:     node.NodeTopicMappings,

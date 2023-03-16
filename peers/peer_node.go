@@ -14,28 +14,32 @@ import (
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	network "github.com/libp2p/go-libp2p/core/network"
-	peer "github.com/libp2p/go-libp2p/core/peer"
-	multiaddr "github.com/multiformats/go-multiaddr"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/multiformats/go-multiaddr"
 )
 
-func InitPeerNode(peerType string, serverAddress string) *utils.PeerNode {
+func InitPeerNode(peerType string, serverAddress string, useBoostrap bool) *utils.PeerNode {
 	// Create a new libp2p host for the new node
 	node, _ := libp2p.New()
 	table, _ := dht.New(context.Background(), node)
 	// The multiaddress of the bootstrap node
-	bootstrapAddr, _ := multiaddr.NewMultiaddr(utils.BOOTSTRAP_NODE_MULTIADDR)
-	peerInfo, _ := peer.AddrInfoFromP2pAddr(bootstrapAddr)
-	err := node.Connect(context.Background(), *peerInfo)
 
-	if err != nil {
-		log.Fatal(err)
+	if useBoostrap {
+		bootstrapAddr, _ := multiaddr.NewMultiaddr(utils.BOOTSTRAP_NODE_MULTIADDR)
+		peerInfo, _ := peer.AddrInfoFromP2pAddr(bootstrapAddr)
+		err := node.Connect(context.Background(), *peerInfo)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		stream, _ := node.NewStream(context.Background(),
+			peerInfo.ID, utils.PROTOCOL_IDENTIFIER)
+		networking.SendMessage(&stream, networking.MESSAGE_JOIN_NETWORK)
+
 	}
 	table.Bootstrap(context.Background())
 	fmt.Println("Peer Node:", node.ID())
-
-	stream, _ := node.NewStream(context.Background(),
-		peerInfo.ID, utils.PROTOCOL_IDENTIFIER)
-	networking.SendMessage(&stream, networking.MESSAGE_JOIN_NETWORK)
 
 	ps, _ := pubsub.NewGossipSub(context.Background(), node)
 

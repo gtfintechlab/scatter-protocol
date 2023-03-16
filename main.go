@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"strconv"
 
 	bootstrap "github.com/gtfintechlab/scatter-protocol/bootstrap"
 	"github.com/gtfintechlab/scatter-protocol/cosmos"
@@ -16,7 +17,7 @@ func main() {
 	var ipv4Address string
 	var peerType string
 	var extAddress string
-
+	var useBootstrap string
 	// All nodes
 	flag.StringVar(&nodeType, "type", "", "Type of node you want to run (peer, bootstrap, or celestial)")
 	flag.StringVar(&util, "utils", "", "Run a utility script")
@@ -33,16 +34,20 @@ func main() {
 	flag.StringVar(&extAddress, "extAddress", ":5002",
 		"External server address (for communication with the node)")
 
+	flag.StringVar(&useBootstrap, "useBootstrap", "false",
+		"Whether or not to connect to the bootstrap node")
+
 	flag.Parse()
 
+	bootstrapConnect, _ := strconv.ParseBool(useBootstrap)
 	if nodeType == utils.NODE_BOOTSTRAP {
 		bootstrapNode := bootstrap.InitBootstrapNode(ipv4Address, tcpPort)
 		bootstrapNode.Start(bootstrapNode)
 	} else if nodeType == utils.NODE_PEER {
-		peerNode := peer.InitPeerNode(peerType, extAddress)
+		peerNode := peer.InitPeerNode(peerType, extAddress, bootstrapConnect)
 		peerNode.Start(peerNode)
 	} else if nodeType == utils.NODE_CELESTIAL {
-		celestialNode := cosmos.InitCelestialNode()
+		celestialNode := cosmos.InitCelestialNode(bootstrapConnect)
 		celestialNode.Start(celestialNode)
 	}
 

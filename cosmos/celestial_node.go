@@ -13,16 +13,19 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
-func InitCelestialNode() *utils.CelestialNode {
+func InitCelestialNode(useBootstrap bool) *utils.CelestialNode {
 	node, _ := libp2p.New()
 	table, _ := dht.New(context.Background(), node)
 
-	bootstrapAddr, _ := multiaddr.NewMultiaddr(utils.BOOTSTRAP_NODE_MULTIADDR)
-	peerInfo, _ := peer.AddrInfoFromP2pAddr(bootstrapAddr)
-	err := node.Connect(context.Background(), *peerInfo)
+	if useBootstrap {
+		bootstrapAddr, _ := multiaddr.NewMultiaddr(utils.BOOTSTRAP_NODE_MULTIADDR)
+		peerInfo, _ := peer.AddrInfoFromP2pAddr(bootstrapAddr)
+		err := node.Connect(context.Background(), *peerInfo)
 
-	if err != nil {
-		log.Fatal(err)
+		if err != nil {
+			log.Fatal(err)
+		}
+
 	}
 
 	table.Bootstrap(context.Background())

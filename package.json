@@ -9,11 +9,14 @@
     "bootstrap": "go run main.go --type bootstrap",
     "peer": "go run main.go --type peer",
     "peer:requestor": "go run main.go --type peer --peerType requestor --extAddress :5002",
-    "peer:trainer": "go run main.go --type peer --peerType trainer --extAddress :5003",
-    "celestial": "go run main.go --type celestial"
+    "peer:requestor:2": "go run main.go --type peer --peerType requestor --extAddress :5003",
+    "peer:trainer": "go run main.go --type peer --peerType trainer --extAddress :6001",
+    "celestial": "go run main.go --type celestial",
+    "network": "concurrently \"npm run peer:requestor\" \"npm run peer:trainer\" \"npm run celestial\" \"npm run peer:requestor:2\""
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^4.8.1"
+    "@openzeppelin/contracts": "^4.8.1",
+    "concurrently": "^7.6.0"
   },
   "devDependencies": {
     "prettier": "^2.8.1",
