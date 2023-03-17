@@ -36,6 +36,7 @@ const (
 	PEER_REQUESTOR_ADD_TOPIC    = "requestor add topic"
 	PEER_REQUESTOR_REMOVE_TOPIC = "requestor remove topic"
 	PEER_GET_TOPICS             = "trainer get topics"
+	PEER_START_TRAINING         = "start training"
 )
 
 const (
@@ -59,14 +60,15 @@ type InformationBox struct {
 type PeerNode struct {
 	PeerType             string                    // Type of Peer (requestor or trainer)
 	NodeId               peer.ID                   // ID of Node
-	Start                func(*PeerNode)           // Start Function for node
+	Start                func(*PeerNode, bool)     // Start Function for node
 	ExternalServer       *http.Server              // Http Server to communicate with node
 	PeerToPeerServer     *host.Host                // Peer2Peer server to communicate with network
 	TopicToDataPath      *map[string]string        // Topics to Data Path Mapping
 	DistributedHashTable *dht.IpfsDHT              // Distributed hash table for peer discovery
 	PubSubService        *pubsub.PubSub            // PubSub Service for the node
 	PubSubTopics         *map[string]*pubsub.Topic // PubSub Topics for topics we have subscribed to
-	TopicTrainerMap      map[string][]string       // Map of the topic --> list of trainer nodes
+	TopicTrainerMap      *map[string][]string      // Map of the topic --> list of trainer nodes
+	RequestorTopicMap    *map[string][]string      // Map of requestor --> list of topics
 	InformationBox       *InformationBox           // Network Information
 }
 
@@ -87,17 +89,22 @@ type CelestialNode struct {
 	NodeId               peer.ID
 	NodeTopicMappings    map[string]map[string]bool
 	PeerToPeerServer     *host.Host
-	Start                func(*CelestialNode)
+	Start                func(*CelestialNode, bool)
 	PubSubService        *pubsub.PubSub
 	DistributedHashTable *dht.IpfsDHT
 }
 
 type AddTopicRequestBody struct {
-	Topic string  `json:"topic"`
-	Path  *string `json:"path,omitempty"`
+	Topic       string  `json:"topic"`
+	RequestorId string  `json:"requestorId,omitempty"`
+	Path        *string `json:"path,omitempty"`
 }
 
 type PublishTopicRequestBody struct {
+	Topic string `json:"topic"`
+}
+
+type InitializeTrainingRequestBody struct {
 	Topic string `json:"topic"`
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"net/http"
 
@@ -12,33 +11,17 @@ import (
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 	libp2p "github.com/libp2p/go-libp2p"
-	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	network "github.com/libp2p/go-libp2p/core/network"
-	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/multiformats/go-multiaddr"
 )
 
-func InitPeerNode(peerType string, serverAddress string, useBoostrap bool) *utils.PeerNode {
+func InitPeerNode(peerType string, serverAddress string) *utils.PeerNode {
 	// Create a new libp2p host for the new node
 	node, _ := libp2p.New()
-	table, _ := dht.New(context.Background(), node)
+	table, _ := networking.NewDHT(context.Background(), node)
+	// table, _ := dht.New(context.Background(), node)
 	// The multiaddress of the bootstrap node
 
-	if useBoostrap {
-		bootstrapAddr, _ := multiaddr.NewMultiaddr(utils.BOOTSTRAP_NODE_MULTIADDR)
-		peerInfo, _ := peer.AddrInfoFromP2pAddr(bootstrapAddr)
-		err := node.Connect(context.Background(), *peerInfo)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		stream, _ := node.NewStream(context.Background(),
-			peerInfo.ID, utils.PROTOCOL_IDENTIFIER)
-		networking.SendMessage(&stream, networking.MESSAGE_JOIN_NETWORK)
-
-	}
 	table.Bootstrap(context.Background())
 	fmt.Println("Peer Node:", node.ID())
 
@@ -55,7 +38,8 @@ func InitPeerNode(peerType string, serverAddress string, useBoostrap bool) *util
 		DistributedHashTable: table,
 		PubSubService:        ps,
 		TopicToDataPath:      &map[string]string{},
-		TopicTrainerMap:      map[string][]string{},
+		TopicTrainerMap:      &map[string][]string{},
+		RequestorTopicMap:    &map[string][]string{},
 		PubSubTopics:         &map[string]*pubsub.Topic{},
 		InformationBox: &utils.InformationBox{
 			CosmosTopics: &map[string]map[string]bool{},
@@ -67,10 +51,18 @@ func InitPeerNode(peerType string, serverAddress string, useBoostrap bool) *util
 	return &peerNode
 }
 
-func StartPeer(node *utils.PeerNode) {
+func StartPeer(node *utils.PeerNode, useMdns bool) {
 	externalServerHandlers(node)
-	utils.InitializePeerDiscovery(node.PeerToPeerServer)
-
+	if useMdns {
+		utils.InitializePeerDiscovery(node.PeerToPeerServer)
+	} else {
+		go networking.InitializePeerDiscoveryDHT(
+			context.Background(),
+			*node.PeerToPeerServer,
+			node.DistributedHashTable,
+			string(utils.PROTOCOL_IDENTIFIER),
+		)
+	}
 	universalCosmosTopic := cosmos.JoinCosmos(context.Background(), node, utils.UNIVERSAL_COSMOS)
 	(*node.PubSubTopics)[utils.UNIVERSAL_COSMOS] = universalCosmosTopic
 
@@ -88,6 +80,8 @@ func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 			jsonData, _ := json.Marshal(message.Payload)
 			json.Unmarshal(jsonData, &topicList)
 			node.InformationBox.CosmosTopics = &topicList
+		case utils.PEER_START_TRAINING:
+			fmt.Println(message.MessageType)
 		}
 	}
 }
@@ -99,4 +93,6 @@ func externalServerHandlers(node *utils.PeerNode) {
 	http.HandleFunc("/node/topic/add", addTopic(node))
 	http.HandleFunc("/node/topics/get", getOwnTopics(node))
 	http.HandleFunc("/cosmos/topics/get", getCosmosTopics(node))
+	http.HandleFunc("/node/topics/trainers", getTopicTrainers(node))
+	http.HandleFunc("/node/training/start", initializeTraining(node))
 }

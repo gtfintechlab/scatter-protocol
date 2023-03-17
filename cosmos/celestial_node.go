@@ -3,30 +3,17 @@ package cosmos
 import (
 	"context"
 	"fmt"
-	"log"
 
+	"github.com/gtfintechlab/scatter-protocol/networking"
 	"github.com/gtfintechlab/scatter-protocol/utils"
 	"github.com/libp2p/go-libp2p"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
-	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/multiformats/go-multiaddr"
 )
 
-func InitCelestialNode(useBootstrap bool) *utils.CelestialNode {
+func InitCelestialNode() *utils.CelestialNode {
 	node, _ := libp2p.New()
 	table, _ := dht.New(context.Background(), node)
-
-	if useBootstrap {
-		bootstrapAddr, _ := multiaddr.NewMultiaddr(utils.BOOTSTRAP_NODE_MULTIADDR)
-		peerInfo, _ := peer.AddrInfoFromP2pAddr(bootstrapAddr)
-		err := node.Connect(context.Background(), *peerInfo)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-	}
 
 	table.Bootstrap(context.Background())
 	fmt.Println("Celestial Node:", node.ID())
@@ -45,9 +32,21 @@ func InitCelestialNode(useBootstrap bool) *utils.CelestialNode {
 
 }
 
-func StartCelestial(node *utils.CelestialNode) {
+func StartCelestial(node *utils.CelestialNode, useMdns bool) {
 	go (*node.PeerToPeerServer).Network().Listen((*node.PeerToPeerServer).Addrs()[0])
-	utils.InitializePeerDiscovery(node.PeerToPeerServer)
+
+	if useMdns {
+		utils.InitializePeerDiscovery(node.PeerToPeerServer)
+
+	} else {
+		go networking.InitializePeerDiscoveryDHT(
+			context.Background(),
+			*node.PeerToPeerServer,
+			node.DistributedHashTable,
+			string(utils.PROTOCOL_IDENTIFIER),
+		)
+	}
+
 	go func() {
 		universalCosmos := CreateUniversalCosmos(node, context.Background())
 		for {

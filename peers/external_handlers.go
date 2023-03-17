@@ -9,6 +9,7 @@ import (
 	"github.com/gtfintechlab/scatter-protocol/cosmos"
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"golang.org/x/exp/maps"
 )
 
@@ -78,8 +79,18 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			}
 
 			(*node.TopicToDataPath)[requestBody.Topic] = *requestBody.Path
-
-			cosmos.JoinCosmos(context.Background(), node, requestBody.Topic)
+			if _, ok := (*node.RequestorTopicMap)[requestBody.RequestorId]; ok {
+				(*node.RequestorTopicMap)[requestBody.RequestorId] =
+					append((*node.RequestorTopicMap)[requestBody.RequestorId],
+						requestBody.Topic)
+			} else {
+				(*node.RequestorTopicMap)[requestBody.RequestorId] = []string{}
+				(*node.RequestorTopicMap)[requestBody.RequestorId] =
+					append((*node.RequestorTopicMap)[requestBody.RequestorId],
+						requestBody.Topic)
+			}
+			cosmos.JoinCosmos(context.Background(), node,
+				fmt.Sprintf("%s: %s", requestBody.RequestorId, requestBody.Topic))
 		}
 	}
 }
@@ -103,5 +114,46 @@ func getCosmosTopics(node *utils.PeerNode) http.HandlerFunc {
 			"success": true,
 			"topics":  *(node.InformationBox.CosmosTopics),
 		})
+	}
+}
+
+func getTopicTrainers(node *utils.PeerNode) http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		networking.GetValidator(request, response)
+
+		networking.SendJson(response, map[string]interface{}{
+			"success":  true,
+			"trainers": node.TopicTrainerMap,
+		})
+	}
+}
+
+func initializeTraining(node *utils.PeerNode) http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		networking.PostValidator(request, response)
+
+		var requestBody utils.InitializeTrainingRequestBody
+		json.NewDecoder(request.Body).Decode(&requestBody)
+
+		switch nodeType := node.PeerType; nodeType {
+		case utils.PEER_REQUESTOR:
+			trainers := (*node.TopicTrainerMap)[fmt.Sprintf("%s: %s",
+				node.NodeId.String(),
+				requestBody.Topic)]
+
+			for _, trainer := range trainers {
+				peerId, _ := peer.Decode(trainer)
+				stream, _ := (*node.PeerToPeerServer).NewStream(
+					context.Background(),
+					peerId,
+					utils.PROTOCOL_IDENTIFIER,
+				)
+				networking.SendMessage(&stream, utils.Message{
+					MessageType: utils.PEER_START_TRAINING,
+					Payload:     map[string]interface{}{},
+				})
+			}
+		}
+
 	}
 }

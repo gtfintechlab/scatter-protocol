@@ -15,11 +15,11 @@ func HandleCosmosMessage(message *pubsub.Message, node *utils.PeerNode) {
 
 	switch messageType := cosmosMessage.Type; messageType {
 	case utils.PEER_TRAINER_JOIN:
-		if _, ok := node.TopicTrainerMap[message.GetTopic()]; ok {
-			node.TopicTrainerMap[message.GetTopic()] = append(node.TopicTrainerMap[message.GetTopic()], message.ReceivedFrom.String())
+		if _, ok := (*node.TopicTrainerMap)[message.GetTopic()]; ok {
+			(*node.TopicTrainerMap)[message.GetTopic()] = append((*node.TopicTrainerMap)[message.GetTopic()], message.ReceivedFrom.String())
 		} else {
-			node.TopicTrainerMap[message.GetTopic()] = []string{}
-			node.TopicTrainerMap[message.GetTopic()] = append(node.TopicTrainerMap[message.GetTopic()], message.ReceivedFrom.String())
+			(*node.TopicTrainerMap)[message.GetTopic()] = []string{}
+			(*node.TopicTrainerMap)[message.GetTopic()] = append((*node.TopicTrainerMap)[message.GetTopic()], message.ReceivedFrom.String())
 		}
 	}
 }

@@ -11,8 +11,13 @@ require (
 )
 
 require (
+	github.com/btcsuite/btcd v0.22.0-beta // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.1 // indirect
+	github.com/libp2p/go-libp2p-core v0.14.0 // indirect
+	github.com/libp2p/go-openssl v0.1.0 // indirect
 	github.com/libp2p/zeroconf/v2 v2.2.0 // indirect
+	github.com/mattn/go-pointer v0.0.1 // indirect
+	github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572 // indirect
 )
 
 require (
@@ -62,6 +67,7 @@ require (
 	github.com/libp2p/go-cidranger v1.1.0 // indirect
 	github.com/libp2p/go-flow-metrics v0.1.0 // indirect
 	github.com/libp2p/go-libp2p-asn-util v0.2.0 // indirect
+	github.com/libp2p/go-libp2p-discovery v0.7.0
 	github.com/libp2p/go-libp2p-kbucket v0.5.0 // indirect
 	github.com/libp2p/go-libp2p-pubsub v0.9.2
 	github.com/libp2p/go-libp2p-record v0.2.0 // indirect

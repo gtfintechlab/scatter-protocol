@@ -19,6 +19,7 @@ func InitBootstrapNode(ipv4Address string, tcpPort string) *utils.BootstrapNode 
 		libp2p.ListenAddrStrings("/ip4/"+ipv4Address+"/tcp/"+tcpPort))
 	// Create a new DHT
 	distributedHashTable, _ := dht.New(context.Background(), node)
+	distributedHashTable.Bootstrap(context.Background())
 	fmt.Println("Bootstrap Node:", node.ID())
 
 	// Set stream handler
@@ -37,6 +38,12 @@ func StartBootstrap(node *utils.BootstrapNode) {
 	addr, _ := multiaddr.NewMultiaddr(utils.BOOTSTRAP_NODE_MULTIADDR)
 	go (*node.PeerToPeerServer).Network().Listen(addr)
 	utils.InitializePeerDiscovery(node.PeerToPeerServer)
+	// go networking.InitializePeerDiscoveryDHT(
+	// 	context.Background(),
+	// 	*node.PeerToPeerServer,
+	// 	node.DistributedHashTable,
+	// 	string(utils.PROTOCOL_IDENTIFIER),
+	// )
 	select {}
 
 }
