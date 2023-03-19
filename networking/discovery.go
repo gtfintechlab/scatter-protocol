@@ -72,7 +72,6 @@ func InitializePeerDiscoveryDHT(ctx context.Context, host host.Host, dht *dht.Ip
 			return
 		case <-ticker.C:
 			peerChannels, _ := routingDiscovery.FindPeers(ctx, rendezvous)
-			fmt.Println(dht.RoutingTable())
 			for peerNode := range peerChannels {
 
 				if peerNode.ID == host.ID() {

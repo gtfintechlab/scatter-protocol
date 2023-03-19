@@ -25,3 +25,9 @@ build/
 node_modules/
 
 *.pem
+
+venv/
+__pycache__
+
+*.onnx
+*.pt

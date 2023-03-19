@@ -34,7 +34,7 @@ func main() {
 	flag.StringVar(&extAddress, "extAddress", ":5002",
 		"External server address (for communication with the node)")
 
-	flag.StringVar(&useMdns, "useBootstrap", "true",
+	flag.StringVar(&useMdns, "useMdns", "true",
 		"Whether or not to connect to the bootstrap node")
 
 	flag.Parse()
