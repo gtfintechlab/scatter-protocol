@@ -21,6 +21,7 @@ const (
 )
 
 var UTIL_GENERATE_KEYS = "keygen"
+var UTIL_DEBUG_MODE = "debug"
 
 var PROTOCOL_IDENTIFIER protocol.ID = "/scatter-protocol/1.0.0"
 
@@ -47,6 +48,10 @@ const (
 	PEER_REQUESTOR = "requestor"
 	PEER_TRAINER   = "trainer"
 )
+
+var IDENTITY_VERIFICATION_DATA map[string]interface{} = map[string]interface{}{
+	"Verify": "Identity",
+}
 
 type Message struct {
 	MessageType string

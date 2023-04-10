@@ -41,7 +41,7 @@ func StartCelestial(node *utils.CelestialNode, useMdns bool) {
 	} else {
 		go networking.InitializePeerDiscoveryDHT(
 			context.Background(),
-			*node.PeerToPeerServer,
+			node.PeerToPeerServer,
 			node.DistributedHashTable,
 			string(utils.PROTOCOL_IDENTIFIER),
 		)

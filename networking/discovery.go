@@ -59,7 +59,7 @@ func NewDHT(ctx context.Context, host host.Host) (*dht.IpfsDHT, error) {
 
 	return kdht, nil
 }
-func InitializePeerDiscoveryDHT(ctx context.Context, host host.Host, dht *dht.IpfsDHT, rendezvous string) {
+func InitializePeerDiscoveryDHT(ctx context.Context, host *host.Host, dht *dht.IpfsDHT, rendezvous string) {
 	routingDiscovery := drouting.NewRoutingDiscovery(dht)
 	dutil.Advertise(ctx, routingDiscovery, rendezvous)
 
@@ -68,18 +68,19 @@ func InitializePeerDiscoveryDHT(ctx context.Context, host host.Host, dht *dht.Ip
 
 	for {
 		select {
-		case <-ctx.Done():
+		case <-(ctx).Done():
 			return
 		case <-ticker.C:
 			peerChannels, _ := routingDiscovery.FindPeers(ctx, rendezvous)
+
 			for peerNode := range peerChannels {
 
-				if peerNode.ID == host.ID() {
+				if peerNode.ID == (*host).ID() {
 					continue
 				}
 
-				if host.Network().Connectedness(peerNode.ID) != network.Connected {
-					host.Connect(ctx, peerNode)
+				if (*host).Network().Connectedness(peerNode.ID) != network.Connected {
+					(*host).Connect(ctx, peerNode)
 					fmt.Printf("Connected to peer node %s\n", peerNode.ID.Pretty())
 				}
 			}

@@ -7,9 +7,9 @@ from albumentations.pytorch import ToTensorV2
 
 augmentations = A.Compose(
     [
-        A.SmallestMaxSize(max_size=350),
+        A.SmallestMaxSize(max_size=700),
         A.ShiftScaleRotate(shift_limit=0.05, scale_limit=0.05, rotate_limit=360, p=0.5),
-        A.RandomCrop(height=256, width=256),
+        A.RandomCrop(height=640, width=640),
         A.RGBShift(r_shift_limit=15, g_shift_limit=15, b_shift_limit=15, p=0.5),
         A.RandomBrightnessContrast(p=0.5),
         A.MultiplicativeNoise(multiplier=[0.5,2], per_channel=True, p=0.2),
@@ -17,6 +17,7 @@ augmentations = A.Compose(
         A.HueSaturationValue(hue_shift_limit=0.2, sat_shift_limit=0.2, val_shift_limit=0.2, p=0.5),
         A.RandomBrightnessContrast(brightness_limit=(-0.1,0.1), contrast_limit=(-0.1, 0.1), p=0.5),
         ToTensorV2(),
+
     ]
 )
 
