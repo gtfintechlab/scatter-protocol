@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/big"
 	"os"
@@ -28,25 +28,16 @@ func getOwnStake() *big.Int {
 	return stake
 }
 
-// Function to generate a digital signature from a private key using Keccak256Hash
-func GenerateDigitalSignature(privateKeyStr string, data map[string]interface{}) ([]byte, error) {
-
-	// Generate a private key from the input bytes
+func GenerateDigitalSignature(privateKeyStr string, inputData map[string]interface{}) ([]byte, error) {
 	privateKey, err := crypto.HexToECDSA(privateKeyStr)
 	if err != nil {
 		return nil, err
 	}
 
-	// Marshal the data into a JSON string
-	dataBytes, err := json.Marshal(data)
-	if err != nil {
-		return nil, err
-	}
-	// Hash the data using Keccak256Hash
-	hashedData := crypto.Keccak256Hash(dataBytes)
+	data, _ := json.Marshal(inputData)
+	hash := crypto.Keccak256Hash(data)
 
-	// Generate a signature for the hashed data
-	signature, err := crypto.Sign(hashedData.Bytes(), privateKey)
+	signature, err := crypto.Sign(hash.Bytes(), privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -54,17 +45,14 @@ func GenerateDigitalSignature(privateKeyStr string, data map[string]interface{})
 	return signature, nil
 }
 
-func VerifyDigitalSignature(expectedPublicKey string, signature []byte, data map[string]interface{}) (bool, error) {
-	publicKeyBytes, _ := hex.DecodeString(expectedPublicKey)
-
-	dataBytes, err := json.Marshal(data)
+func VerifyDigitalSignature(address string, data map[string]interface{}, signature []byte) (bool, error) {
+	ethereumAddress := common.HexToAddress(address)
+	messageBytes, _ := json.Marshal(data)
+	recoveredPublicKey, err := crypto.SigToPub(crypto.Keccak256(messageBytes), signature)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("error recovering public key: %v", err)
 	}
-	// Hash the data using Keccak256Hash
-	hashedData := crypto.Keccak256Hash(dataBytes)
-
-	signatureNoRecoverID := signature[:len(signature)-1] // remove recovery ID
-	verified := crypto.VerifySignature(publicKeyBytes, hashedData.Bytes(), signatureNoRecoverID)
-	return verified, nil
+	recoveredAddress := crypto.PubkeyToAddress(*recoveredPublicKey)
+	isValid := recoveredAddress == ethereumAddress
+	return isValid, nil
 }

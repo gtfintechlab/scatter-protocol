@@ -2,15 +2,12 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"os"
 	"strconv"
 
 	bootstrap "github.com/gtfintechlab/scatter-protocol/bootstrap"
 	"github.com/gtfintechlab/scatter-protocol/cosmos"
 	peer "github.com/gtfintechlab/scatter-protocol/peers"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
-	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -57,13 +54,6 @@ func main() {
 	if util == utils.UTIL_GENERATE_KEYS {
 		utils.GenerateKeys()
 	} else if util == utils.UTIL_DEBUG_MODE {
-		var _ = godotenv.Load(".env")
-
-		signature, _ := utils.GenerateDigitalSignature(os.Getenv("PRIVATE_KEY"),
-			utils.IDENTITY_VERIFICATION_DATA)
-
-		verified, err := utils.VerifyDigitalSignature(os.Getenv("PUBLIC_KEY"), signature,
-			utils.IDENTITY_VERIFICATION_DATA)
-		fmt.Println(verified, err, os.Getenv("PUBLIC_KEY"))
+		peer.RunDockerContainer()
 	}
 }

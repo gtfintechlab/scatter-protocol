@@ -4,7 +4,7 @@ import torch
 from data import CustomDataset
 import torch.nn.functional as F
 
-model = torch.load('example.pt')
+model = torch.load('./models/example.pt')
 trainData = CustomDataset(trainDataPath='./data/example')
 trainLoader = torch.utils.data.DataLoader(dataset=trainData, shuffle=True)
 optimizer = torch.optim.Adadelta(model.parameters(), lr=0.01)
