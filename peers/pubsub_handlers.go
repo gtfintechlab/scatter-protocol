@@ -14,12 +14,8 @@ func HandleCosmosMessage(message *pubsub.Message, node *utils.PeerNode) {
 	json.Unmarshal(message.Data, &cosmosMessage)
 
 	switch messageType := cosmosMessage.Type; messageType {
+	// Trainer telling requestors that it plans on joining the training group
 	case utils.PEER_TRAINER_JOIN:
-		if _, ok := (*node.TopicTrainerMap)[message.GetTopic()]; ok {
-			(*node.TopicTrainerMap)[message.GetTopic()] = append((*node.TopicTrainerMap)[message.GetTopic()], message.ReceivedFrom.String())
-		} else {
-			(*node.TopicTrainerMap)[message.GetTopic()] = []string{}
-			(*node.TopicTrainerMap)[message.GetTopic()] = append((*node.TopicTrainerMap)[message.GetTopic()], message.ReceivedFrom.String())
-		}
+		addTopicFromInfo(node, message.ReceivedFrom.String(), message.GetTopic(), utils.PEER_TRAINER, nil)
 	}
 }

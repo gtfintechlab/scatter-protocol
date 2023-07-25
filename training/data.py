@@ -2,6 +2,7 @@ import glob
 from pandas.core.common import flatten
 import cv2
 from torch.utils.data import Dataset
+from torchvision.datasets.vision import VisionDataset
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
@@ -17,7 +18,6 @@ augmentations = A.Compose(
         A.HueSaturationValue(hue_shift_limit=0.2, sat_shift_limit=0.2, val_shift_limit=0.2, p=0.5),
         A.RandomBrightnessContrast(brightness_limit=(-0.1,0.1), contrast_limit=(-0.1, 0.1), p=0.5),
         ToTensorV2(),
-
     ]
 )
 
@@ -37,10 +37,11 @@ class DataProcessor:
         self.classToIndex = {value:key for key,value in self.indexToClass.items()}
         
 
-class CustomDataset(Dataset):
+class CustomDataset(VisionDataset):
     def __init__(self, trainDataPath, transform=augmentations):
         self.dataloader = DataProcessor(trainDataPath)
         self.imagePaths = self.dataloader.trainImagePaths
+        self.root = self.dataloader.trainDataPath
         self.transform = transform
 
     def __len__(self):

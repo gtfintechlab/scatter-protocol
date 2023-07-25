@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -22,8 +23,11 @@ const (
 
 var UTIL_GENERATE_KEYS = "keygen"
 var UTIL_DEBUG_MODE = "debug"
+var UTIL_CELESTIAL_DATABASE_MIGRATION = "migrate:celestial"
+var UTIL_PEER_DATABASE_MIGRATION = "migrate:peer"
 
 var PROTOCOL_IDENTIFIER protocol.ID = "/scatter-protocol/1.0.0"
+var DATA_DIRECTORY = "training/data"
 
 // Boostrap Message Codes
 const (
@@ -59,21 +63,19 @@ type Message struct {
 }
 
 type InformationBox struct {
-	CosmosTopics *map[string]map[string]bool
+	CosmosTopics *map[string]interface{}
 }
 
 type PeerNode struct {
 	PeerType             string                    // Type of Peer (requestor or trainer)
 	NodeId               peer.ID                   // ID of Node
 	Start                func(*PeerNode, bool)     // Start Function for node
+	DataStore            *sql.DB                   // DataStore to store information
 	ExternalServer       *http.Server              // Http Server to communicate with node
 	PeerToPeerServer     *host.Host                // Peer2Peer server to communicate with network
-	TopicToDataPath      *map[string]string        // Topics to Data Path Mapping
 	DistributedHashTable *dht.IpfsDHT              // Distributed hash table for peer discovery
 	PubSubService        *pubsub.PubSub            // PubSub Service for the node
 	PubSubTopics         *map[string]*pubsub.Topic // PubSub Topics for topics we have subscribed to
-	TopicTrainerMap      *map[string][]string      // Map of the topic --> list of trainer nodes
-	RequestorTopicMap    *map[string][]string      // Map of requestor --> list of topics
 	InformationBox       *InformationBox           // Network Information
 }
 
@@ -92,11 +94,11 @@ type ValidatorNode struct {
 
 type CelestialNode struct {
 	NodeId               peer.ID
-	NodeTopicMappings    map[string]map[string]bool
 	PeerToPeerServer     *host.Host
 	Start                func(*CelestialNode, bool)
 	PubSubService        *pubsub.PubSub
 	DistributedHashTable *dht.IpfsDHT
+	DataStore            *sql.DB
 }
 
 type AddTopicRequestBody struct {

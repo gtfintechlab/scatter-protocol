@@ -6,7 +6,9 @@ import (
 
 	bootstrap "github.com/gtfintechlab/scatter-protocol/bootstrap"
 	"github.com/gtfintechlab/scatter-protocol/cosmos"
+	celestialDatabase "github.com/gtfintechlab/scatter-protocol/cosmos/db"
 	peer "github.com/gtfintechlab/scatter-protocol/peers"
+	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 )
 
@@ -18,6 +20,7 @@ func main() {
 	var peerType string
 	var extAddress string
 	var useMdns string
+	var migrationDirection string
 	// All nodes
 	flag.StringVar(&nodeType, "type", "", "Type of node you want to run (peer, bootstrap, or celestial)")
 	flag.StringVar(&util, "utils", "", "Run a utility script")
@@ -36,6 +39,8 @@ func main() {
 
 	flag.StringVar(&useMdns, "useMdns", "true",
 		"Whether or not to connect to the bootstrap node")
+	flag.StringVar(&migrationDirection, "direction", "up",
+		"Migration direction (up/down)")
 
 	flag.Parse()
 
@@ -55,5 +60,10 @@ func main() {
 		utils.GenerateKeys()
 	} else if util == utils.UTIL_DEBUG_MODE {
 		peer.RunDockerContainer()
+	} else if util == utils.UTIL_CELESTIAL_DATABASE_MIGRATION {
+		celestialDatabase.MigrateCelestialDB(migrationDirection)
+	} else if util == utils.UTIL_PEER_DATABASE_MIGRATION {
+		peerDatabase.MigratePeerDB(migrationDirection, peerType)
 	}
+
 }

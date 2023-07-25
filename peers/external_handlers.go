@@ -10,14 +10,14 @@ import (
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"golang.org/x/exp/maps"
 )
 
-func health() http.HandlerFunc {
+func health(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
 		healthy := map[string]interface{}{
-			"Hello": "World",
+			"Hello":   "World",
+			"Node ID": node.NodeId,
 		}
 
 		networking.SendJson(response, healthy)
@@ -51,7 +51,15 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 		case utils.PEER_REQUESTOR:
 			var requestBody utils.AddTopicRequestBody
 			json.NewDecoder(request.Body).Decode(&requestBody)
-			(*node.TopicToDataPath)[requestBody.Topic] = ""
+
+			if checkIfTopicExistsForNode(node, requestBody.Topic) {
+				networking.SendJson(response, map[string]interface{}{
+					"success": false,
+					"Error":   "Topic already exists for node",
+				})
+				return
+			}
+			addTopicFromInfo(node, node.NodeId.String(), requestBody.Topic, node.PeerType, nil)
 			cs := cosmos.CreateCosmos(node, context.Background(), requestBody.Topic)
 			go func() {
 				for {
@@ -59,7 +67,6 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 					HandleCosmosMessage(message, node)
 				}
 			}()
-
 			cosmos.AddTopicToUniversalCosmos(node, requestBody.Topic)
 
 			networking.SendJson(response, map[string]interface{}{
@@ -78,17 +85,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				return
 			}
 
-			(*node.TopicToDataPath)[requestBody.Topic] = *requestBody.Path
-			if _, ok := (*node.RequestorTopicMap)[requestBody.RequestorId]; ok {
-				(*node.RequestorTopicMap)[requestBody.RequestorId] =
-					append((*node.RequestorTopicMap)[requestBody.RequestorId],
-						requestBody.Topic)
-			} else {
-				(*node.RequestorTopicMap)[requestBody.RequestorId] = []string{}
-				(*node.RequestorTopicMap)[requestBody.RequestorId] =
-					append((*node.RequestorTopicMap)[requestBody.RequestorId],
-						requestBody.Topic)
-			}
+			addTopicFromInfo(node, node.NodeId.String(), requestBody.Topic, node.PeerType, requestBody.Path)
 			cosmos.JoinCosmos(context.Background(), node,
 				fmt.Sprintf("%s: %s", requestBody.RequestorId, requestBody.Topic))
 		}
@@ -100,7 +97,7 @@ func getOwnTopics(node *utils.PeerNode) http.HandlerFunc {
 		networking.GetValidator(request, response)
 		networking.SendJson(response, map[string]interface{}{
 			"success": true,
-			"topics":  maps.Keys((*node.TopicToDataPath)),
+			"topics":  getTopicsByNodeId(node, node.NodeId.String()),
 		})
 	}
 }
@@ -120,10 +117,9 @@ func getCosmosTopics(node *utils.PeerNode) http.HandlerFunc {
 func getTopicTrainers(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
-
 		networking.SendJson(response, map[string]interface{}{
 			"success":  true,
-			"trainers": node.TopicTrainerMap,
+			"trainers": getTrainersForAllTopics(node),
 		})
 	}
 }
@@ -137,9 +133,7 @@ func initializeTraining(node *utils.PeerNode) http.HandlerFunc {
 
 		switch nodeType := node.PeerType; nodeType {
 		case utils.PEER_REQUESTOR:
-			trainers := (*node.TopicTrainerMap)[fmt.Sprintf("%s: %s",
-				node.NodeId.String(),
-				requestBody.Topic)]
+			trainers := getTrainersByTopic(node, requestBody.Topic)
 
 			for _, trainer := range trainers {
 				peerId, _ := peer.Decode(trainer)

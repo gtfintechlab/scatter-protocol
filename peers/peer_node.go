@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	_ "github.com/lib/pq"
+
 	"net/http"
 
 	"github.com/gtfintechlab/scatter-protocol/cosmos"
@@ -27,6 +29,7 @@ func InitPeerNode(peerType string, serverAddress string) *utils.PeerNode {
 
 	ps, _ := pubsub.NewGossipSub(context.Background(), node)
 
+	database := connectToPostgres(peerType)
 	peerNode := utils.PeerNode{
 		PeerType: peerType,
 		Start:    StartPeer,
@@ -37,14 +40,13 @@ func InitPeerNode(peerType string, serverAddress string) *utils.PeerNode {
 		PeerToPeerServer:     &node,
 		DistributedHashTable: table,
 		PubSubService:        ps,
-		TopicToDataPath:      &map[string]string{},
-		TopicTrainerMap:      &map[string][]string{},
-		RequestorTopicMap:    &map[string][]string{},
+		DataStore:            database,
 		PubSubTopics:         &map[string]*pubsub.Topic{},
 		InformationBox: &utils.InformationBox{
-			CosmosTopics: &map[string]map[string]bool{},
+			CosmosTopics: &map[string]interface{}{},
 		},
 	}
+	getInitialTopics(utils.DATA_DIRECTORY, &peerNode)
 
 	node.SetStreamHandler(utils.PROTOCOL_IDENTIFIER, peerStreamHandler(&peerNode))
 
@@ -76,7 +78,7 @@ func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 		message := networking.DecodeMessage(&stream)
 		switch messageType := message.MessageType; messageType {
 		case utils.PEER_GET_TOPICS:
-			var topicList map[string]map[string]bool
+			var topicList map[string]interface{}
 			jsonData, _ := json.Marshal(message.Payload)
 			json.Unmarshal(jsonData, &topicList)
 			node.InformationBox.CosmosTopics = &topicList
@@ -88,7 +90,7 @@ func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 
 // "Private" method handlers for you to communicate with your own node
 func externalServerHandlers(node *utils.PeerNode) {
-	http.HandleFunc("/node/health", health())
+	http.HandleFunc("/node/health", health(node))
 	http.HandleFunc("/node/role/switch", switchPeerNodeRole(node))
 	http.HandleFunc("/node/topic/add", addTopic(node))
 	http.HandleFunc("/node/topics/get", getOwnTopics(node))

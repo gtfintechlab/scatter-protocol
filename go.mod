@@ -16,6 +16,7 @@ require (
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.1 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/libp2p/go-libp2p-core v0.14.0 // indirect
 	github.com/libp2p/go-openssl v0.1.0 // indirect
 	github.com/libp2p/zeroconf/v2 v2.2.0 // indirect

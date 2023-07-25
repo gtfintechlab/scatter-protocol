@@ -3,6 +3,7 @@ package cosmos
 import (
 	"context"
 	"fmt"
+	"os/exec"
 
 	"github.com/gtfintechlab/scatter-protocol/networking"
 	"github.com/gtfintechlab/scatter-protocol/utils"
@@ -19,13 +20,15 @@ func InitCelestialNode() *utils.CelestialNode {
 	fmt.Println("Celestial Node:", node.ID())
 	pubsub, _ := pubsub.NewGossipSub(context.Background(), node)
 
+	database := connectToPostgres()
+
 	celestialNode := utils.CelestialNode{
 		NodeId:               node.ID(),
 		PeerToPeerServer:     &node,
 		Start:                StartCelestial,
 		PubSubService:        pubsub,
 		DistributedHashTable: table,
-		NodeTopicMappings:    map[string]map[string]bool{},
+		DataStore:            database,
 	}
 
 	return &celestialNode
@@ -33,6 +36,10 @@ func InitCelestialNode() *utils.CelestialNode {
 }
 
 func StartCelestial(node *utils.CelestialNode, useMdns bool) {
+	defer node.DataStore.Close()
+	defer exec.Command("docker", "stop", "celestial-postgres")
+	defer exec.Command("docker", "rm", "celestial-postgres")
+
 	go (*node.PeerToPeerServer).Network().Listen((*node.PeerToPeerServer).Addrs()[0])
 
 	if useMdns {

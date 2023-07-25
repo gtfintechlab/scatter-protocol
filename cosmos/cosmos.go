@@ -42,7 +42,7 @@ func JoinCosmos(ctx context.Context, node *utils.PeerNode, topicName string) *pu
 	topic, _ := node.PubSubService.Join(topicName)
 	msg := utils.CosmosMessage{
 		Type:     utils.PEER_TRAINER_JOIN,
-		Message:  "Joined Network",
+		Message:  "Joined Cosmos",
 		SenderID: (*node.PeerToPeerServer).ID(),
 	}
 
