@@ -101,6 +101,11 @@ type CelestialNode struct {
 	DataStore            *sql.DB
 }
 
+type TrainingInfoFromRequestor struct {
+	Model      []byte `json:"model"`
+	Transforms []byte `json:"transforms"`
+}
+
 type AddTopicRequestBody struct {
 	Topic       string  `json:"topic"`
 	RequestorId string  `json:"requestorId,omitempty"`

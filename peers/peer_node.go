@@ -83,7 +83,13 @@ func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 			json.Unmarshal(jsonData, &topicList)
 			node.InformationBox.CosmosTopics = &topicList
 		case utils.PEER_START_TRAINING:
-			fmt.Println(message.MessageType)
+			var trainingInfo utils.TrainingInfoFromRequestor
+			jsonData, _ := json.Marshal(message.Payload)
+			json.Unmarshal(jsonData, &trainingInfo)
+			modelConfig := trainingInfo.Model
+			transformConfig := trainingInfo.Transforms
+
+			fmt.Println(modelConfig, transformConfig)
 		}
 	}
 }
