@@ -1,11 +1,13 @@
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from training.trainer.data import CustomDataset
 
 
-class YourCustomModel(nn.Module):
+class CustomModel(nn.Module):
     def __init__(self, dataset, learningRate=0.01, batchSize=1, epochs=10):
-        super(YourCustomModel, self).__init__()
+        super(CustomModel, self).__init__()
         # Device to use
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.epochs = epochs
@@ -110,8 +112,15 @@ class YourCustomModel(nn.Module):
 
     def saveModel(self, pathName):
         torch.onnx.export(
-            self,
-            next(iter(self.trainLoader))[0],
+            model,
+            next(iter(model.trainLoader))[0],
             pathName,
             verbose=True,
         )
+
+
+if __name__ == "__main__":
+    dataset = CustomDataset(trainDataPath="../data/example")
+    model = CustomModel(dataset=dataset)
+    model.eval()
+    model.saveModel("models/example.onnx")

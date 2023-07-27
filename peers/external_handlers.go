@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gtfintechlab/scatter-protocol/cosmos"
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
@@ -16,8 +17,8 @@ func health(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
 		healthy := map[string]interface{}{
-			"Hello":   "World",
-			"Node ID": node.NodeId,
+			"Hello":  "World",
+			"nodeId": node.NodeId,
 		}
 
 		networking.SendJson(response, healthy)
@@ -135,8 +136,9 @@ func initializeTraining(node *utils.PeerNode) http.HandlerFunc {
 		case utils.PEER_REQUESTOR:
 			trainers := getTrainersByTopic(node, requestBody.Topic)
 
-			modelConfig := networking.ReadFileBytes("training/config/example.onnx")
-			transformConfig := networking.ReadFileBytes("training/config/transforms.json")
+			networking.ZipFolder("training/requestor", "training/requestor_zip.zip")
+			zippedFileBytes := networking.ReadFileBytes("training/requestor_zip.zip")
+			os.Remove("training/requestor_zip.zip")
 
 			for _, trainer := range trainers {
 				peerId, _ := peer.Decode(trainer)
@@ -148,8 +150,8 @@ func initializeTraining(node *utils.PeerNode) http.HandlerFunc {
 				networking.SendMessage(&stream, utils.Message{
 					MessageType: utils.PEER_START_TRAINING,
 					Payload: map[string]interface{}{
-						"model":      modelConfig,
-						"transforms": transformConfig,
+						"file":  zippedFileBytes,
+						"topic": requestBody.Topic,
 					},
 				})
 			}

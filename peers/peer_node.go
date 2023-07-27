@@ -2,7 +2,6 @@ package peers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	_ "github.com/lib/pq"
@@ -78,18 +77,9 @@ func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 		message := networking.DecodeMessage(&stream)
 		switch messageType := message.MessageType; messageType {
 		case utils.PEER_GET_TOPICS:
-			var topicList map[string]interface{}
-			jsonData, _ := json.Marshal(message.Payload)
-			json.Unmarshal(jsonData, &topicList)
-			node.InformationBox.CosmosTopics = &topicList
+			go peerGetTopicsHandler(node, &message)
 		case utils.PEER_START_TRAINING:
-			var trainingInfo utils.TrainingInfoFromRequestor
-			jsonData, _ := json.Marshal(message.Payload)
-			json.Unmarshal(jsonData, &trainingInfo)
-			modelConfig := trainingInfo.Model
-			transformConfig := trainingInfo.Transforms
-
-			fmt.Println(modelConfig, transformConfig)
+			go peerStartTrainingHandler(node, &message, &stream)
 		}
 	}
 }

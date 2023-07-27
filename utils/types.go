@@ -102,8 +102,8 @@ type CelestialNode struct {
 }
 
 type TrainingInfoFromRequestor struct {
-	Model      []byte `json:"model"`
-	Transforms []byte `json:"transforms"`
+	Files []byte `json:"files"`
+	Topic []byte `json:"topic"`
 }
 
 type AddTopicRequestBody struct {
@@ -149,4 +149,21 @@ type CosmosMessage struct {
 	Type     string  `json:"Type"`
 	Message  string  `json:"Message"`
 	SenderID peer.ID `json:"SenderID"`
+}
+
+type SimulationConfiguration struct {
+	Nodes []NodeConfig             `json:"nodes"`
+	Steps []map[string]interface{} `json:"steps"`
+}
+
+type NodeConfig struct {
+	Id                string  `json:"id"`
+	Type              string  `json:"type"`
+	Ipv4Address       *string `json:"ipv4Address"`
+	TcpPort           *string `json:"tcpPort"`
+	ExtAddress        *string `json:"extAddress"`
+	DatastorePort     *string `json:"datastorePort"`
+	DatastoreUsername *string `json:"datastoreUsername"`
+	DatastorePassword *string `json:"datastorePassword"`
+	UseMdns           *bool   `json:"useMdns"`
 }

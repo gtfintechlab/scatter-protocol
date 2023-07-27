@@ -4,8 +4,8 @@
 FROM python:3.8
 
 # Copy this entire folder into the training directory
-COPY . /training
-WORKDIR /training
+COPY . /requestor
+WORKDIR /requestor
 
 RUN pip3 install --upgrade pip
 RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu

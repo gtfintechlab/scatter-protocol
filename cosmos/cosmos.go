@@ -47,7 +47,7 @@ func JoinCosmos(ctx context.Context, node *utils.PeerNode, topicName string) *pu
 	}
 
 	msgBytes, _ := json.Marshal(msg)
-	topic.Publish(ctx, msgBytes)
+	topic.Publish(context.Background(), msgBytes)
 	return topic
 }
 

@@ -3,7 +3,6 @@ package peerDatabase
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -81,7 +80,7 @@ type migrationFile struct {
 func getMigrations(direction string) ([]migrationFile, error) {
 	var migrations []migrationFile
 
-	files, err := ioutil.ReadDir(migrationsDir)
+	files, err := os.ReadDir(migrationsDir)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +106,7 @@ func getMigrations(direction string) ([]migrationFile, error) {
 }
 
 func runMigration(db *sql.DB, path string, direction string) error {
-	content, err := ioutil.ReadFile(path)
+	content, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}

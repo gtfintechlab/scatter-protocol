@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.peer_topic_maps (
     node_type TEXT,
     topic_name TEXT,
     data_path TEXT,
+    is_training BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT now()
 );
 

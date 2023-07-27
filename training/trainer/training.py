@@ -4,8 +4,8 @@ import torch
 from data import CustomDataset
 import torch.nn.functional as F
 
-model = torch.load('./models/example.pt')
-trainData = CustomDataset(trainDataPath='./data/example')
+model = torch.load("./models/example.pt")
+trainData = CustomDataset(trainDataPath="./data/example")
 trainLoader = torch.utils.data.DataLoader(dataset=trainData, shuffle=True)
 optimizer = torch.optim.Adadelta(model.parameters(), lr=0.01)
 
@@ -31,5 +31,5 @@ for epoch in range(3):  # loop over the dataset multiple times
 for i, (images, labels) in enumerate(trainLoader):
     sampleInput = images.to("cpu")
     break
-        
-torch.onnx.export(model, sampleInput, 'example_trained.onnx', verbose=True)
+
+torch.onnx.export(model, sampleInput, "example_trained.onnx", verbose=True)

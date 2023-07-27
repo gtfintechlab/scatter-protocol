@@ -33,8 +33,5 @@ six==1.16.0
 sympy==1.11.1
 threadpoolctl==3.1.0
 tifffile==2023.3.15
-# torch==2.0.1+cpu
-# torchaudio==2.0.2+cpu
-# torchvision==0.15.2+cpu
 typing-extensions==4.4.0
 urllib3==1.26.13
