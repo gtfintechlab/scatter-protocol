@@ -25,6 +25,7 @@ var UTIL_GENERATE_KEYS = "keygen"
 var UTIL_DEBUG_MODE = "debug"
 var UTIL_CELESTIAL_DATABASE_MIGRATION = "migrate:celestial"
 var UTIL_PEER_DATABASE_MIGRATION = "migrate:peer"
+var UTIL_RUN_SIMULATION = "simulation"
 
 var PROTOCOL_IDENTIFIER protocol.ID = "/scatter-protocol/1.0.0"
 var DATA_DIRECTORY = "training/data"
@@ -103,12 +104,12 @@ type CelestialNode struct {
 
 type TrainingInfoFromRequestor struct {
 	Files []byte `json:"files"`
-	Topic []byte `json:"topic"`
+	Topic string `json:"topic"`
 }
 
 type AddTopicRequestBody struct {
 	Topic       string  `json:"topic"`
-	RequestorId string  `json:"requestorId,omitempty"`
+	RequestorId *string `json:"requestorId,omitempty"`
 	Path        *string `json:"path,omitempty"`
 }
 
@@ -160,9 +161,9 @@ type NodeConfig struct {
 	Id                string  `json:"id"`
 	Type              string  `json:"type"`
 	Ipv4Address       *string `json:"ipv4Address"`
-	TcpPort           *string `json:"tcpPort"`
+	TcpPort           *int    `json:"tcpPort"`
 	ExtAddress        *string `json:"extAddress"`
-	DatastorePort     *string `json:"datastorePort"`
+	DatastorePort     *int    `json:"datastorePort"`
 	DatastoreUsername *string `json:"datastoreUsername"`
 	DatastorePassword *string `json:"datastorePassword"`
 	UseMdns           *bool   `json:"useMdns"`

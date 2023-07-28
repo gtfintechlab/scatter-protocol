@@ -3,37 +3,27 @@ package peerDatabase
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"time"
 
-	"github.com/gtfintechlab/scatter-protocol/utils"
 	_ "github.com/lib/pq" // PostgreSQL driver, replace with your preferred driver
 )
 
 var currentDir, _ = os.Getwd()
 var (
-	dbDriver      = "postgres" // Replace with your preferred database driver name
-	dbUser        = "postgres"
-	dbPassword    = "postgres"
-	dbHost        = "localhost"
-	dbName        = "postgres"
 	migrationsDir = fmt.Sprintf("%s/peers/db/migrations", currentDir)
 )
 
-func MigratePeerDB(direction string, peerType string) {
+func MigratePeerDB(direction string, peerType string, databaseUsername string, databasePassword string, databasePort int) {
 	if direction != "up" && direction != "down" {
 		fmt.Println("Invalid direction. Use 'up' or 'down'.")
 		os.Exit(1)
 	}
 
-	db, err := connectToDatabase(peerType)
-	if err != nil {
-		fmt.Println("Error connecting to the database:", err)
-		os.Exit(1)
-	}
+	db := connectToPostgres(peerType, databaseUsername, databasePassword, databasePort)
 	defer db.Close()
 
 	migrations, err := getMigrations(direction)
@@ -51,25 +41,28 @@ func MigratePeerDB(direction string, peerType string) {
 	}
 }
 
-func connectToDatabase(peerType string) (*sql.DB, error) {
-	var cmd *exec.Cmd
-	var dbPort int
-	if peerType == utils.PEER_REQUESTOR {
-		dbPort = 8701
-		cmd = exec.Command("docker", "run", "--name", "requestor-postgres", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_PASSWORD=postgres", "-p", "8701:5432", "-d", "postgres")
-	} else {
-		dbPort = 8702
-		cmd = exec.Command("docker", "run", "--name", "trainer-postgres", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_PASSWORD=postgres", "-p", "8702:5432", "-d", "postgres")
-	}
+func connectToPostgres(peerType string, username string, password string, port int) *sql.DB {
+	cmd := exec.Command(
+		"docker", "run",
+		"--name", fmt.Sprintf("%s-postgres", peerType),
+		"-e", fmt.Sprintf("POSTGRES_USER=%s", username),
+		"-e", fmt.Sprintf("POSTGRES_PASSWORD=%s", password),
+		"-p", fmt.Sprintf("%d:5432", port),
+		"-d", "postgres",
+	)
 	cmd.Output()
 
-	connStr := fmt.Sprintf("user=%s password=%s host=%s port=%d dbname=%s sslmode=disable", dbUser, dbPassword, dbHost, dbPort, dbName)
-	db, err := sql.Open(dbDriver, connStr)
+	connStr := fmt.Sprintf(
+		"user=%s password=%s host=localhost port=%d dbname=postgres sslmode=disable",
+		username, password, port,
+	)
+	db, err := sql.Open("postgres", connStr)
 	if err != nil {
-		return nil, err
+		log.Fatalf("Peer Node: Error connecting to PostgreSQL: %v", err)
 	}
-	time.Sleep(10 * time.Second)
-	return db, nil
+
+	fmt.Println("Peer Node: Connected to PostgreSQL server successfully!")
+	return db
 }
 
 type migrationFile struct {

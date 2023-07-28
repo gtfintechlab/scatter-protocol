@@ -60,8 +60,11 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				})
 				return
 			}
+			var cs *utils.Cosmos
 			addTopicFromInfo(node, node.NodeId.String(), requestBody.Topic, node.PeerType, nil)
-			cs := cosmos.CreateCosmos(node, context.Background(), requestBody.Topic)
+			cs = cosmos.CreateCosmos(node, context.Background(),
+				fmt.Sprintf("%s:%s", node.NodeId.String(), requestBody.Topic))
+
 			go func() {
 				for {
 					message, _ := cs.Subscription.Next(context.Background())
@@ -88,7 +91,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 
 			addTopicFromInfo(node, node.NodeId.String(), requestBody.Topic, node.PeerType, requestBody.Path)
 			cosmos.JoinCosmos(context.Background(), node,
-				fmt.Sprintf("%s: %s", requestBody.RequestorId, requestBody.Topic))
+				fmt.Sprintf("%s:%s", *requestBody.RequestorId, requestBody.Topic))
 		}
 	}
 }
@@ -131,11 +134,9 @@ func initializeTraining(node *utils.PeerNode) http.HandlerFunc {
 
 		var requestBody utils.InitializeTrainingRequestBody
 		json.NewDecoder(request.Body).Decode(&requestBody)
-
 		switch nodeType := node.PeerType; nodeType {
 		case utils.PEER_REQUESTOR:
 			trainers := getTrainersByTopic(node, requestBody.Topic)
-
 			networking.ZipFolder("training/requestor", "training/requestor_zip.zip")
 			zippedFileBytes := networking.ReadFileBytes("training/requestor_zip.zip")
 			os.Remove("training/requestor_zip.zip")

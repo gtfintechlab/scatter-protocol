@@ -12,11 +12,11 @@ import (
 	"github.com/multiformats/go-multiaddr"
 )
 
-func InitBootstrapNode(ipv4Address string, tcpPort string) *utils.BootstrapNode {
+func InitBootstrapNode(ipv4Address string, tcpPort int) *utils.BootstrapNode {
 	privateKey, _ := utils.LoadKeys()
 
 	node, _ := libp2p.New(libp2p.Identity(privateKey),
-		libp2p.ListenAddrStrings("/ip4/"+ipv4Address+"/tcp/"+tcpPort))
+		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%d", ipv4Address, tcpPort)))
 	// Create a new DHT
 	distributedHashTable, _ := dht.New(context.Background(), node)
 	distributedHashTable.Bootstrap(context.Background())

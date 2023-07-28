@@ -16,7 +16,7 @@ import (
 	network "github.com/libp2p/go-libp2p/core/network"
 )
 
-func InitPeerNode(peerType string, serverAddress string) *utils.PeerNode {
+func InitPeerNode(peerType string, serverAddress string, databaseUsername string, databasePassword string, databasePort int) *utils.PeerNode {
 	// Create a new libp2p host for the new node
 	node, _ := libp2p.New()
 	table, _ := networking.NewDHT(context.Background(), node)
@@ -28,7 +28,7 @@ func InitPeerNode(peerType string, serverAddress string) *utils.PeerNode {
 
 	ps, _ := pubsub.NewGossipSub(context.Background(), node)
 
-	database := connectToPostgres(peerType)
+	database := connectToPostgres(peerType, databaseUsername, databasePassword, databasePort)
 	peerNode := utils.PeerNode{
 		PeerType: peerType,
 		Start:    StartPeer,
@@ -53,7 +53,7 @@ func InitPeerNode(peerType string, serverAddress string) *utils.PeerNode {
 }
 
 func StartPeer(node *utils.PeerNode, useMdns bool) {
-	externalServerHandlers(node)
+	serverMux := externalServerHandlers(node)
 	if useMdns {
 		utils.InitializePeerDiscovery(node.PeerToPeerServer)
 	} else {
@@ -67,7 +67,7 @@ func StartPeer(node *utils.PeerNode, useMdns bool) {
 	universalCosmosTopic := cosmos.JoinCosmos(context.Background(), node, utils.UNIVERSAL_COSMOS)
 	(*node.PubSubTopics)[utils.UNIVERSAL_COSMOS] = universalCosmosTopic
 
-	go node.ExternalServer.ListenAndServe()
+	go http.ListenAndServe(node.ExternalServer.Addr, serverMux)
 	select {}
 }
 
@@ -85,12 +85,14 @@ func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 }
 
 // "Private" method handlers for you to communicate with your own node
-func externalServerHandlers(node *utils.PeerNode) {
-	http.HandleFunc("/node/health", health(node))
-	http.HandleFunc("/node/role/switch", switchPeerNodeRole(node))
-	http.HandleFunc("/node/topic/add", addTopic(node))
-	http.HandleFunc("/node/topics/get", getOwnTopics(node))
-	http.HandleFunc("/cosmos/topics/get", getCosmosTopics(node))
-	http.HandleFunc("/node/topics/trainers", getTopicTrainers(node))
-	http.HandleFunc("/node/training/start", initializeTraining(node))
+func externalServerHandlers(node *utils.PeerNode) *http.ServeMux {
+	serverMux := http.NewServeMux()
+	serverMux.HandleFunc("/node/health", health(node))
+	serverMux.HandleFunc("/node/role/switch", switchPeerNodeRole(node))
+	serverMux.HandleFunc("/node/topic/add", addTopic(node))
+	serverMux.HandleFunc("/node/topics/get", getOwnTopics(node))
+	serverMux.HandleFunc("/cosmos/topics/get", getCosmosTopics(node))
+	serverMux.HandleFunc("/node/topics/trainers", getTopicTrainers(node))
+	serverMux.HandleFunc("/node/training/start", initializeTraining(node))
+	return serverMux
 }

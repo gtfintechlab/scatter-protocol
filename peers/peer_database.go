@@ -141,18 +141,21 @@ func getInitialTopics(rootDir string, node *utils.PeerNode) error {
 	return err
 }
 
-func connectToPostgres(peerType string) *sql.DB {
-	var cmd *exec.Cmd
-	var dbPort int
-	if peerType == utils.PEER_REQUESTOR {
-		dbPort = 8701
-		cmd = exec.Command("docker", "run", "--name", "requestor-postgres", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_PASSWORD=postgres", "-p", "8701:5432", "-d", "postgres")
-	} else {
-		dbPort = 8702
-		cmd = exec.Command("docker", "run", "--name", "trainer-postgres", "-e", "POSTGRES_USER=postgres", "-e", "POSTGRES_PASSWORD=postgres", "-p", "8702:5432", "-d", "postgres")
-	}
+func connectToPostgres(peerType string, username string, password string, port int) *sql.DB {
+	cmd := exec.Command(
+		"docker", "run",
+		"--name", fmt.Sprintf("%s-postgres", peerType),
+		"-e", fmt.Sprintf("POSTGRES_USER=%s", username),
+		"-e", fmt.Sprintf("POSTGRES_PASSWORD=%s", password),
+		"-p", fmt.Sprintf("%d:5432", port),
+		"-d", "postgres",
+	)
 	cmd.Output()
-	connStr := fmt.Sprintf("user=postgres password=postgres host=localhost port=%d dbname=postgres sslmode=disable", dbPort)
+
+	connStr := fmt.Sprintf(
+		"user=%s password=%s host=localhost port=%d dbname=postgres sslmode=disable",
+		username, password, port,
+	)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatalf("Peer Node: Error connecting to PostgreSQL: %v", err)

@@ -12,7 +12,7 @@ import (
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 )
 
-func InitCelestialNode() *utils.CelestialNode {
+func InitCelestialNode(databaseUsername string, databasePassword string, databasePort int) *utils.CelestialNode {
 	node, _ := libp2p.New()
 	table, _ := dht.New(context.Background(), node)
 
@@ -20,7 +20,7 @@ func InitCelestialNode() *utils.CelestialNode {
 	fmt.Println("Celestial Node:", node.ID())
 	pubsub, _ := pubsub.NewGossipSub(context.Background(), node)
 
-	database := connectToPostgres()
+	database := connectToPostgres(databaseUsername, databasePassword, databasePort)
 
 	celestialNode := utils.CelestialNode{
 		NodeId:               node.ID(),

@@ -9,7 +9,7 @@
         {
             "id": "requestor_node",
             "type": "requestor",
-            "extAddress": 5002,
+            "extAddress": ":5002",
             "datastorePort": 8701,
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
@@ -18,7 +18,7 @@
         {
             "id": "trainer_node",
             "type": "trainer",
-            "extAddress": 6001,
+            "extAddress": ":6001",
             "datastorePort": 8702,
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
@@ -29,7 +29,8 @@
             "type": "celestial",
             "datastorePort": 5432,
             "datastoreUsername": "postgres",
-            "datastorePassword": "postgres"
+            "datastorePassword": "postgres",
+            "useMdns": true
         }
     ],
 

@@ -22,7 +22,10 @@ func peerStartTrainingHandler(node *utils.PeerNode, message *utils.Message, stre
 	jsonData, _ := json.Marshal(message.Payload)
 	json.Unmarshal(jsonData, &trainingInfo)
 	zipFileBytes := trainingInfo.Files
-	dataPath := fmt.Sprintf("training/trainer/jobs/%s/%s", (*stream).Conn().RemotePeer().String(), trainingInfo.Topic)
+	dataPath := fmt.Sprintf("training/trainer/jobs/%s/%s",
+		(*stream).Conn().RemotePeer().String(),
+		trainingInfo.Topic)
+	fmt.Println(trainingInfo.Topic)
 	os.MkdirAll(dataPath, os.ModePerm)
 	networking.WriteBytesToFile(fmt.Sprintf("%s/training_zip.zip", dataPath), zipFileBytes)
 
