@@ -3,6 +3,7 @@ package peers
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	_ "github.com/lib/pq"
 
@@ -41,8 +42,10 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 		PubSubService:        ps,
 		DataStore:            database,
 		PubSubTopics:         &map[string]*pubsub.Topic{},
+		DatastoreLock:        &sync.Mutex{},
 		InformationBox: &utils.InformationBox{
-			CosmosTopics: &map[string]interface{}{},
+			CosmosTopics:            &map[string]interface{}{},
+			InformationBoxMutexLock: &sync.Mutex{},
 		},
 	}
 	getInitialTopics(utils.DATA_DIRECTORY, &peerNode)

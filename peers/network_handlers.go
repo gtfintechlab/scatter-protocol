@@ -15,6 +15,8 @@ func peerGetTopicsHandler(node *utils.PeerNode, message *utils.Message) {
 	jsonData, _ := json.Marshal(message.Payload)
 	json.Unmarshal(jsonData, &topicList)
 	node.InformationBox.CosmosTopics = &topicList
+	// Accompanying lock is in GetTopicsFromUniversalCosmos()
+	node.InformationBox.InformationBoxMutexLock.Unlock()
 }
 
 func peerStartTrainingHandler(node *utils.PeerNode, message *utils.Message, stream *network.Stream) {
@@ -22,11 +24,14 @@ func peerStartTrainingHandler(node *utils.PeerNode, message *utils.Message, stre
 	jsonData, _ := json.Marshal(message.Payload)
 	json.Unmarshal(jsonData, &trainingInfo)
 	zipFileBytes := trainingInfo.Files
-	dataPath := fmt.Sprintf("training/trainer/jobs/%s/%s",
-		(*stream).Conn().RemotePeer().String(),
-		trainingInfo.Topic)
-	fmt.Println(trainingInfo.Topic)
-	os.MkdirAll(dataPath, os.ModePerm)
-	networking.WriteBytesToFile(fmt.Sprintf("%s/training_zip.zip", dataPath), zipFileBytes)
 
+	requestorId := (*stream).Conn().RemotePeer().String()
+	dataPath := fmt.Sprintf("training/trainer/jobs/%s/%s",
+		requestorId,
+		trainingInfo.Topic)
+
+	os.MkdirAll(dataPath, os.ModePerm)
+	networking.UnzipFolder(zipFileBytes, dataPath)
+
+	RunDockerContainer(requestorId, trainingInfo.Topic)
 }

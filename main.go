@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
 	"strconv"
 
 	bootstrap "github.com/gtfintechlab/scatter-protocol/bootstrap"
 	"github.com/gtfintechlab/scatter-protocol/cosmos"
 	celestialDatabase "github.com/gtfintechlab/scatter-protocol/cosmos/db"
+	"github.com/gtfintechlab/scatter-protocol/networking"
 	peer "github.com/gtfintechlab/scatter-protocol/peers"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
 	"github.com/gtfintechlab/scatter-protocol/simulation"
@@ -73,7 +73,8 @@ func main() {
 		utils.GenerateKeys()
 	} else if util == utils.UTIL_DEBUG_MODE {
 		fmt.Println("Debug Mode")
-		os.MkdirAll("training/trainer/jobs/test2/test2", os.ModePerm)
+		zippedBytes, _ := networking.ZipFolder("training/requestor")
+		networking.UnzipFolder(zippedBytes.Bytes(), "training/trainer/jobs")
 	} else if util == utils.UTIL_CELESTIAL_DATABASE_MIGRATION {
 		celestialDatabase.MigrateCelestialDB(migrationDirection, "postgres", "postgres", 5432)
 	} else if util == utils.UTIL_PEER_DATABASE_MIGRATION {

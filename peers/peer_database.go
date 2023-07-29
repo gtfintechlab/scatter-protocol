@@ -13,6 +13,8 @@ import (
 )
 
 func getTrainersByTopic(node *utils.PeerNode, topicName string) []string {
+	node.DatastoreLock.Lock()
+	defer node.DatastoreLock.Unlock()
 	rows, err := node.DataStore.Query(`
 		SELECT node_id from peer_topic_maps
 		WHERE (topic_name = $1) AND (node_type = $2)
@@ -34,6 +36,8 @@ func getTrainersByTopic(node *utils.PeerNode, topicName string) []string {
 }
 
 func addTopicFromInfo(node *utils.PeerNode, nodeId string, topicName string, nodeType string, dataPath *string) {
+	node.DatastoreLock.Lock()
+	defer node.DatastoreLock.Unlock()
 	statement, err := node.DataStore.Prepare(`
 		INSERT INTO peer_topic_maps (node_id, topic_name, node_type, data_path)
 		VALUES ($1, $2, $3, $4);
@@ -52,6 +56,8 @@ func addTopicFromInfo(node *utils.PeerNode, nodeId string, topicName string, nod
 }
 
 func getTopicsByNodeId(node *utils.PeerNode, nodeId string) []string {
+	node.DatastoreLock.Lock()
+	defer node.DatastoreLock.Unlock()
 	rows, err := node.DataStore.Query(`
 		SELECT topic_name FROM peer_topic_maps
 		WHERE (node_id = $1)
@@ -72,6 +78,8 @@ func getTopicsByNodeId(node *utils.PeerNode, nodeId string) []string {
 	return topics
 }
 func getTrainersForAllTopics(node *utils.PeerNode) map[string][]string {
+	node.DatastoreLock.Lock()
+	defer node.DatastoreLock.Unlock()
 	topicTrainerMap := map[string][]string{}
 	rows, err := node.DataStore.Query(`
 		SELECT node_id, node_type, topic_name 
@@ -96,6 +104,8 @@ func getTrainersForAllTopics(node *utils.PeerNode) map[string][]string {
 }
 
 func checkIfTopicExistsForNode(node *utils.PeerNode, topicName string) bool {
+	node.DatastoreLock.Lock()
+	defer node.DatastoreLock.Unlock()
 	rows, err := node.DataStore.Query(`
 		SELECT * 
 		FROM peer_topic_maps
@@ -110,6 +120,8 @@ func checkIfTopicExistsForNode(node *utils.PeerNode, topicName string) bool {
 }
 
 func getInitialTopics(rootDir string, node *utils.PeerNode) error {
+	node.DatastoreLock.Lock()
+	defer node.DatastoreLock.Unlock()
 	if node.PeerType == utils.PEER_REQUESTOR {
 		return nil
 	}
@@ -142,15 +154,14 @@ func getInitialTopics(rootDir string, node *utils.PeerNode) error {
 }
 
 func connectToPostgres(peerType string, username string, password string, port int) *sql.DB {
-	cmd := exec.Command(
+	exec.Command(
 		"docker", "run",
 		"--name", fmt.Sprintf("%s-postgres", peerType),
 		"-e", fmt.Sprintf("POSTGRES_USER=%s", username),
 		"-e", fmt.Sprintf("POSTGRES_PASSWORD=%s", password),
 		"-p", fmt.Sprintf("%d:5432", port),
 		"-d", "postgres",
-	)
-	cmd.Output()
+	).Output()
 
 	connStr := fmt.Sprintf(
 		"user=%s password=%s host=localhost port=%d dbname=postgres sslmode=disable",

@@ -3,7 +3,6 @@ package cosmos
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 
 	"github.com/google/uuid"
@@ -39,7 +38,6 @@ func CreateCosmos(node *utils.PeerNode, ctx context.Context, topicName string) *
 }
 
 func JoinCosmos(ctx context.Context, node *utils.PeerNode, topicName string) *pubsub.Topic {
-	fmt.Printf("JOINING COSMOS: %s", topicName)
 	topic, _ := node.PubSubService.Join(topicName)
 	msg := utils.CosmosMessage{
 		Type:     utils.PEER_TRAINER_JOIN,
@@ -93,6 +91,7 @@ func AddTopicToUniversalCosmos(node *utils.PeerNode, topicName string) {
 }
 
 func GetTopicsFromUniversalCosmos(node *utils.PeerNode) {
+	node.InformationBox.InformationBoxMutexLock.Lock()
 	msg := utils.CosmosMessage{
 		Type:     utils.PEER_GET_TOPICS,
 		Message:  "",
@@ -101,5 +100,4 @@ func GetTopicsFromUniversalCosmos(node *utils.PeerNode) {
 
 	msgBytes, _ := json.Marshal(msg)
 	(*node.PubSubTopics)[utils.UNIVERSAL_COSMOS].Publish(context.Background(), msgBytes)
-
 }

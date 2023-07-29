@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/gtfintechlab/scatter-protocol/cosmos"
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
@@ -109,8 +108,9 @@ func getOwnTopics(node *utils.PeerNode) http.HandlerFunc {
 func getCosmosTopics(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
-
 		cosmos.GetTopicsFromUniversalCosmos(node)
+		node.InformationBox.InformationBoxMutexLock.Lock()
+		defer node.InformationBox.InformationBoxMutexLock.Unlock()
 		networking.SendJson(response, map[string]interface{}{
 			"success": true,
 			"topics":  *(node.InformationBox.CosmosTopics),
@@ -137,10 +137,7 @@ func initializeTraining(node *utils.PeerNode) http.HandlerFunc {
 		switch nodeType := node.PeerType; nodeType {
 		case utils.PEER_REQUESTOR:
 			trainers := getTrainersByTopic(node, requestBody.Topic)
-			networking.ZipFolder("training/requestor", "training/requestor_zip.zip")
-			zippedFileBytes := networking.ReadFileBytes("training/requestor_zip.zip")
-			os.Remove("training/requestor_zip.zip")
-
+			zippedFileBytes, _ := networking.ZipFolder("training/requestor")
 			for _, trainer := range trainers {
 				peerId, _ := peer.Decode(trainer)
 				stream, _ := (*node.PeerToPeerServer).NewStream(
@@ -151,7 +148,7 @@ func initializeTraining(node *utils.PeerNode) http.HandlerFunc {
 				networking.SendMessage(&stream, utils.Message{
 					MessageType: utils.PEER_START_TRAINING,
 					Payload: map[string]interface{}{
-						"file":  zippedFileBytes,
+						"files": zippedFileBytes.Bytes(),
 						"topic": requestBody.Topic,
 					},
 				})

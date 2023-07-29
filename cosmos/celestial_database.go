@@ -67,15 +67,14 @@ func deleteTopicByInfo(node *utils.CelestialNode, nodeId string, topicName strin
 }
 
 func connectToPostgres(username string, password string, port int) *sql.DB {
-	cmd := exec.Command(
+	exec.Command(
 		"docker", "run",
 		"--name", "celestial-postgres",
 		"-e", fmt.Sprintf("POSTGRES_USER=%s", username),
 		"-e", fmt.Sprintf("POSTGRES_PASSWORD=%s", password),
 		"-p", fmt.Sprintf("%d:5432", port),
 		"-d", "postgres",
-	)
-	cmd.Output()
+	).Output()
 
 	connStr := fmt.Sprintf(
 		"user=%s password=%s host=localhost port=%d dbname=postgres sslmode=disable",

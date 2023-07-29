@@ -3,6 +3,7 @@ package networking
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -48,38 +49,27 @@ func WriteBytesToFile(filename string, data []byte) error {
 	return nil
 }
 
-func ZipFolder(folderPath string, zipFilePath string) error {
-	zipFile, err := os.Create(zipFilePath)
-	if err != nil {
-		return err
-	}
-	defer zipFile.Close()
-
-	zipWriter := zip.NewWriter(zipFile)
+func ZipFolder(folderPath string) (*bytes.Buffer, error) {
+	zipBuffer := new(bytes.Buffer)
+	zipWriter := zip.NewWriter(zipBuffer)
 	defer zipWriter.Close()
 
-	err = filepath.Walk(folderPath, func(filePath string, info os.FileInfo, err error) error {
+	err := filepath.Walk(folderPath, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// Create the relative path inside the zip file
-		relPath, err := filepath.Rel(folderPath, filePath)
-		if err != nil {
-			return err
-		}
-
-		// Add file or folder to the zip archive
 		header, err := zip.FileInfoHeader(info)
 		if err != nil {
 			return err
 		}
+
+		// Modify the header's name to be relative to the folder being zipped
+		relPath, _ := filepath.Rel(folderPath, filePath)
 		header.Name = relPath
 
 		if info.IsDir() {
 			header.Name += "/"
-		} else {
-			header.Method = zip.Deflate
 		}
 
 		writer, err := zipWriter.CreateHeader(header)
@@ -87,7 +77,6 @@ func ZipFolder(folderPath string, zipFilePath string) error {
 			return err
 		}
 
-		// If it's a regular file, write its contents to the zip
 		if !info.IsDir() {
 			file, err := os.Open(filePath)
 			if err != nil {
@@ -104,45 +93,39 @@ func ZipFolder(folderPath string, zipFilePath string) error {
 		return nil
 	})
 
-	return err
+	return zipBuffer, err
 }
-
-func UnzipFolder(zipFilePath, targetDir string) error {
-	zipReader, err := zip.OpenReader(zipFilePath)
+func UnzipFolder(zipBytes []byte, destPath string) error {
+	zipReader, err := zip.NewReader(bytes.NewReader(zipBytes), int64(len(zipBytes)))
 	if err != nil {
 		return err
 	}
-	defer zipReader.Close()
 
 	for _, file := range zipReader.File {
-		// Construct the full file path based on the target directory
-		targetPath := filepath.Join(targetDir, file.Name)
+		fullPath := filepath.Join(destPath, file.Name)
 
-		// If the file is a directory, create it
 		if file.FileInfo().IsDir() {
-			os.MkdirAll(targetPath, file.Mode())
+			// Create directories if they don't exist
+			os.MkdirAll(fullPath, file.Mode())
 			continue
 		}
 
-		// Otherwise, create the file and write its contents
-		err = os.MkdirAll(filepath.Dir(targetPath), 0755)
+		// Create the file and set its permissions
+		writer, err := os.OpenFile(fullPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, file.Mode())
 		if err != nil {
 			return err
 		}
+		defer writer.Close()
 
-		outFile, err := os.Create(targetPath)
+		// Open the zipped file
+		zippedFile, err := file.Open()
 		if err != nil {
 			return err
 		}
-		defer outFile.Close()
+		defer zippedFile.Close()
 
-		inFile, err := file.Open()
-		if err != nil {
-			return err
-		}
-		defer inFile.Close()
-
-		_, err = io.Copy(outFile, inFile)
+		// Copy the zipped file's content to the destination file
+		_, err = io.Copy(writer, zippedFile)
 		if err != nil {
 			return err
 		}

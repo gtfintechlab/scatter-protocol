@@ -44,6 +44,14 @@
             } 
         },
         {
+            "description": "Requestor is requesting the network to train a model for classifying cats v.s. dogs",
+            "nodeId": "requestor_node",
+            "action": "GET /node/topics/get",
+            "body": {
+                "topic": "cats v.s. dogs"
+            } 
+        },
+        {
             "description": "Trainer is searching for all topics that have been published to the cosmos",
             "nodeId": "trainer_node",
             "action": "GET /cosmos/topics/get",
@@ -56,8 +64,8 @@
             "nodeId": "trainer_node",
             "action": "POST /node/topic/add",
             "body": {
-                "topic": "{$COSMOS_TOPICS.topics.allTopics[0].topic_name}",
-                "requestorId": "{$COSMOS_TOPICS.topics.allTopics[0].node_id}",
+                "topic": "{COSMOS_TOPICS.topics.allTopics[0].topic_name}",
+                "requestorId": "{COSMOS_TOPICS.topics.allTopics[0].node_id}",
                 "path": "/home/samrat/Documents/scatterchain/training/data/cats v.s. dogs"
             } 
         },

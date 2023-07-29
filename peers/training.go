@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
 
 	"github.com/docker/docker/client"
-	"github.com/google/uuid"
 )
 
 func dockerSetup() {
@@ -26,31 +24,16 @@ func dockerSetup() {
 		return
 	}
 }
-func buildImage(dockerfilePath string, imageName string) {
-	// Create the Docker build command
-	buildCmd := exec.Command("docker", "build", "-t", imageName, dockerfilePath)
-	buildCmd.Stdout = os.Stdout
-	buildCmd.Stderr = os.Stderr
-
-	err := buildCmd.Run()
-	if err != nil {
-		panic(err)
-	}
+func buildImage(requestorId string, topicName string) {
+	exec.Command(
+		"docker", "build",
+		"--build-arg", fmt.Sprintf("NODE_ID=%s", requestorId),
+		"--build-arg", fmt.Sprintf("TOPIC_NAME=%s", topicName),
+		"-t", fmt.Sprintf("outer-image:%s", requestorId), "training/trainer",
+	).Output()
 }
 
-func RunDockerContainer() string {
+func RunDockerContainer(requestorId string, topicName string) {
 	dockerSetup()
-	imageName := fmt.Sprintf("training:%s", uuid.New().String())
-	buildImage("training/", imageName)
-	runCmd := exec.Command("docker", "run", "-d", imageName)
-	// Execute the run command and capture the output
-	output, err := runCmd.Output()
-	if err != nil {
-		panic(err)
-	}
-
-	// Get the container ID from the output
-	containerID := string(output)
-	containerID = containerID[:len(containerID)-1] // Remove newline character
-	return containerID
+	buildImage(requestorId, topicName)
 }

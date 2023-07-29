@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"sync"
 
 	"github.com/google/uuid"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
@@ -64,7 +65,8 @@ type Message struct {
 }
 
 type InformationBox struct {
-	CosmosTopics *map[string]interface{}
+	CosmosTopics            *map[string]interface{}
+	InformationBoxMutexLock *sync.Mutex
 }
 
 type PeerNode struct {
@@ -72,6 +74,7 @@ type PeerNode struct {
 	NodeId               peer.ID                   // ID of Node
 	Start                func(*PeerNode, bool)     // Start Function for node
 	DataStore            *sql.DB                   // DataStore to store information
+	DatastoreLock        *sync.Mutex               // Mutex Lock for datastore
 	ExternalServer       *http.Server              // Http Server to communicate with node
 	PeerToPeerServer     *host.Host                // Peer2Peer server to communicate with network
 	DistributedHashTable *dht.IpfsDHT              // Distributed hash table for peer discovery
@@ -153,8 +156,16 @@ type CosmosMessage struct {
 }
 
 type SimulationConfiguration struct {
-	Nodes []NodeConfig             `json:"nodes"`
-	Steps []map[string]interface{} `json:"steps"`
+	Nodes []NodeConfig `json:"nodes"`
+	Steps []StepConfig `json:"steps"`
+}
+
+type StepConfig struct {
+	Description string                  `json:"description"`
+	NodeId      string                  `json:"nodeId"`
+	Action      *string                 `json:"action"`
+	Body        *map[string]interface{} `json:"body"`
+	StateKey    *string                 `json:"stateKey"`
 }
 
 type NodeConfig struct {
@@ -167,4 +178,16 @@ type NodeConfig struct {
 	DatastoreUsername *string `json:"datastoreUsername"`
 	DatastorePassword *string `json:"datastorePassword"`
 	UseMdns           *bool   `json:"useMdns"`
+}
+
+type SimulationNode struct {
+	CelestialNode *CelestialNode
+	PeerNode      *PeerNode
+	BootstrapNode *BootstrapNode
+}
+
+type SimulationNodeConfig struct {
+	Node  SimulationNode
+	Type  string
+	State map[string]interface{}
 }
