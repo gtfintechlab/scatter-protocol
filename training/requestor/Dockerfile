@@ -16,6 +16,6 @@ RUN pip3 install -r requirements.txt
 RUN python3 convert.py 
 
 # Run training script with data path
-RUN python3 training.py
+CMD python3 training.py
 # Testing Purposes
 # ENTRYPOINT ["tail", "-f", "/dev/null"]

@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gtfintechlab/scatter-protocol/bootstrap"
 	"github.com/gtfintechlab/scatter-protocol/cosmos"
@@ -111,6 +112,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig) map[string]utils.Simulation
 			State: map[string]interface{}{},
 		}
 	}
+	time.Sleep(time.Second * 10)
 	return nodeConfig
 }
 
@@ -151,6 +153,8 @@ func executeSteps(nodeConfig map[string]utils.SimulationNodeConfig, stepList []u
 			nodeConfig[step.NodeId].State[*step.StateKey] = response
 		}
 
+		// Let other steps finish first
+		time.Sleep(time.Second * 10)
 	}
 	select {}
 }

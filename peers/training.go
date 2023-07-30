@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/docker/docker/client"
 )
@@ -25,15 +27,43 @@ func dockerSetup() {
 	}
 }
 func buildImage(requestorId string, topicName string) {
-	exec.Command(
+	fmt.Println(requestorId, topicName)
+	err := exec.Command(
 		"docker", "build",
 		"--build-arg", fmt.Sprintf("NODE_ID=%s", requestorId),
-		"--build-arg", fmt.Sprintf("TOPIC_NAME=%s", topicName),
+		"--build-arg", fmt.Sprintf("TOPIC_NAME=%s", strings.ReplaceAll(topicName, " ", "-")),
 		"-t", fmt.Sprintf("outer-image:%s", requestorId), "training/trainer",
-	).Output()
+	).Run()
+
+	if err != nil {
+		log.Fatalf("Failed to build image for %s:%s with error: %s", requestorId, topicName, err)
+	}
 }
 
-func RunDockerContainer(requestorId string, topicName string) {
+func runContainer(requestorId string, topicName string) {
+	basePath, _ := os.Getwd()
+	fmt.Println(basePath)
+	cmd := exec.Command(
+		"docker", "run",
+		"--privileged",
+		"-v", "/var/run/docker.sock:/var/run/docker.sock",
+		"-v", fmt.Sprintf("\"/%s/training/trainer/jobs/%s/%s/output:/tmp/%s/%s/output/\"",
+			basePath,
+			requestorId, strings.ReplaceAll(topicName, " ", "-"),
+			requestorId, strings.ReplaceAll(topicName, " ", "-")),
+		"-it", fmt.Sprintf("outer-image:%s", requestorId),
+	)
+
+	fmt.Println(cmd.String())
+	err := cmd.Run()
+	if err != nil {
+		log.Fatalf("Failed to run container for %s:%s with error: %s", requestorId, topicName, err)
+	}
+}
+
+func RunTrainingProcedure(requestorId string, topicName string) {
 	dockerSetup()
 	buildImage(requestorId, topicName)
+	runContainer(requestorId, topicName)
+
 }

@@ -44,14 +44,6 @@
             } 
         },
         {
-            "description": "Requestor is requesting the network to train a model for classifying cats v.s. dogs",
-            "nodeId": "requestor_node",
-            "action": "GET /node/topics/get",
-            "body": {
-                "topic": "cats v.s. dogs"
-            } 
-        },
-        {
             "description": "Trainer is searching for all topics that have been published to the cosmos",
             "nodeId": "trainer_node",
             "action": "GET /cosmos/topics/get",

@@ -33,3 +33,5 @@ __pycache__
 *.pt
 
 .vscode
+
+training/trainer/jobs/

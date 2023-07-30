@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
 	"github.com/gtfintechlab/scatter-protocol/utils"
@@ -28,10 +29,14 @@ func peerStartTrainingHandler(node *utils.PeerNode, message *utils.Message, stre
 	requestorId := (*stream).Conn().RemotePeer().String()
 	dataPath := fmt.Sprintf("training/trainer/jobs/%s/%s",
 		requestorId,
-		trainingInfo.Topic)
+		strings.ReplaceAll(trainingInfo.Topic, " ", "-"),
+	)
 
 	os.MkdirAll(dataPath, os.ModePerm)
 	networking.UnzipFolder(zipFileBytes, dataPath)
-
-	RunDockerContainer(requestorId, trainingInfo.Topic)
+	os.Mkdir(
+		fmt.Sprintf("%s/output", dataPath),
+		os.ModePerm,
+	)
+	RunTrainingProcedure(requestorId, trainingInfo.Topic)
 }
