@@ -42,12 +42,11 @@ func buildImage(requestorId string, topicName string) {
 
 func runContainer(requestorId string, topicName string) {
 	basePath, _ := os.Getwd()
-	fmt.Println(basePath)
 	cmd := exec.Command(
 		"docker", "run",
 		"--privileged",
 		"-v", "/var/run/docker.sock:/var/run/docker.sock",
-		"-v", fmt.Sprintf("\"/%s/training/trainer/jobs/%s/%s/output:/tmp/%s/%s/output/\"",
+		"-v", fmt.Sprintf("\"%s/training/trainer/jobs/%s/%s/output:/tmp/%s/%s/output/\"",
 			basePath,
 			requestorId, strings.ReplaceAll(topicName, " ", "-"),
 			requestorId, strings.ReplaceAll(topicName, " ", "-")),

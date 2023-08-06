@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -22,11 +21,6 @@ import (
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
 	"github.com/gtfintechlab/scatter-protocol/utils"
 )
-
-func cleanUp() {
-	exec.Command("docker", "rm", "-vf", "$(docker ps -a -q)").Output()
-	exec.Command("docker", "rmi", "-f", "$(docker images -a -q)").Output()
-}
 
 func clearDatabase(datastore *sql.DB) {
 	_, err := datastore.Query(`DROP SCHEMA public CASCADE;`)
@@ -43,7 +37,6 @@ func clearDatabase(datastore *sql.DB) {
 }
 
 func RunSimulation(simulationName string) {
-	cleanUp()
 	var simulationConfiguration utils.SimulationConfiguration
 	jsonData, err := os.ReadFile(fmt.Sprintf("simulation/simulations/%s.json", simulationName))
 	if err != nil {

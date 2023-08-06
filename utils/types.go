@@ -55,6 +55,10 @@ const (
 	PEER_TRAINER   = "trainer"
 )
 
+const (
+	GOERLI = 5
+)
+
 var IDENTITY_VERIFICATION_DATA map[string]interface{} = map[string]interface{}{
 	"Verify": "Identity",
 }
