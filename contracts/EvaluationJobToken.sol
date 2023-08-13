@@ -18,14 +18,14 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable {
         protocolDeployer = payable(msg.sender);
     }
 
-    function publishTrainingJob(
+    function publishEvaluationJob(
         address recipient,
         string memory tokenURI
     ) external returns (uint256) {
         _tokenIds.increment();
 
         uint256 newItemId = _tokenIds.current();
-        _mint(recipient, newItemId);
+        _safeMint(recipient, newItemId);
         setTokenURI(newItemId, tokenURI);
         return newItemId;
     }

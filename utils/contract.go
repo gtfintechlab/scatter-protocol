@@ -14,28 +14,22 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	evaluationtoken "github.com/gtfintechlab/scatter-protocol/token/evaluation"
-	scattertoken "github.com/gtfintechlab/scatter-protocol/token/scatter"
-	trainingtoken "github.com/gtfintechlab/scatter-protocol/token/training"
+	evaluationtoken "github.com/gtfintechlab/scatter-protocol/protocol/evaluation"
+	scattertoken "github.com/gtfintechlab/scatter-protocol/protocol/scatter"
+	trainingtoken "github.com/gtfintechlab/scatter-protocol/protocol/training"
 	"github.com/joho/godotenv"
-)
-
-const (
-	SCATTER_TOKEN_CONTRACT   = "0x7FB03B464be3b9749A7423Ee6D64D482aBD06aCe"
-	TRAINING_TOKEN_CONTRACT  = "0x68f88DD73a75f9064777D5101207AE9F1f456D5E"
-	EVALATION_TOKEN_CONTRACT = "0x274ad4d7749ECBd681C0BC3C8bbDCD806A4Fb48B"
 )
 
 var _ = godotenv.Load(".env")
 var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_GOERLI_NODE"))
 
-var scatterContractAddress common.Address = common.HexToAddress(SCATTER_TOKEN_CONTRACT)
+var scatterContractAddress common.Address = common.HexToAddress(SCATTER_PROTCOL_CONTRACT)
 var trainingContractAddress common.Address = common.HexToAddress(TRAINING_TOKEN_CONTRACT)
 var evaluationContractAddress common.Address = common.HexToAddress(EVALATION_TOKEN_CONTRACT)
 
-var scatterTokenContract, _ = scattertoken.NewScattertoken(scatterContractAddress, client)
+var scatterTokenContract, _ = scattertoken.NewScatterprotocol(scatterContractAddress, client)
 var trainingTokenContract, _ = trainingtoken.NewTrainingtoken(trainingContractAddress, client)
-var contract, _ = evaluationtoken.NewEvaluationtoken(evaluationContractAddress, client)
+var evaluationTokenContract, _ = evaluationtoken.NewEvaluationtoken(evaluationContractAddress, client)
 
 func getTransactor() *bind.TransactOpts {
 
@@ -89,6 +83,29 @@ func GetScatterTokenStake() *big.Int {
 		log.Fatal(err)
 	}
 	return stake
+}
+
+func PublishTrainingJob(trainingJobPath string, topicName string) string {
+	auth := getTransactor()
+	ipfsCid := UploadFileToIpfs(trainingJobPath)
+	_, err := trainingTokenContract.PublishTrainingJob(
+		auth, ipfsCid, topicName)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	return ipfsCid
+}
+
+func PublishEvaluationJob(evaluationJobPath string) string {
+	auth := getTransactor()
+	ipfsCid := UploadFileToIpfs(evaluationJobPath)
+	transaction, err := evaluationTokenContract.PublishEvaluationJob(auth, auth.From, ipfsCid)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	return transaction.Hash().String()
 }
 
 func GenerateDigitalSignature(privateKeyStr string, inputData map[string]interface{}) ([]byte, error) {

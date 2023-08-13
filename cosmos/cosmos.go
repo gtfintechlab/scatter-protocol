@@ -79,10 +79,11 @@ func CreateUniversalCosmos(node *utils.CelestialNode, ctx context.Context) *util
 	return cosmos
 }
 
-func AddTopicToUniversalCosmos(node *utils.PeerNode, topicName string) {
+func AddTopicToUniversalCosmos(node *utils.PeerNode, topicName string, payload *utils.PublishTrainingJobPayload) {
 	msg := utils.CosmosMessage{
 		Type:     utils.PEER_REQUESTOR_ADD_TOPIC,
 		Message:  topicName,
+		Payload:  payload,
 		SenderID: (*node.PeerToPeerServer).ID(),
 	}
 

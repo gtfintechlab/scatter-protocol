@@ -2,8 +2,9 @@ package cosmos
 
 import (
 	"context"
-	"fmt"
 	"os/exec"
+
+	"log"
 
 	"github.com/gtfintechlab/scatter-protocol/networking"
 	"github.com/gtfintechlab/scatter-protocol/utils"
@@ -17,7 +18,7 @@ func InitCelestialNode(databaseUsername string, databasePassword string, databas
 	table, _ := dht.New(context.Background(), node)
 
 	table.Bootstrap(context.Background())
-	fmt.Println("Celestial Node:", node.ID())
+	log.Println("Celestial Node:", node.ID())
 	pubsub, _ := pubsub.NewGossipSub(context.Background(), node)
 
 	database := connectToPostgres(databaseUsername, databasePassword, databasePort)

@@ -19,7 +19,7 @@ var (
 
 func MigratePeerDB(direction string, peerType string, databaseUsername string, databasePassword string, databasePort int) {
 	if direction != "up" && direction != "down" {
-		fmt.Println("Invalid direction. Use 'up' or 'down'.")
+		log.Fatal("Invalid direction. Use 'up' or 'down'.")
 		os.Exit(1)
 	}
 
@@ -28,14 +28,14 @@ func MigratePeerDB(direction string, peerType string, databaseUsername string, d
 
 	migrations, err := getMigrations(direction)
 	if err != nil {
-		fmt.Println("Error getting migrations:", err)
+		log.Fatal("Error getting migrations:", err)
 		os.Exit(1)
 	}
 
 	for _, migration := range migrations {
 		fmt.Printf("Running %s migration: %s\n", direction, migration.Name)
 		if err := runMigration(db, migration.Path, direction); err != nil {
-			fmt.Println("Error executing migration:", err)
+			log.Fatal("Error executing migration:", err)
 			os.Exit(1)
 		}
 	}
@@ -60,7 +60,7 @@ func connectToPostgres(peerType string, username string, password string, port i
 		log.Fatalf("Peer Node: Error connecting to PostgreSQL: %v", err)
 	}
 
-	fmt.Println("Peer Node: Connected to PostgreSQL server successfully!")
+	log.Println("Peer Node: Connected to PostgreSQL server successfully!")
 	return db
 }
 

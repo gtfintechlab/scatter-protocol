@@ -40,14 +40,14 @@ func RunSimulation(simulationName string) {
 	var simulationConfiguration utils.SimulationConfiguration
 	jsonData, err := os.ReadFile(fmt.Sprintf("simulation/simulations/%s.json", simulationName))
 	if err != nil {
-		fmt.Println(`An error occurred when reading the simulation. 
+		log.Fatal(`An error occurred when reading the simulation. 
 			Make sure you define the simulation configuration in /simulation/simulations`, err)
 		return
 	}
 
 	err = json.Unmarshal(jsonData, &simulationConfiguration)
 	if err != nil {
-		fmt.Println("Error unmarshaling JSON:", err)
+		log.Fatal("Error unmarshaling JSON:", err)
 		return
 	}
 
@@ -118,7 +118,7 @@ const (
 
 func executeSteps(nodeConfig map[string]utils.SimulationNodeConfig, stepList []utils.StepConfig) {
 	for _, step := range stepList {
-		fmt.Println(Green + step.Description + Reset)
+		log.Println(Green + step.Description + Reset)
 		method := strings.Split((*step.Action), " ")[0]
 		endpoint := strings.Split((*step.Action), " ")[1]
 		var url string

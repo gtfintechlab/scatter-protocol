@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -13,7 +14,7 @@ import (
 func ReadFileBytes(filename string) []byte {
 	file, err := os.Open(filename)
 	if err != nil {
-		fmt.Println("Error opening file:", err)
+		log.Fatal("Error opening file:", err)
 		return []byte{}
 	}
 	defer file.Close()

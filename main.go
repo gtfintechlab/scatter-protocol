@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 	"strconv"
 
 	bootstrap "github.com/gtfintechlab/scatter-protocol/bootstrap"
@@ -71,8 +71,7 @@ func main() {
 	if util == utils.UTIL_GENERATE_KEYS {
 		utils.GenerateKeys()
 	} else if util == utils.UTIL_DEBUG_MODE {
-		fmt.Println("Debug Mode")
-		fmt.Println(utils.GetScatterTokenStake())
+		log.Println("Debug Mode")
 	} else if util == utils.UTIL_CELESTIAL_DATABASE_MIGRATION {
 		celestialDatabase.MigrateCelestialDB(migrationDirection, "postgres", "postgres", 5432)
 	} else if util == utils.UTIL_PEER_DATABASE_MIGRATION {
@@ -85,6 +84,8 @@ func main() {
 		peerDatabase.MigratePeerDB(migrationDirection, peerType, "postgres", "postgres", dbPort)
 	} else if util == utils.UTIL_RUN_SIMULATION {
 		simulation.RunSimulation(simulationName)
+	} else if util == utils.UTIL_RUN_IPFS_NODE {
+		utils.RunIpfsNode(4001, 5001, 8080)
 	}
 
 }

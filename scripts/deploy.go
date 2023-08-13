@@ -3,17 +3,18 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
 	"log"
 	"math/big"
 	"os"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	evaluationtoken "github.com/gtfintechlab/scatter-protocol/token/evaluation"
-	scattertoken "github.com/gtfintechlab/scatter-protocol/token/scatter"
-	trainingtoken "github.com/gtfintechlab/scatter-protocol/token/training"
+	evaluationtoken "github.com/gtfintechlab/scatter-protocol/protocol/evaluation"
+	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter"
+	trainingtoken "github.com/gtfintechlab/scatter-protocol/protocol/training"
+	"github.com/gtfintechlab/scatter-protocol/utils"
 
 	"github.com/joho/godotenv"
 )
@@ -61,16 +62,20 @@ func deployScatterToken() {
 		log.Fatal(err)
 	}
 	gasPrice, _ := client.SuggestGasPrice(context.Background())
-	auth.Value = big.NewInt(0)      // in wei
-	auth.GasLimit = uint64(3000000) // in units
+	auth.Value = big.NewInt(0)
+	auth.GasLimit = uint64(30000000)
 	auth.GasPrice = gasPrice
-	address, transaction, _, err := scattertoken.DeployScattertoken(auth, client, big.NewInt(int64(100000000000)), big.NewInt(int64(100)))
+	address, transaction, _, err := scatterprotocol.DeployScatterprotocol(
+		auth, client, big.NewInt(int64(100000000000)), big.NewInt(int64(100)),
+		common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT),
+		common.HexToAddress(utils.EVALATION_TOKEN_CONTRACT),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Contract Address: " + address.Hex())
-	fmt.Println("Transaction Hash: " + transaction.Hash().Hex())
+	log.Println("Contract Address: " + address.Hex())
+	log.Println("Transaction Hash: " + transaction.Hash().Hex())
 
 }
 
@@ -97,8 +102,8 @@ func deployEvaluationJobToken() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Contract Address: " + address.Hex())
-	fmt.Println("Transaction Hash: " + transaction.Hash().Hex())
+	log.Println("Contract Address: " + address.Hex())
+	log.Println("Transaction Hash: " + transaction.Hash().Hex())
 
 }
 
@@ -125,7 +130,7 @@ func deployTrainingJobToken() {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Contract Address: " + address.Hex())
-	fmt.Println("Transaction Hash: " + transaction.Hash().Hex())
+	log.Println("Contract Address: " + address.Hex())
+	log.Println("Transaction Hash: " + transaction.Hash().Hex())
 
 }

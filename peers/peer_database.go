@@ -172,6 +172,6 @@ func connectToPostgres(peerType string, username string, password string, port i
 		log.Fatalf("Peer Node: Error connecting to PostgreSQL: %v", err)
 	}
 
-	fmt.Println("Peer Node: Connected to PostgreSQL server successfully!")
+	log.Println("Peer Node: Connected to PostgreSQL server successfully!")
 	return db
 }

@@ -19,7 +19,7 @@ var (
 
 func MigrateCelestialDB(direction string, databaseUsername string, databasePassword string, databasePort int) {
 	if direction != "up" && direction != "down" {
-		fmt.Println("Invalid direction. Use 'up' or 'down'.")
+		log.Println("Invalid direction. Use 'up' or 'down'.")
 		os.Exit(1)
 	}
 
@@ -28,15 +28,14 @@ func MigrateCelestialDB(direction string, databaseUsername string, databasePassw
 
 	migrations, err := getMigrations(direction)
 	if err != nil {
-		fmt.Println("Error getting migrations:", err)
+		log.Println("Error getting migrations:", err)
 		os.Exit(1)
 	}
 
 	for _, migration := range migrations {
 		fmt.Printf("Running %s migration: %s\n", direction, migration.Name)
 		if err := runMigration(db, migration.Path, direction); err != nil {
-			fmt.Println("Error executing migration:", err)
-			os.Exit(1)
+			log.Fatal("Error executing migration:", err)
 		}
 	}
 }
@@ -60,7 +59,7 @@ func connectToPostgres(username string, password string, port int) *sql.DB {
 		log.Fatalf("Celestial Node: Error connecting to PostgreSQL: %v", err)
 	}
 
-	fmt.Println("Celestial Node: Connected to PostgreSQL server successfully!")
+	log.Println("Celestial Node: Connected to PostgreSQL server successfully!")
 	return db
 }
 

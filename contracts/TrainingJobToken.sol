@@ -6,11 +6,21 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+interface IScatterProtocol {
+    function addTopicForRequestor(
+        string memory topicName,
+        string memory jobCid,
+        address requestorAddress,
+        uint maxTrainerCount
+    ) external;
+}
+
 contract TrainingJobToken is ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     mapping(uint256 => string) private _tokenURIs;
     string baseURI;
     address payable public protocolDeployer;
+    address scatterContractAddress;
 
     Counters.Counter private _tokenIds;
 
@@ -18,15 +28,28 @@ contract TrainingJobToken is ERC721URIStorage, Ownable {
         protocolDeployer = payable(msg.sender);
     }
 
+    function setScatterContractAddress(
+        address contractAddress
+    ) public onlyOwner {
+        scatterContractAddress = contractAddress;
+    }
+
     function publishTrainingJob(
-        address recipient,
-        string memory tokenURI
+        string memory tokenURI,
+        string memory topicName
     ) external returns (uint256) {
         _tokenIds.increment();
 
         uint256 newItemId = _tokenIds.current();
-        _mint(recipient, newItemId);
+        _safeMint(msg.sender, newItemId);
         setTokenURI(newItemId, tokenURI);
+
+        IScatterProtocol(scatterContractAddress).addTopicForRequestor(
+            topicName,
+            tokenURI,
+            msg.sender,
+            100
+        );
         return newItemId;
     }
 
@@ -40,12 +63,7 @@ contract TrainingJobToken is ERC721URIStorage, Ownable {
         return tokenURI(tokenId);
     }
 
-    function setBaseURI(string memory baseURI_) external {
-        require(
-            msg.sender == protocolDeployer,
-            "Only the owner can access this method"
-        );
-
+    function setBaseURI(string memory baseURI_) external onlyOwner {
         baseURI = baseURI_;
     }
 

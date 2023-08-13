@@ -2,7 +2,7 @@ package peers
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"sync"
 
 	_ "github.com/lib/pq"
@@ -25,7 +25,7 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 	// The multiaddress of the bootstrap node
 
 	table.Bootstrap(context.Background())
-	fmt.Println("Peer Node:", node.ID())
+	log.Println("Peer Node:", node.ID())
 
 	ps, _ := pubsub.NewGossipSub(context.Background(), node)
 

@@ -85,6 +85,6 @@ func connectToPostgres(username string, password string, port int) *sql.DB {
 		log.Fatalf("Celestial Node: Error connecting to PostgreSQL: %v", err)
 	}
 
-	fmt.Println("Celestial Node: Connected to PostgreSQL server successfully!")
+	log.Println("Celestial Node: Connected to PostgreSQL server successfully!")
 	return db
 }

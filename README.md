@@ -4,28 +4,26 @@ Scatter Protocol is an incentivized, privacy-centered federated learning protoco
 
 ## Project Milestones
 
-| **Milestone**                                         | **Progress**      |
-| ----------------------------------------------------- | ----------------- |
+| **Milestone**                                         | **Progress**    |
+| ----------------------------------------------------- | --------------- |
 | General: Initial Project Setup                        | ✅ COMPLETE ✅    |
 | Networking: Simple Peer2Peer Communication            | ✅ COMPLETE ✅    |
 | Nodes: Persistent Peer2Peer Hashing                   | ✅ COMPLETE ✅    |
 | Smart Contracts: ERC-20 Scatter Token                 | ✅ COMPLETE ✅    |
-| Bootstrap Nodes: Distributed Hash Table Functionality | 🚧 IN PROGRESS 🚧 |
-| Nodes: Peer Discovery Mechanism                       | 🚧 IN PROGRESS 🚧 |
+| Bootstrap Nodes: Distributed Hash Table Functionality | ✅ COMPLETE ✅    |
+| Nodes: Peer Discovery Mechanism                       | ✅ COMPLETE ✅    |
 | Celestial Nodes: Universal Cosmos                     | ✅ COMPLETE ✅    |
-| Peer Nodes: Intialize Training Request                |                   |
-| Peer Nodes: Smart Contract Interactions               |                   |
-| Peer Nodes: Federated Learning Execution              |                   |
-| Peer Nodes: Model Weights Exclusion                   |                   |
-| Validator Nodes: Token Staking                        |                   |
-| Validator Nodes: Proof of Training                    |                   |
-| Validator Nodes: Training Consensus Mechanism         |                   |
-| Validator Nodes: Node Eviction Mechanism              |                   |
-| Smart Contracts: Token Reward System                  |                   |
-| Node: Reputation System                               |                   |
-| Cloud: Deploy a Node on AWS/GCP                       |                   |
+| Peer Nodes: Intialize Training Request                | ✅ COMPLETE ✅    |
+| Peer Nodes: Smart Contract Interactions               | 🚧 IN PROGRESS 🚧 |
+| Peer Nodes: Federated Learning Execution              | ✅ COMPLETE ✅    |
+| Peer Nodes: Model Weights Exclusion                   |                 |
+| Validator Nodes: Token Staking                        |                 |
+| Validator Nodes: Training Consensus Mechanism         |                 |
+| Validator Nodes: Node Eviction Mechanism              |                 |
+| Smart Contracts: Token Reward System                  |                 |
+| Node: Reputation System                               |                 |
 
-## Generate Node Keys
+## Generate Node Keys (For Bootstrap Nodes)
 
 ```
 go run main.go --util keygen

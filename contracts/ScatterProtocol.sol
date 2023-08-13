@@ -8,24 +8,51 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 // Model Validator: 500,000 Scatter Token Staked
 // Cosmos Validator: 100,000 Scatter Token Staked
-contract ScatterToken is ERC20Capped, ERC20Burnable {
+contract ScatterProtocol is ERC20Capped, ERC20Burnable {
     enum roles {
-        Peer, 
+        Peer,
         Celestial,
-        ModelValidator, 
+        ModelValidator,
         CosmosValidator
     }
+
+    struct TrainingJobInfo {
+        string trainingJobCid;
+        address[] trainers;
+    }
+
     address payable public owner;
+    address trainingJobContract;
+    address evaluationJobContract;
+
     uint256 public blockReward;
     uint256 public requiredModelValidatorStake;
     uint256 public requiredCosmosValidatorStake;
+
     mapping(address => uint256) internal addressToStake;
     mapping(address => uint256) internal addressToStakeTime;
     mapping(address => roles) internal addressToRoles;
 
+    /*
+        Example addressToTrainingJobInfo Mapping:
+        {
+            requestor 1 address: {
+                topic 1: {
+                    trainingJobCid: CID of the training job location, 
+                    trainers: [trainer 1 address, trainer 2 address]
+                }
+            }
+            requestor 2 address: {...}
+        }
+     */
+    mapping(address => mapping(string => TrainingJobInfo))
+        public addressToTrainingJobInfo;
+
     constructor(
         uint256 cap,
-        uint256 reward
+        uint256 reward,
+        address trainingTokenContractAddress,
+        address evaluationTokenContractAddress
     ) ERC20("ScatterToken", "ST") ERC20Capped(cap * (10 ** decimals())) {
         owner = payable(msg.sender);
         _mint(owner, (cap / 100) * 70 * (10 ** decimals()));
@@ -33,6 +60,21 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
 
         requiredModelValidatorStake = 500000;
         requiredCosmosValidatorStake = 100000;
+
+        trainingJobContract = trainingTokenContractAddress;
+        evaluationJobContract = evaluationTokenContractAddress;
+    }
+
+    function setTrainingJobContractAddress(
+        address newAddress
+    ) external onlyOwner {
+        trainingJobContract = newAddress;
+    }
+
+    function setEvaluationJobContractAddress(
+        address newAddress
+    ) external onlyOwner {
+        evaluationJobContract = newAddress;
     }
 
     function initPeerNode() public {
@@ -44,7 +86,8 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
     }
 
     function elevateToModelValidator() public {
-        require (addressToStake[msg.sender] >= requiredModelValidatorStake,
+        require(
+            addressToStake[msg.sender] >= requiredModelValidatorStake,
             "To become a model validator, you must have 500,000 Scatter Token staked"
         );
 
@@ -52,7 +95,8 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
     }
 
     function elevateToCosmosValidator() public {
-        require (addressToStake[msg.sender] >= requiredCosmosValidatorStake,
+        require(
+            addressToStake[msg.sender] >= requiredCosmosValidatorStake,
             "To become a cosmos validator, you must have 100,000 Scatter Token staked"
         );
 
@@ -68,7 +112,8 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
     }
 
     function removeStake(uint256 amount) public {
-        require(addressToStakeTime[msg.sender] >= block.timestamp, 
+        require(
+            addressToStakeTime[msg.sender] >= block.timestamp,
             "You must wait 30 days before being able to unstake Scatter Token"
         );
         require(
@@ -80,15 +125,19 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
         _mint(msg.sender, amount);
         addressToStake[msg.sender] -= amount;
 
-        if (addressToRoles[msg.sender] == roles.ModelValidator && 
-            addressToStake[msg.sender] < requiredModelValidatorStake){
-                addressToRoles[msg.sender] = roles.Peer;
-            }
+        if (
+            addressToRoles[msg.sender] == roles.ModelValidator &&
+            addressToStake[msg.sender] < requiredModelValidatorStake
+        ) {
+            addressToRoles[msg.sender] = roles.Peer;
+        }
 
-        if (addressToRoles[msg.sender] == roles.CosmosValidator && 
-            addressToStake[msg.sender] < requiredCosmosValidatorStake){
-                addressToRoles[msg.sender] = roles.Peer;
-            }
+        if (
+            addressToRoles[msg.sender] == roles.CosmosValidator &&
+            addressToStake[msg.sender] < requiredCosmosValidatorStake
+        ) {
+            addressToRoles[msg.sender] = roles.Peer;
+        }
     }
 
     function getOwnStake() public view returns (uint256) {
@@ -131,6 +180,29 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
             _mintMinerReward();
         }
         super._beforeTokenTransfer(from, to, value);
+    }
+
+    function addTopicForRequestor(
+        string memory topicName,
+        string memory jobCid,
+        address requestorAddress,
+        uint maxTrainerCount
+    ) external onlyTrainingJobTokenContract {
+        address[] memory emptyAddressArray = new address[](maxTrainerCount);
+
+        TrainingJobInfo memory trainingInfo = TrainingJobInfo(
+            jobCid,
+            emptyAddressArray
+        );
+        addressToTrainingJobInfo[requestorAddress][topicName] = trainingInfo;
+    }
+
+    modifier onlyTrainingJobTokenContract() {
+        require(
+            msg.sender == trainingJobContract,
+            "This method can only be called by the training job token contract"
+        );
+        _;
     }
 
     modifier onlyOwner() {

@@ -27,6 +27,13 @@ var UTIL_DEBUG_MODE = "debug"
 var UTIL_CELESTIAL_DATABASE_MIGRATION = "migrate:celestial"
 var UTIL_PEER_DATABASE_MIGRATION = "migrate:peer"
 var UTIL_RUN_SIMULATION = "simulation"
+var UTIL_RUN_IPFS_NODE = "ipfs"
+
+const (
+	SCATTER_PROTCOL_CONTRACT = "0xd20C7DC8FcB366105b6b9fc9B4161C0fb0d1308f"
+	TRAINING_TOKEN_CONTRACT  = "0x47fb083dCd531Aee0dd55F29427BF4A8BfcB1c10"
+	EVALATION_TOKEN_CONTRACT = "0x2c13bbf5A80a48343FFb7B90cB41355970C597Ba"
+)
 
 var PROTOCOL_IDENTIFIER protocol.ID = "/scatter-protocol/1.0.0"
 var DATA_DIRECTORY = "training/data"
@@ -154,9 +161,14 @@ type UniversalCosmos struct {
 }
 
 type CosmosMessage struct {
-	Type     string  `json:"Type"`
-	Message  string  `json:"Message"`
-	SenderID peer.ID `json:"SenderID"`
+	Type     string                     `json:"Type"`
+	Message  string                     `json:"Message"`
+	Payload  *PublishTrainingJobPayload `json:"Payload"`
+	SenderID peer.ID                    `json:"SenderID"`
+}
+
+type PublishTrainingJobPayload struct {
+	TopicCid string `json:"topicCid"`
 }
 
 type SimulationConfiguration struct {

@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"fmt"
+	"log"
 
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
@@ -20,7 +21,7 @@ func InitBootstrapNode(ipv4Address string, tcpPort int) *utils.BootstrapNode {
 	// Create a new DHT
 	distributedHashTable, _ := dht.New(context.Background(), node)
 	distributedHashTable.Bootstrap(context.Background())
-	fmt.Println("Bootstrap Node:", node.ID())
+	log.Println("Bootstrap Node:", node.ID())
 
 	// Set stream handler
 	node.SetStreamHandler(utils.PROTOCOL_IDENTIFIER, bootstrapStreamHandler)
@@ -51,6 +52,6 @@ func bootstrapStreamHandler(stream network.Stream) {
 	message := networking.DecodeMessage(&stream)
 	switch messageType := message.MessageType; messageType {
 	case utils.MESSAGE_CODE_JOIN_NETWORK:
-		fmt.Println("Peer connected:", stream.Conn().RemotePeer())
+		log.Println("Peer connected:", stream.Conn().RemotePeer())
 	}
 }

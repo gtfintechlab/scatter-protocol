@@ -27,7 +27,6 @@ func dockerSetup() {
 	}
 }
 func buildImage(requestorId string, topicName string) {
-	fmt.Println(requestorId, topicName)
 	err := exec.Command(
 		"docker", "build",
 		"--build-arg", fmt.Sprintf("NODE_ID=%s", requestorId),
@@ -53,7 +52,6 @@ func runContainer(requestorId string, topicName string) {
 		"-it", fmt.Sprintf("outer-image:%s", requestorId),
 	)
 
-	fmt.Println(cmd.String())
 	err := cmd.Run()
 	if err != nil {
 		log.Fatalf("Failed to run container for %s:%s with error: %s", requestorId, topicName, err)
