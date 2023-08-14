@@ -74,7 +74,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			zippedJobPath := fmt.Sprintf("training/requestor/%s_%s.zip", node.NodeId.String(), requestBody.Topic)
 			networking.WriteBytesToFile(zippedJobPath, zippedFileBytes.Bytes())
 
-			topicCid := utils.PublishTrainingJob(zippedJobPath, requestBody.Topic)
+			topicCid, _ := utils.PublishTrainingJob(zippedJobPath, requestBody.Topic)
 			cosmos.AddTopicToUniversalCosmos(node, requestBody.Topic, &utils.PublishTrainingJobPayload{
 				TopicCid: topicCid,
 			})

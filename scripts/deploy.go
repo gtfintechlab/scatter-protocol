@@ -1,11 +1,12 @@
 package main
 
 import (
-	"context"
+	"encoding/json"
 	"flag"
 	"log"
 	"math/big"
 	"os"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -20,16 +21,20 @@ import (
 )
 
 const (
-	GOERLI = 5
+	GOERLI  = 5
+	SEPOLIA = 11155111
 )
 
 const (
 	SCATTER    = "scatter"
 	EVALUATION = "evaluation"
 	TRAINING   = "training"
+	ALL        = "all"
 )
 
-var CHAIN = big.NewInt(GOERLI)
+var CHAIN = big.NewInt(SEPOLIA)
+var _ = godotenv.Load(".env")
+var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_SEPOLIA_NODE"))
 
 func main() {
 	var tokenType string
@@ -39,37 +44,72 @@ func main() {
 
 	switch tokenType {
 	case SCATTER:
-		deployScatterToken()
+		deployScatterProtocol()
 	case EVALUATION:
 		deployEvaluationJobToken()
 	case TRAINING:
 		deployTrainingJobToken()
+	case ALL:
+		deployAllContracts()
 	}
 }
 
-func deployScatterToken() {
-	godotenv.Load(".env")
-	client, err := ethclient.Dial(os.Getenv("ETHEREUM_GOERLI_NODE"))
+func deployAllContracts() {
+	auth := getTransactor()
+	trainingAddress, trainingTransaction, trainingInstance, err := trainingtoken.DeployTrainingtoken(auth, client)
+
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to deploy training token", err.Error())
 	}
-	privateKey, err := crypto.HexToECDSA(os.Getenv("PRIVATE_KEY"))
+	time.Sleep(time.Second * 10)
+	evaluationAddress, evaluationTransaction, evaluationInstance, err := evaluationtoken.DeployEvaluationtoken(auth, client)
+
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to deploy evaluation token", err.Error())
 	}
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
+	time.Sleep(time.Second * 10)
+	scatterProtocolAddress, scatterProtocolTransaction, scatterInstance, err := scatterprotocol.DeployScatterprotocol(
+		auth, client, big.NewInt(int64(100000000000)), big.NewInt(int64(100)),
+		common.HexToAddress(trainingAddress.Hash().Hex()),
+		common.HexToAddress(evaluationAddress.Hash().Hex()))
+
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to deploy scatter protocol", err.Error())
 	}
-	gasPrice, _ := client.SuggestGasPrice(context.Background())
-	auth.Value = big.NewInt(0)
-	auth.GasLimit = uint64(30000000)
-	auth.GasPrice = gasPrice
+	time.Sleep(time.Second * 10)
+
+	trainingInstance.SetScatterContractAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+	evaluationInstance.SetScatterContractAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+	scatterInstance.InitRequestorNode(auth)
+
+	log.Println("Transaction Info:")
+	log.Printf("Training Token: %s\n", trainingTransaction.Hash())
+	log.Printf("Evaluation Token: %s\n", evaluationTransaction.Hash())
+	log.Printf("Scatter Protocol: %s\n", scatterProtocolTransaction.Hash())
+	log.Println("===============")
+
+	log.Println("Contract Info:")
+	log.Printf("Training Token: %s\n", trainingAddress.Hex())
+	log.Printf("Evaluation Token: %s\n", evaluationAddress.Hex())
+	log.Printf("Scatter Protocol: %s\n", scatterProtocolAddress.Hex())
+
+	contractInfo := map[string]string{
+		"SCATTER_PROTOCOL_CONTRACT": scatterProtocolAddress.Hex(),
+		"TRAINING_TOKEN_CONTRACT":   trainingAddress.Hex(),
+		"EVALUATION_TOKEN_CONTRACT": evaluationAddress.Hex(),
+	}
+
+	jsonData, _ := json.MarshalIndent(contractInfo, "", "  ")
+	os.WriteFile("utils/contracts.json", jsonData, 0644)
+}
+
+func deployScatterProtocol() {
+	auth := getTransactor()
+
 	address, transaction, _, err := scatterprotocol.DeployScatterprotocol(
 		auth, client, big.NewInt(int64(100000000000)), big.NewInt(int64(100)),
 		common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT),
-		common.HexToAddress(utils.EVALATION_TOKEN_CONTRACT),
-	)
+		common.HexToAddress(utils.EVALATION_TOKEN_CONTRACT))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,23 +120,8 @@ func deployScatterToken() {
 }
 
 func deployEvaluationJobToken() {
-	godotenv.Load(".env")
-	client, err := ethclient.Dial(os.Getenv("ETHEREUM_GOERLI_NODE"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	privateKey, err := crypto.HexToECDSA(os.Getenv("PRIVATE_KEY"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
-	if err != nil {
-		log.Fatal(err)
-	}
-	gasPrice, _ := client.SuggestGasPrice(context.Background())
-	auth.Value = big.NewInt(0)      // in wei
-	auth.GasLimit = uint64(3000000) // in units
-	auth.GasPrice = gasPrice
+	auth := getTransactor()
+
 	address, transaction, _, err := evaluationtoken.DeployEvaluationtoken(auth, client)
 	if err != nil {
 		log.Fatal(err)
@@ -108,23 +133,7 @@ func deployEvaluationJobToken() {
 }
 
 func deployTrainingJobToken() {
-	godotenv.Load(".env")
-	client, err := ethclient.Dial(os.Getenv("ETHEREUM_GOERLI_NODE"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	privateKey, err := crypto.HexToECDSA(os.Getenv("PRIVATE_KEY"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
-	if err != nil {
-		log.Fatal(err)
-	}
-	gasPrice, _ := client.SuggestGasPrice(context.Background())
-	auth.Value = big.NewInt(0)      // in wei
-	auth.GasLimit = uint64(3000000) // in units
-	auth.GasPrice = gasPrice
+	auth := getTransactor()
 	address, transaction, _, err := trainingtoken.DeployTrainingtoken(auth, client)
 	if err != nil {
 		log.Fatal(err)
@@ -133,4 +142,16 @@ func deployTrainingJobToken() {
 	log.Println("Contract Address: " + address.Hex())
 	log.Println("Transaction Hash: " + transaction.Hash().Hex())
 
+}
+
+func getTransactor() *bind.TransactOpts {
+	privateKey, err := crypto.HexToECDSA(os.Getenv("PRIVATE_KEY"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(SEPOLIA))
+	auth.Value = big.NewInt(0)
+
+	return auth
 }

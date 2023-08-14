@@ -20,7 +20,7 @@ contract TrainingJobToken is ERC721URIStorage, Ownable {
     mapping(uint256 => string) private _tokenURIs;
     string baseURI;
     address payable public protocolDeployer;
-    address scatterContractAddress;
+    address public scatterContractAddress;
 
     Counters.Counter private _tokenIds;
 

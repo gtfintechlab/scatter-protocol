@@ -11,11 +11,18 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable {
     mapping(uint256 => string) private _tokenURIs;
     string baseURI;
     address payable public protocolDeployer;
+    address public scatterContractAddress;
 
     Counters.Counter private _tokenIds;
 
     constructor() ERC721("Scatter Protocol Evaluation Jobs", "SPTJ") {
         protocolDeployer = payable(msg.sender);
+    }
+
+    function setScatterContractAddress(
+        address contractAddress
+    ) public onlyOwner {
+        scatterContractAddress = contractAddress;
     }
 
     function publishEvaluationJob(

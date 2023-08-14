@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"strconv"
 
@@ -72,6 +73,7 @@ func main() {
 		utils.GenerateKeys()
 	} else if util == utils.UTIL_DEBUG_MODE {
 		log.Println("Debug Mode")
+		fmt.Println(utils.GetProtocolRequestors(0))
 	} else if util == utils.UTIL_CELESTIAL_DATABASE_MIGRATION {
 		celestialDatabase.MigrateCelestialDB(migrationDirection, "postgres", "postgres", 5432)
 	} else if util == utils.UTIL_PEER_DATABASE_MIGRATION {

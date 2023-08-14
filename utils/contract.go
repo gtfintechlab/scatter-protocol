@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"context"
-	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -15,57 +13,25 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	evaluationtoken "github.com/gtfintechlab/scatter-protocol/protocol/evaluation"
-	scattertoken "github.com/gtfintechlab/scatter-protocol/protocol/scatter"
+	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter"
 	trainingtoken "github.com/gtfintechlab/scatter-protocol/protocol/training"
 	"github.com/joho/godotenv"
 )
 
 var _ = godotenv.Load(".env")
-var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_GOERLI_NODE"))
+var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_SEPOLIA_NODE"))
 
 var scatterContractAddress common.Address = common.HexToAddress(SCATTER_PROTCOL_CONTRACT)
 var trainingContractAddress common.Address = common.HexToAddress(TRAINING_TOKEN_CONTRACT)
 var evaluationContractAddress common.Address = common.HexToAddress(EVALATION_TOKEN_CONTRACT)
 
-var scatterTokenContract, _ = scattertoken.NewScatterprotocol(scatterContractAddress, client)
+var scatterProtocolContract, _ = scatterprotocol.NewScatterprotocol(scatterContractAddress, client)
 var trainingTokenContract, _ = trainingtoken.NewTrainingtoken(trainingContractAddress, client)
 var evaluationTokenContract, _ = evaluationtoken.NewEvaluationtoken(evaluationContractAddress, client)
 
-func getTransactor() *bind.TransactOpts {
-
-	privateKey, err := crypto.HexToECDSA(os.Getenv("PRIVATE_KEY"))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		log.Fatal("cannot assert type: publicKey is not of type *ecdsa.PublicKey")
-	}
-
-	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	gasPrice, err := client.SuggestGasPrice(context.Background())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(GOERLI))
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = big.NewInt(0)     // in wei
-	auth.GasLimit = uint64(300000) // in units
-	auth.GasPrice = gasPrice
-
-	return auth
-}
 func AddScatterTokenStake(stakeAmount *big.Int) *types.Transaction {
 	auth := getTransactor()
-	transaction, err := scatterTokenContract.AddStake(auth, stakeAmount)
+	transaction, err := scatterProtocolContract.AddStake(auth, stakeAmount)
 
 	if err != nil {
 		log.Fatal(err)
@@ -75,7 +41,7 @@ func AddScatterTokenStake(stakeAmount *big.Int) *types.Transaction {
 
 func GetScatterTokenStake() *big.Int {
 	auth := getTransactor()
-	stake, err := scatterTokenContract.GetOwnStake(&bind.CallOpts{
+	stake, err := scatterProtocolContract.GetOwnStake(&bind.CallOpts{
 		From: auth.From,
 	})
 
@@ -85,16 +51,29 @@ func GetScatterTokenStake() *big.Int {
 	return stake
 }
 
-func PublishTrainingJob(trainingJobPath string, topicName string) string {
+func GetProtocolRequestors(skipAmount uint64) string {
+	auth := getTransactor()
+	skip := new(big.Int)
+	skip.SetUint64(skipAmount)
+	addresses, _ := scatterProtocolContract.GetRequestorAddresses(&bind.CallOpts{
+		From: auth.From,
+	}, skip)
+
+	return addresses
+}
+
+func PublishTrainingJob(trainingJobPath string, topicName string) (string, string) {
+	fmt.Println(CONTRACTS)
+
 	auth := getTransactor()
 	ipfsCid := UploadFileToIpfs(trainingJobPath)
-	_, err := trainingTokenContract.PublishTrainingJob(
+	transaction, err := trainingTokenContract.PublishTrainingJob(
 		auth, ipfsCid, topicName)
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	return ipfsCid
+	return ipfsCid, transaction.Hash().Hex()
 }
 
 func PublishEvaluationJob(evaluationJobPath string) string {
@@ -106,6 +85,19 @@ func PublishEvaluationJob(evaluationJobPath string) string {
 		log.Fatal(err)
 	}
 	return transaction.Hash().String()
+}
+
+func getTransactor() *bind.TransactOpts {
+
+	privateKey, err := crypto.HexToECDSA(os.Getenv("PRIVATE_KEY"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(SEPOLIA))
+	auth.Value = big.NewInt(0)
+
+	return auth
 }
 
 func GenerateDigitalSignature(privateKeyStr string, inputData map[string]interface{}) ([]byte, error) {

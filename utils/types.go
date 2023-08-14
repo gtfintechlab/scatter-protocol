@@ -3,7 +3,9 @@ package utils
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/google/uuid"
@@ -29,10 +31,25 @@ var UTIL_PEER_DATABASE_MIGRATION = "migrate:peer"
 var UTIL_RUN_SIMULATION = "simulation"
 var UTIL_RUN_IPFS_NODE = "ipfs"
 
-const (
-	SCATTER_PROTCOL_CONTRACT = "0xd20C7DC8FcB366105b6b9fc9B4161C0fb0d1308f"
-	TRAINING_TOKEN_CONTRACT  = "0x47fb083dCd531Aee0dd55F29427BF4A8BfcB1c10"
-	EVALATION_TOKEN_CONTRACT = "0x2c13bbf5A80a48343FFb7B90cB41355970C597Ba"
+type Contracts struct {
+	ScatterProtocolContract string `json:"SCATTER_PROTOCOL_CONTRACT"`
+	TrainingTokenContract   string `json:"TRAINING_TOKEN_CONTRACT"`
+	EvaluationTokenContract string `json:"EVALUATION_TOKEN_CONTRACT"`
+}
+
+func ReadContractInfo() Contracts {
+	jsonData, _ := os.ReadFile("utils/contracts.json")
+	var contractData Contracts
+	json.Unmarshal(jsonData, &contractData)
+	return contractData
+}
+
+var CONTRACTS = ReadContractInfo()
+
+var (
+	SCATTER_PROTCOL_CONTRACT = CONTRACTS.ScatterProtocolContract
+	TRAINING_TOKEN_CONTRACT  = CONTRACTS.TrainingTokenContract
+	EVALATION_TOKEN_CONTRACT = CONTRACTS.EvaluationTokenContract
 )
 
 var PROTOCOL_IDENTIFIER protocol.ID = "/scatter-protocol/1.0.0"
@@ -63,7 +80,8 @@ const (
 )
 
 const (
-	GOERLI = 5
+	GOERLI  = 5
+	SEPOLIA = 11155111
 )
 
 var IDENTITY_VERIFICATION_DATA map[string]interface{} = map[string]interface{}{

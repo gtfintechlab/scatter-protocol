@@ -1,16 +1,19 @@
-// SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 // Model Validator: 500,000 Scatter Token Staked
 // Cosmos Validator: 100,000 Scatter Token Staked
 contract ScatterProtocol is ERC20Capped, ERC20Burnable {
     enum roles {
-        Peer,
+        NoRole,
+        Requestor,
+        Trainer,
         Celestial,
         ModelValidator,
         CosmosValidator
@@ -22,8 +25,8 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
     }
 
     address payable public owner;
-    address trainingJobContract;
-    address evaluationJobContract;
+    address public trainingJobContract;
+    address public evaluationJobContract;
 
     uint256 public blockReward;
     uint256 public requiredModelValidatorStake;
@@ -48,11 +51,17 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
     mapping(address => mapping(string => TrainingJobInfo))
         public addressToTrainingJobInfo;
 
+    mapping(address => string[]) public addressToTopics;
+
+    // Requestor Information
+    mapping(address => bool) internal requestorDuplicationChecker;
+    address[] public networkRequestors;
+
     constructor(
         uint256 cap,
         uint256 reward,
-        address trainingTokenContractAddress,
-        address evaluationTokenContractAddress
+        address trainingTokenContract,
+        address evaluationTokenContract
     ) ERC20("ScatterToken", "ST") ERC20Capped(cap * (10 ** decimals())) {
         owner = payable(msg.sender);
         _mint(owner, (cap / 100) * 70 * (10 ** decimals()));
@@ -61,8 +70,8 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
         requiredModelValidatorStake = 500000;
         requiredCosmosValidatorStake = 100000;
 
-        trainingJobContract = trainingTokenContractAddress;
-        evaluationJobContract = evaluationTokenContractAddress;
+        trainingJobContract = trainingTokenContract;
+        evaluationJobContract = evaluationTokenContract;
     }
 
     function setTrainingJobContractAddress(
@@ -77,8 +86,13 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
         evaluationJobContract = newAddress;
     }
 
-    function initPeerNode() public {
-        addressToRoles[msg.sender] = roles.Peer;
+    function initRequestorNode() public {
+        addressToRoles[msg.sender] = roles.Requestor;
+        updateNetworkParticipants(msg.sender, roles.Requestor);
+    }
+
+    function initTrainerNode() public {
+        addressToRoles[msg.sender] = roles.Trainer;
     }
 
     function initCelestialNode() public {
@@ -129,14 +143,14 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
             addressToRoles[msg.sender] == roles.ModelValidator &&
             addressToStake[msg.sender] < requiredModelValidatorStake
         ) {
-            addressToRoles[msg.sender] = roles.Peer;
+            addressToRoles[msg.sender] = roles.NoRole;
         }
 
         if (
             addressToRoles[msg.sender] == roles.CosmosValidator &&
             addressToStake[msg.sender] < requiredCosmosValidatorStake
         ) {
-            addressToRoles[msg.sender] = roles.Peer;
+            addressToRoles[msg.sender] = roles.NoRole;
         }
     }
 
@@ -188,6 +202,11 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
         address requestorAddress,
         uint maxTrainerCount
     ) external onlyTrainingJobTokenContract {
+        require(
+            addressToRoles[requestorAddress] == roles.Requestor,
+            "You must change your node's role to requestor before calling this method"
+        );
+
         address[] memory emptyAddressArray = new address[](maxTrainerCount);
 
         TrainingJobInfo memory trainingInfo = TrainingJobInfo(
@@ -195,6 +214,47 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
             emptyAddressArray
         );
         addressToTrainingJobInfo[requestorAddress][topicName] = trainingInfo;
+
+        // Enables trainers to view all topics by a specific network participant
+        addressToTopics[requestorAddress].push(topicName);
+
+        updateNetworkParticipants(requestorAddress, roles.Requestor);
+    }
+
+    // Displays 10 addresses at a time
+    function getRequestorAddresses(
+        int256 skip
+    ) public view returns (string memory) {
+        string memory addressList = "";
+        int256 minIndex = int256(networkRequestors.length) < skip + 10
+            ? int256(networkRequestors.length)
+            : skip + 10;
+
+        for (int256 i = skip; i < int256(minIndex); i++) {
+            addressList = string.concat(
+                addressList,
+                Strings.toHexString(
+                    uint256(uint160(networkRequestors[uint256(i)])),
+                    20
+                )
+            );
+
+            addressList = string.concat(addressList, "\n");
+        }
+
+        return addressList;
+    }
+
+    function updateNetworkParticipants(
+        address participant,
+        roles role
+    ) internal {
+        if (role == roles.Requestor) {
+            if (!requestorDuplicationChecker[participant]) {
+                networkRequestors.push(participant);
+                requestorDuplicationChecker[participant] = true;
+            }
+        }
     }
 
     modifier onlyTrainingJobTokenContract() {
