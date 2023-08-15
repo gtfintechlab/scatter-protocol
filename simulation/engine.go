@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/big"
 	"net/http"
 	"os"
 	"regexp"
@@ -14,10 +15,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/gtfintechlab/scatter-protocol/bootstrap"
 	"github.com/gtfintechlab/scatter-protocol/peers"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
 	"github.com/gtfintechlab/scatter-protocol/protocol"
+	scattertoken "github.com/gtfintechlab/scatter-protocol/protocol/scatter-token"
 	"github.com/gtfintechlab/scatter-protocol/utils"
 )
 
@@ -49,12 +55,11 @@ func RunSimulation(simulationName string) {
 		log.Fatal("Error unmarshaling JSON:", err)
 		return
 	}
-
-	nodeConfig := initializeAllNodes(simulationConfiguration.Nodes)
+	nodeConfig := initializeAllNodes(simulationConfiguration.Nodes, simulationConfiguration.Environment)
 	executeSteps(nodeConfig, simulationConfiguration.Steps)
 }
 
-func initializeAllNodes(nodeList []utils.NodeConfig) map[string]utils.SimulationNodeConfig {
+func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.EnvironmentConfig) map[string]utils.SimulationNodeConfig {
 	nodeConfig := make(map[string]utils.SimulationNodeConfig)
 	for _, node := range nodeList {
 		var simulationNode utils.SimulationNode
@@ -73,6 +78,13 @@ func initializeAllNodes(nodeList []utils.NodeConfig) map[string]utils.Simulation
 				*node.DatastorePort,
 				*node.BlockchainAddress,
 				*node.PrivateKey,
+			)
+			transferToken(
+				*environment.ProtocolOwnerPrivateKey,
+				int64(*node.InitialScatterTokenSupply),
+				*node.BlockchainAddress,
+				*environment.EthereumNode,
+				utils.SCATTER_TOKEN_CONTRACT,
 			)
 			clearDatabase(createdNode.DataStore)
 			peerDatabase.MigratePeerDB("up",
@@ -252,4 +264,24 @@ func simpleRequest(endpoint string, method string, url string, body *map[string]
 		log.Fatal("Error unmarshaling JSON:", err)
 	}
 	return jsonData, nil
+}
+
+func transferToken(privateKey string, amount int64, recipient string, ethereumNode string, contractAddress string) {
+	auth := getTransactor(privateKey)
+	var ethereumClient, _ = ethclient.Dial(ethereumNode)
+	contract, _ := scattertoken.NewScattertoken(common.HexToAddress(contractAddress), ethereumClient)
+	contract.Transfer(auth, common.HexToAddress(recipient), big.NewInt(amount))
+}
+
+func getTransactor(ownerPrivateKey string) *bind.TransactOpts {
+
+	privateKey, err := crypto.HexToECDSA(ownerPrivateKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, protocol.CHAIN)
+	auth.Value = big.NewInt(0)
+
+	return auth
 }

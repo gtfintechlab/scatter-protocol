@@ -29,6 +29,7 @@ var UTIL_CELESTIAL_DATABASE_MIGRATION = "migrate:celestial"
 var UTIL_PEER_DATABASE_MIGRATION = "migrate:peer"
 var UTIL_RUN_SIMULATION = "simulation"
 var UTIL_RUN_IPFS_NODE = "ipfs"
+var UTIL_DEPLOY_CONTRACTS = "deploy-contracts"
 
 type Contracts struct {
 	ScatterProtocolContract string `json:"SCATTER_PROTOCOL_CONTRACT"`
@@ -119,15 +120,6 @@ type ValidatorNode struct {
 	DistributedHashTable *dht.IpfsDHT
 }
 
-type CelestialNode struct {
-	NodeId               peer.ID
-	PeerToPeerServer     *host.Host
-	Start                func(*CelestialNode, bool)
-	PubSubService        *pubsub.PubSub
-	DistributedHashTable *dht.IpfsDHT
-	DataStore            *sql.DB
-}
-
 type TrainingInfoFromRequestor struct {
 	Files []byte `json:"files"`
 	Topic string `json:"topic"`
@@ -156,8 +148,9 @@ type PublishTrainingJobPayload struct {
 }
 
 type SimulationConfiguration struct {
-	Nodes []NodeConfig `json:"nodes"`
-	Steps []StepConfig `json:"steps"`
+	Environment EnvironmentConfig `json:"environment"`
+	Nodes       []NodeConfig      `json:"nodes"`
+	Steps       []StepConfig      `json:"steps"`
 }
 
 type StepConfig struct {
@@ -169,21 +162,28 @@ type StepConfig struct {
 }
 
 type NodeConfig struct {
-	Id                string  `json:"id"`
-	Type              string  `json:"type"`
-	Ipv4Address       *string `json:"ipv4Address"`
-	TcpPort           *int    `json:"tcpPort"`
-	ExtAddress        *string `json:"extAddress"`
-	DatastorePort     *int    `json:"datastorePort"`
-	DatastoreUsername *string `json:"datastoreUsername"`
-	DatastorePassword *string `json:"datastorePassword"`
-	UseMdns           *bool   `json:"useMdns"`
-	BlockchainAddress *string `json:"blockchainAddress"`
-	PrivateKey        *string `json:"privateKey"`
+	Id                        string  `json:"id"`
+	Type                      string  `json:"type"`
+	Ipv4Address               *string `json:"ipv4Address"`
+	TcpPort                   *int    `json:"tcpPort"`
+	ExtAddress                *string `json:"extAddress"`
+	DatastorePort             *int    `json:"datastorePort"`
+	DatastoreUsername         *string `json:"datastoreUsername"`
+	DatastorePassword         *string `json:"datastorePassword"`
+	UseMdns                   *bool   `json:"useMdns"`
+	BlockchainAddress         *string `json:"blockchainAddress"`
+	PrivateKey                *string `json:"privateKey"`
+	InitialScatterTokenSupply *uint64 `json:"initialScatterTokenSupply"`
+}
+
+type EnvironmentConfig struct {
+	DeployProtocol          *bool   `json:"deployProtocol"`
+	ProtocolOwnerAddress    *string `json:"protocolOwnerAddress"`
+	ProtocolOwnerPrivateKey *string `json:"protocolOwnerPrivateKey"`
+	EthereumNode            *string `json:"ethereumNode"`
 }
 
 type SimulationNode struct {
-	CelestialNode *CelestialNode
 	PeerNode      *PeerNode
 	BootstrapNode *BootstrapNode
 }

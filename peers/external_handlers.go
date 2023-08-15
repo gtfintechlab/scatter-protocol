@@ -172,3 +172,14 @@ func initializeTraining(node *utils.PeerNode) http.HandlerFunc {
 
 	}
 }
+
+func getScatterTokenBalance(node *utils.PeerNode) http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		networking.GetValidator(request, response)
+		networking.SendJson(response, map[string]interface{}{
+			"success": true,
+			"balance": protocol.GetScatterTokenBalance(node),
+		})
+
+	}
+}

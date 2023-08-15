@@ -2,4 +2,6 @@
 
 pragma solidity 0.8.17;
 
-interface IScatterToken {}
+interface IScatterToken {
+    function canBecomeModelValidator() external returns (bool);
+}

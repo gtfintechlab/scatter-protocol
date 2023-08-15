@@ -92,5 +92,7 @@ func externalServerHandlers(node *utils.PeerNode) *http.ServeMux {
 	serverMux.HandleFunc("/node/topics/published", getPublishedTopics(node))
 	serverMux.HandleFunc("/node/topics/trainers", getTopicTrainers(node))
 	serverMux.HandleFunc("/node/training/start", initializeTraining(node))
+	serverMux.HandleFunc("/node/token/balance", getScatterTokenBalance(node))
+
 	return serverMux
 }

@@ -1,4 +1,10 @@
 {
+    "environment": {
+        "deployProtocol": true,
+        "protocolOwnerAddress": "0x89D9cf4Cc89A8058c5bDcBA525FFb14Fe15f614B",
+        "protocolOwnerPrivateKey": "58a83c4aead5717f1c43567d82e504609345eb75b11312a057f9e600a7788ff7",
+        "ethereumNode": "ws://172.22.80.1:7545"
+    },
     "nodes": [
         {
             "id": "bootstrap_node",
@@ -14,8 +20,9 @@
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
             "useMdns": true,
-            "blockchainAddress": "0x89D9cf4Cc89A8058c5bDcBA525FFb14Fe15f614B",
-            "privateKey": "58a83c4aead5717f1c43567d82e504609345eb75b11312a057f9e600a7788ff7"
+            "blockchainAddress": "0xB5219B818d2870D08fFbFC0aA93742Db2df721b4",
+            "privateKey": "da2c5e2ee5b3204e3253e2ea04ad4fd1f53ec7d3a9302c1c92ebfa1135de6124",
+            "initialScatterTokenSupply": 100000
         },
         {
             "id": "trainer_node",
@@ -26,7 +33,8 @@
             "datastorePassword": "postgres",
             "useMdns": true,
             "blockchainAddress": "0xE4505606D2DD1B47A782bF4149f073EB91E0A6Bb",
-            "privateKey": "f898575dc21b5a4fc16ee69d8482b63b22ed23326c08efb495bf9417c60c4f0c"
+            "privateKey": "f898575dc21b5a4fc16ee69d8482b63b22ed23326c08efb495bf9417c60c4f0c",
+            "initialScatterTokenSupply": 100000
         }
     ],
 

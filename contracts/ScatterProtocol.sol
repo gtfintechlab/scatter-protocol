@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./ITrainingJobToken.sol";
+import "./IScatterToken.sol";
+
 import "./Shared.sol";
 
 // Model Validator: 500,000 Scatter Token Staked
@@ -43,12 +45,19 @@ contract ScatterProtocol {
     mapping(address => string[]) public addressToTopics;
 
     // Requestor Information
-    mapping(address => bool) internal requestorDuplicationChecker;
+    // We specifically do order and not index because default value of a mapping is 0
+    mapping(address => uint256) internal networkRequestorOrder;
     address[] public networkRequestors;
 
     // Trainer Information
-    mapping(address => bool) internal trainerDuplicationChecker;
+    // We specifically do order and not index because default value of a mapping is 0
+    mapping(address => uint256) internal networkTrainerOrder;
     address[] public networkTrainers;
+
+    // Validator Information
+    // We specifically do order and not index because default value of a mapping is 0
+    mapping(address => uint256) internal networkValidatorOrder;
+    address[] public networkValidators;
 
     // Information for P2P communication
     mapping(address => string) public addressToNodeId;
@@ -115,16 +124,70 @@ contract ScatterProtocol {
      *  @dev Set the current user role to be a requestor
      */
     function initRequestorNode() public {
+        // Nothing will happen if they do not have the respective role
+        _removeFromOrderedArray(
+            networkTrainers,
+            networkTrainerOrder,
+            msg.sender
+        );
+        _removeFromOrderedArray(
+            networkValidators,
+            networkValidatorOrder,
+            msg.sender
+        );
         addressToRoles[msg.sender] = roles.Requestor;
-        updateNetworkParticipants(msg.sender, roles.Requestor);
+        _addToOrderedArray(
+            networkRequestors,
+            networkRequestorOrder,
+            msg.sender
+        );
     }
 
     /**
      *  @dev Set the current user role to be a trainer
      */
     function initTrainerNode() public {
+        // Nothing will happen if they do not have the respective role
+        _removeFromOrderedArray(
+            networkValidators,
+            networkValidatorOrder,
+            msg.sender
+        );
+        _removeFromOrderedArray(
+            networkRequestors,
+            networkRequestorOrder,
+            msg.sender
+        );
         addressToRoles[msg.sender] = roles.Trainer;
-        updateNetworkParticipants(msg.sender, roles.Trainer);
+        _addToOrderedArray(networkTrainers, networkTrainerOrder, msg.sender);
+    }
+
+    /**
+     *  @dev Set the current user role to be a trainer
+     */
+    function initModelValidator() public {
+        bool canBePromoted = IScatterToken(scatterTokenContract)
+            .canBecomeModelValidator();
+        require(
+            canBePromoted,
+            "Your node is not eligible to become a model validator"
+        );
+        _removeFromOrderedArray(
+            networkRequestors,
+            networkRequestorOrder,
+            msg.sender
+        );
+        _removeFromOrderedArray(
+            networkTrainers,
+            networkTrainerOrder,
+            msg.sender
+        );
+        addressToRoles[msg.sender] = roles.ModelValidator;
+        _addToOrderedArray(
+            networkValidators,
+            networkValidatorOrder,
+            msg.sender
+        );
     }
 
     /**
@@ -230,6 +293,12 @@ contract ScatterProtocol {
             ).length > 0;
     }
 
+    /**
+     *  @dev Return a new line concatenated string with a list of trainers by address and topic
+     *  @param requestorAddress The address of the requestor
+     *  @param topicName The name of the topic
+     *  @param skip number of elements to skip in array
+     */
     function getTrainersByAddressAndTopic(
         address requestorAddress,
         string memory topicName,
@@ -262,6 +331,12 @@ contract ScatterProtocol {
         return trainerList;
     }
 
+    /**
+     *  @dev Add a new training job to the state
+     *  @param topicName The name of the topic
+     *  @param jobCid The content ID hash of the training job files
+     *  @param requestorAddress The address of the requestor
+     */
     function processTrainingJobToken(
         string memory topicName,
         string memory jobCid,
@@ -282,11 +357,12 @@ contract ScatterProtocol {
 
         // Enables trainers to view all topics by a specific network participant
         addressToTopics[requestorAddress].push(topicName);
-
-        updateNetworkParticipants(requestorAddress, roles.Requestor);
     }
 
-    // Displays 10 addresses at a time
+    /**
+     *  @dev Return a new line concatenated string with a list of addresses
+     *  @param skip number of elements to skip in array
+     */
     function getRequestorAddresses(
         int256 skip
     ) public view returns (string memory) {
@@ -310,6 +386,11 @@ contract ScatterProtocol {
         return addressList;
     }
 
+    /**
+     *  @dev Return a new line concatenated string with a list of topics by requestor address
+     *  @param requestorAddress The address of the requestor
+     *  @param skip number of elements to skip in array
+     */
     function getTopicsByRequestorAddress(
         address requestorAddress,
         int256 skip
@@ -332,23 +413,9 @@ contract ScatterProtocol {
         return topicList;
     }
 
-    function updateNetworkParticipants(
-        address participant,
-        roles role
-    ) internal {
-        if (role == roles.Requestor) {
-            if (!requestorDuplicationChecker[participant]) {
-                networkRequestors.push(participant);
-                requestorDuplicationChecker[participant] = true;
-            }
-        } else if (role == roles.Trainer) {
-            if (!trainerDuplicationChecker[participant]) {
-                networkTrainers.push(participant);
-                trainerDuplicationChecker[participant] = true;
-            }
-        }
-    }
-
+    /**
+     *  @dev Modifier to ensure only the training job token contract can run a function
+     */
     modifier onlyTrainingJobTokenContract() {
         require(
             msg.sender == trainingJobContract,
@@ -356,7 +423,9 @@ contract ScatterProtocol {
         );
         _;
     }
-
+    /**
+     *  @dev Modifier to ensure only the scatter token contract can run a function
+     */
     modifier onlyScatterTokenContract() {
         require(
             msg.sender == scatterTokenContract,
@@ -364,7 +433,9 @@ contract ScatterProtocol {
         );
         _;
     }
-
+    /**
+     *  @dev Modifier to ensure only the owner can run a function
+     */
     modifier onlyOwner() {
         require(
             payable(msg.sender) == owner,
@@ -381,7 +452,55 @@ contract ScatterProtocol {
         _;
     }
 
+    /**
+     *  @dev destroy the smart contract
+     */
     function destroy() public onlyOwner {
         selfdestruct(owner);
+    }
+
+    /**
+     *  @dev Helper function to add to an array easily
+     * @param array The array we want to add to
+     * @param orderMap Keeps track of the order in which the elements were added
+     * @param addressToAdd The address we want to add
+     */
+    function _addToOrderedArray(
+        address[] storage array,
+        mapping(address => uint256) storage orderMap,
+        address addressToAdd
+    ) private {
+        if (orderMap[addressToAdd] != 0) {
+            return;
+        }
+
+        array.push(addressToAdd);
+        orderMap[addressToAdd] = array.length;
+    }
+
+    /**
+     *  @dev Helper function to remove from an array easily
+     * @param array The array we want to remove from
+     * @param orderMap Keeps track of the order in which the elements were added
+     * @param addressToRemove The address we want to remove
+     */
+    function _removeFromOrderedArray(
+        address[] storage array,
+        mapping(address => uint256) storage orderMap,
+        address addressToRemove
+    ) private {
+        uint256 orderToDelete = orderMap[addressToRemove];
+        if (orderToDelete == 0) {
+            return;
+        }
+
+        uint256 indexToDelete = orderToDelete - 1;
+
+        address lastValue = array[array.length - 1];
+        array[indexToDelete] = lastValue;
+        orderMap[lastValue] = orderToDelete;
+
+        array.pop();
+        delete orderMap[addressToRemove];
     }
 }

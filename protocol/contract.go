@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	evaluationtoken "github.com/gtfintechlab/scatter-protocol/protocol/evaluation"
 	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter-protocol"
+	scattertoken "github.com/gtfintechlab/scatter-protocol/protocol/scatter-token"
 	trainingtoken "github.com/gtfintechlab/scatter-protocol/protocol/training"
 	"github.com/gtfintechlab/scatter-protocol/utils"
 	"github.com/joho/godotenv"
@@ -23,11 +24,13 @@ import (
 var _ = godotenv.Load(".env")
 var ethereumClient, _ = ethclient.Dial(os.Getenv("ETHEREUM_NODE"))
 
-var scatterContractAddress common.Address = common.HexToAddress(utils.SCATTER_PROTOCOL_CONTRACT)
+var scatterProtocolContractAddress common.Address = common.HexToAddress(utils.SCATTER_PROTOCOL_CONTRACT)
+var scatterTokenContractAddress common.Address = common.HexToAddress(utils.SCATTER_TOKEN_CONTRACT)
 var trainingContractAddress common.Address = common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT)
 var evaluationContractAddress common.Address = common.HexToAddress(utils.EVALUATION_TOKEN_CONTRACT)
 
-var scatterProtocolContract, _ = scatterprotocol.NewScatterprotocol(scatterContractAddress, ethereumClient)
+var scatterProtocolContract, _ = scatterprotocol.NewScatterprotocol(scatterProtocolContractAddress, ethereumClient)
+var scatterTokenContract, _ = scattertoken.NewScattertoken(scatterTokenContractAddress, ethereumClient)
 var trainingTokenContract, _ = trainingtoken.NewTrainingtoken(trainingContractAddress, ethereumClient)
 var evaluationTokenContract, _ = evaluationtoken.NewEvaluationtoken(evaluationContractAddress, ethereumClient)
 
@@ -197,6 +200,12 @@ func PublishEvaluationJob(node *utils.PeerNode, evaluationJobPath string) string
 		log.Fatal(err)
 	}
 	return transaction.Hash().String()
+}
+
+func GetScatterTokenBalance(node *utils.PeerNode) *big.Int {
+	auth := getTransactor(node)
+	balance, _ := scatterTokenContract.BalanceOf(&bind.CallOpts{From: auth.From}, auth.From)
+	return balance
 }
 
 func getTransactor(node *utils.PeerNode) *bind.TransactOpts {

@@ -1,4 +1,5 @@
 {
+    "environment": {},
     "nodes": [
         {
             "id": "bootstrap_node",

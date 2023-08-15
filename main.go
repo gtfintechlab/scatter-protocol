@@ -26,6 +26,8 @@ func main() {
 	var useMdns string
 	var migrationDirection string
 	var simulationName string
+	var contractName string
+
 	// All nodes
 	flag.StringVar(&nodeType, "type", "", "Type of node you want to run (peer, bootstrap, or celestial)")
 	flag.StringVar(&util, "utils", "", "Run a utility script")
@@ -49,6 +51,8 @@ func main() {
 
 	flag.StringVar(&simulationName, "simulation", "lazy_load",
 		"Name of the simulation to run")
+	flag.StringVar(&contractName, "contract", "all",
+		"The smart contract you want to deploy")
 
 	flag.Parse()
 

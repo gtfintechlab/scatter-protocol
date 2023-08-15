@@ -36,27 +36,34 @@ var CHAIN = big.NewInt(int64(CHAIN_ID))
 var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_NODE"))
 
 func main() {
-	var tokenType string
-
-	flag.StringVar(&tokenType, "type", "", "The smart contract you want to deploy")
+	var contractName string
+	var privateKey string
+	flag.StringVar(&contractName, "contract", "all",
+		"Name of contract to deploy")
+	flag.StringVar(&privateKey, "pkey", os.Getenv("PRIVATE_KEY"),
+		"Private key to deploy protocol with")
 	flag.Parse()
 
-	switch tokenType {
+	DeployContracts(contractName, privateKey)
+}
+
+func DeployContracts(contract string, privateKey string) {
+	switch contract {
 	case PROTOCOL:
-		deployScatterProtocol()
+		deployScatterProtocol(privateKey)
 	case EVALUATION:
-		deployEvaluationJobToken()
+		deployEvaluationJobToken(privateKey)
 	case TRAINING:
-		deployTrainingJobToken()
+		deployTrainingJobToken(privateKey)
 	case TOKEN:
-		deployScatterToken()
+		deployScatterToken(privateKey)
 	case ALL:
-		deployAllContracts()
+		deployAllContracts(privateKey)
 	}
 }
 
-func deployAllContracts() {
-	auth := getTransactor()
+func deployAllContracts(privateKey string) {
+	auth := GetTransactor(privateKey)
 
 	trainingAddress, trainingTransaction, trainingInstance, err := trainingtoken.DeployTrainingtoken(auth, client)
 	if err != nil {
@@ -116,8 +123,8 @@ func deployAllContracts() {
 	os.WriteFile("utils/contracts.json", jsonData, 0644)
 }
 
-func deployScatterProtocol() {
-	auth := getTransactor()
+func deployScatterProtocol(privateKey string) {
+	auth := GetTransactor(privateKey)
 
 	address, transaction, _, err := scatterprotocol.DeployScatterprotocol(
 		auth, client,
@@ -133,11 +140,11 @@ func deployScatterProtocol() {
 
 }
 
-func deployScatterToken() {
-	auth := getTransactor()
+func deployScatterToken(privateKey string) {
+	auth := GetTransactor(privateKey)
 
 	address, transaction, _, err := scattertoken.DeployScattertoken(
-		auth, client, big.NewInt(int64(100000000000)))
+		auth, client, big.NewInt(int64(1_000_000_000_000)))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -147,8 +154,8 @@ func deployScatterToken() {
 
 }
 
-func deployEvaluationJobToken() {
-	auth := getTransactor()
+func deployEvaluationJobToken(privateKey string) {
+	auth := GetTransactor(privateKey)
 
 	address, transaction, _, err := evaluationtoken.DeployEvaluationtoken(auth, client)
 	if err != nil {
@@ -160,8 +167,8 @@ func deployEvaluationJobToken() {
 
 }
 
-func deployTrainingJobToken() {
-	auth := getTransactor()
+func deployTrainingJobToken(privateKey string) {
+	auth := GetTransactor(privateKey)
 	address, transaction, _, err := trainingtoken.DeployTrainingtoken(auth, client)
 	if err != nil {
 		log.Fatal(err)
@@ -172,13 +179,13 @@ func deployTrainingJobToken() {
 
 }
 
-func getTransactor() *bind.TransactOpts {
-	privateKey, err := crypto.HexToECDSA(os.Getenv("PRIVATE_KEY"))
+func GetTransactor(privateKey string) *bind.TransactOpts {
+	privateKeyObject, err := crypto.HexToECDSA(privateKey)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
+	auth, _ := bind.NewKeyedTransactorWithChainID(privateKeyObject, CHAIN)
 	auth.Value = big.NewInt(0)
 
 	return auth
