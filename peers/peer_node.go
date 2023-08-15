@@ -3,13 +3,13 @@ package peers
 import (
 	"context"
 	"log"
+	"os"
 	"sync"
 
 	_ "github.com/lib/pq"
 
 	"net/http"
 
-	"github.com/gtfintechlab/scatter-protocol/cosmos"
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 	libp2p "github.com/libp2p/go-libp2p"
@@ -28,12 +28,13 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 	log.Println("Peer Node:", node.ID())
 
 	ps, _ := pubsub.NewGossipSub(context.Background(), node)
-
+	blockchainAddress := os.Getenv("BLOCKCHAIN_ADDRESS")
 	database := connectToPostgres(peerType, databaseUsername, databasePassword, databasePort)
 	peerNode := utils.PeerNode{
-		PeerType: peerType,
-		Start:    StartPeer,
-		NodeId:   node.ID(),
+		PeerType:          peerType,
+		Start:             StartPeer,
+		NodeId:            node.ID(),
+		BlockchainAddress: &blockchainAddress,
 		ExternalServer: &http.Server{
 			Addr: serverAddress,
 		},
@@ -43,11 +44,8 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 		DataStore:            database,
 		PubSubTopics:         &map[string]*pubsub.Topic{},
 		DatastoreLock:        &sync.Mutex{},
-		InformationBox: &utils.InformationBox{
-			CosmosTopics:            &map[string]interface{}{},
-			InformationBoxMutexLock: &sync.Mutex{},
-		},
 	}
+	utils.SetNodeId(node.ID().String())
 	getInitialTopics(utils.DATA_DIRECTORY, &peerNode)
 
 	node.SetStreamHandler(utils.PROTOCOL_IDENTIFIER, peerStreamHandler(&peerNode))
@@ -67,8 +65,6 @@ func StartPeer(node *utils.PeerNode, useMdns bool) {
 			string(utils.PROTOCOL_IDENTIFIER),
 		)
 	}
-	universalCosmosTopic := cosmos.JoinCosmos(context.Background(), node, utils.UNIVERSAL_COSMOS)
-	(*node.PubSubTopics)[utils.UNIVERSAL_COSMOS] = universalCosmosTopic
 
 	go http.ListenAndServe(node.ExternalServer.Addr, serverMux)
 	select {}
@@ -79,8 +75,6 @@ func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 	return func(stream network.Stream) {
 		message := networking.DecodeMessage(&stream)
 		switch messageType := message.MessageType; messageType {
-		case utils.PEER_GET_TOPICS:
-			go peerGetTopicsHandler(node, &message)
 		case utils.PEER_START_TRAINING:
 			go peerStartTrainingHandler(node, &message, &stream)
 		}
@@ -94,7 +88,7 @@ func externalServerHandlers(node *utils.PeerNode) *http.ServeMux {
 	serverMux.HandleFunc("/node/role/switch", switchPeerNodeRole(node))
 	serverMux.HandleFunc("/node/topic/add", addTopic(node))
 	serverMux.HandleFunc("/node/topics/get", getOwnTopics(node))
-	serverMux.HandleFunc("/cosmos/topics/get", getCosmosTopics(node))
+	serverMux.HandleFunc("/node/topics/published", getPublishedTopics(node))
 	serverMux.HandleFunc("/node/topics/trainers", getTopicTrainers(node))
 	serverMux.HandleFunc("/node/training/start", initializeTraining(node))
 	return serverMux

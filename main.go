@@ -7,8 +7,6 @@ import (
 	"strconv"
 
 	bootstrap "github.com/gtfintechlab/scatter-protocol/bootstrap"
-	"github.com/gtfintechlab/scatter-protocol/cosmos"
-	celestialDatabase "github.com/gtfintechlab/scatter-protocol/cosmos/db"
 	peer "github.com/gtfintechlab/scatter-protocol/peers"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
 	"github.com/gtfintechlab/scatter-protocol/simulation"
@@ -46,7 +44,7 @@ func main() {
 	flag.StringVar(&migrationDirection, "direction", "up",
 		"Migration direction (up/down)")
 
-	flag.StringVar(&simulationName, "simulation", "train_simple_model",
+	flag.StringVar(&simulationName, "simulation", "lazy_load",
 		"Name of the simulation to run")
 
 	flag.Parse()
@@ -64,18 +62,14 @@ func main() {
 		}
 		peerNode := peer.InitPeerNode(peerType, extAddress, "postgres", "postgres", dbPort)
 		peerNode.Start(peerNode, mdnsProtocol)
-	} else if nodeType == utils.NODE_CELESTIAL {
-		celestialNode := cosmos.InitCelestialNode("postgres", "postgres", 5432)
-		celestialNode.Start(celestialNode, mdnsProtocol)
 	}
 
 	if util == utils.UTIL_GENERATE_KEYS {
 		utils.GenerateKeys()
 	} else if util == utils.UTIL_DEBUG_MODE {
 		log.Println("Debug Mode")
-		fmt.Println(utils.GetProtocolRequestors(0))
-	} else if util == utils.UTIL_CELESTIAL_DATABASE_MIGRATION {
-		celestialDatabase.MigrateCelestialDB(migrationDirection, "postgres", "postgres", 5432)
+		utils.AddTopicForRequestor("test.png", "topic!")
+		fmt.Println(utils.GetAllTopicsByAddress("0x89D9cf4Cc89A8058c5bDcBA525FFb14Fe15f614B"))
 	} else if util == utils.UTIL_PEER_DATABASE_MIGRATION {
 		var dbPort int
 		if peerType == utils.PEER_REQUESTOR {

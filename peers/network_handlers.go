@@ -11,15 +11,6 @@ import (
 	network "github.com/libp2p/go-libp2p/core/network"
 )
 
-func peerGetTopicsHandler(node *utils.PeerNode, message *utils.Message) {
-	var topicList map[string]interface{}
-	jsonData, _ := json.Marshal(message.Payload)
-	json.Unmarshal(jsonData, &topicList)
-	node.InformationBox.CosmosTopics = &topicList
-	// Accompanying lock is in GetTopicsFromUniversalCosmos()
-	node.InformationBox.InformationBoxMutexLock.Unlock()
-}
-
 func peerStartTrainingHandler(node *utils.PeerNode, message *utils.Message, stream *network.Stream) {
 	var trainingInfo utils.TrainingInfoFromRequestor
 	jsonData, _ := json.Marshal(message.Payload)

@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -21,20 +22,16 @@ import (
 )
 
 const (
-	GOERLI  = 5
-	SEPOLIA = 11155111
-)
-
-const (
 	SCATTER    = "scatter"
 	EVALUATION = "evaluation"
 	TRAINING   = "training"
 	ALL        = "all"
 )
 
-var CHAIN = big.NewInt(SEPOLIA)
 var _ = godotenv.Load(".env")
-var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_SEPOLIA_NODE"))
+var CHAIN_ID, _ = strconv.Atoi(os.Getenv("CHAIN_ID"))
+var CHAIN = big.NewInt(int64(CHAIN_ID))
+var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_NODE"))
 
 func main() {
 	var tokenType string
@@ -150,7 +147,7 @@ func getTransactor() *bind.TransactOpts {
 		log.Fatal(err)
 	}
 
-	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(SEPOLIA))
+	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
 	auth.Value = big.NewInt(0)
 
 	return auth

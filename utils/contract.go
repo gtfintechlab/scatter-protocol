@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,7 +20,7 @@ import (
 )
 
 var _ = godotenv.Load(".env")
-var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_SEPOLIA_NODE"))
+var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_NODE"))
 
 var scatterContractAddress common.Address = common.HexToAddress(SCATTER_PROTCOL_CONTRACT)
 var trainingContractAddress common.Address = common.HexToAddress(TRAINING_TOKEN_CONTRACT)
@@ -51,29 +52,143 @@ func GetScatterTokenStake() *big.Int {
 	return stake
 }
 
-func GetProtocolRequestors(skipAmount uint64) string {
+func GetProtocolRequestors(skipAmount uint64) []string {
 	auth := getTransactor()
-	skip := new(big.Int)
-	skip.SetUint64(skipAmount)
+	skip := big.NewInt(int64(skipAmount))
 	addresses, _ := scatterProtocolContract.GetRequestorAddresses(&bind.CallOpts{
 		From: auth.From,
 	}, skip)
 
-	return addresses
+	return deleteEmptyElements(strings.Split(strings.Trim(addresses, " "), "\n"))
 }
 
-func PublishTrainingJob(trainingJobPath string, topicName string) (string, string) {
-	fmt.Println(CONTRACTS)
+func GetAllProtocolRequestors() []string {
+	requestorList := []string{}
+	skipAmount := 0
+	currentRequestorList := GetProtocolRequestors(uint64(skipAmount))
 
+	for len(currentRequestorList) != 0 {
+		requestorList = append(requestorList, currentRequestorList...)
+		skipAmount += 10
+		currentRequestorList = GetProtocolRequestors(uint64(skipAmount))
+
+	}
+
+	return requestorList
+}
+
+func GetTopicsByAddress(address string, skipAmount uint64) []string {
+	auth := getTransactor()
+	skip := big.NewInt(int64(skipAmount))
+	topics, _ := scatterProtocolContract.GetTopicsByRequestorAddress(&bind.CallOpts{
+		From: auth.From,
+	}, common.HexToAddress(address), skip)
+
+	return deleteEmptyElements(strings.Split(strings.Trim(topics, " "), "\n"))
+}
+
+func GetTrainersByAddressAndTopic(address string, topicName string, skipAmount uint64) []string {
+	auth := getTransactor()
+	skip := big.NewInt(int64(skipAmount))
+	trainers, _ := scatterProtocolContract.GetTrainersByAddressAndTopic(&bind.CallOpts{
+		From: auth.From,
+	}, common.HexToAddress(address), topicName, skip)
+	return deleteEmptyElements(strings.Split(strings.Trim(trainers, " "), "\n"))
+}
+
+func GetAllTrainersByAddressAndTopic(address string, topicName string) []string {
+	trainerList := []string{}
+	skipAmount := 0
+	currentTrainerList := GetTrainersByAddressAndTopic(address, topicName, uint64(skipAmount))
+	for len(currentTrainerList) != 0 {
+		trainerList = append(trainerList, currentTrainerList...)
+		skipAmount += 10
+		currentTrainerList = GetTrainersByAddressAndTopic(address, topicName, uint64(skipAmount))
+	}
+
+	return trainerList
+}
+
+func CheckIfTopicExistsForRequestor(address string, topicName string) bool {
+	auth := getTransactor()
+	exists, _ := scatterProtocolContract.CheckIfTopicExistsForRequestor(&bind.CallOpts{
+		From: auth.From,
+	}, common.HexToAddress(address), topicName)
+
+	return exists
+}
+
+func GetAllTopicsByAddress(address string) []string {
+	topicList := []string{}
+	skipAmount := 0
+	currentTopicList := GetTopicsByAddress(address, uint64(skipAmount))
+	for len(currentTopicList) != 0 {
+		topicList = append(topicList, currentTopicList...)
+		skipAmount += 10
+		currentTopicList = GetTopicsByAddress(address, uint64(skipAmount))
+	}
+
+	return topicList
+}
+
+func GetRoleByAddress(address string) string {
+	auth := getTransactor()
+	role, _ := scatterProtocolContract.GetRoleByAddress(&bind.CallOpts{
+		From: auth.From,
+	}, common.HexToAddress(address))
+
+	return role
+}
+
+func GetCidFromAddressAndTopic(address string, topicName string) string {
+	auth := getTransactor()
+	trainingInfo, err := scatterProtocolContract.AddressToTrainingJobInfo(&bind.CallOpts{
+		From: auth.From,
+	}, common.HexToAddress(address), topicName)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return trainingInfo
+}
+
+func AddTopicForRequestor(trainingJobPath string, topicName string) (string, string) {
 	auth := getTransactor()
 	ipfsCid := UploadFileToIpfs(trainingJobPath)
-	transaction, err := trainingTokenContract.PublishTrainingJob(
+	transaction, err := scatterProtocolContract.RequestorAddTopic(
 		auth, ipfsCid, topicName)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 	return ipfsCid, transaction.Hash().Hex()
+}
+
+func AddTopicForTrainer(address string, topicName string) {
+	auth := getTransactor()
+	_, err := scatterProtocolContract.TrainerAddTopic(
+		auth, common.HexToAddress(address), topicName)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
+
+func ChangeRoleToTrainer() {
+	auth := getTransactor()
+	scatterProtocolContract.InitTrainerNode(auth)
+}
+
+func ChangeRoleToRequestor() {
+	auth := getTransactor()
+	scatterProtocolContract.InitRequestorNode(auth)
+}
+
+func SetNodeId(nodeId string) {
+	auth := getTransactor()
+	scatterProtocolContract.SetNodeId(auth, nodeId)
 }
 
 func PublishEvaluationJob(evaluationJobPath string) string {

@@ -10,8 +10,7 @@ interface IScatterProtocol {
     function addTopicForRequestor(
         string memory topicName,
         string memory jobCid,
-        address requestorAddress,
-        uint maxTrainerCount
+        address requestorAddress
     ) external;
 }
 
@@ -36,19 +35,19 @@ contract TrainingJobToken is ERC721URIStorage, Ownable {
 
     function publishTrainingJob(
         string memory tokenURI,
-        string memory topicName
-    ) external returns (uint256) {
+        string memory topicName,
+        address recipient
+    ) external onlyScatterProtocolContract returns (uint256) {
         _tokenIds.increment();
 
         uint256 newItemId = _tokenIds.current();
-        _safeMint(msg.sender, newItemId);
+        _safeMint(recipient, newItemId);
         setTokenURI(newItemId, tokenURI);
 
         IScatterProtocol(scatterContractAddress).addTopicForRequestor(
             topicName,
             tokenURI,
-            msg.sender,
-            100
+            recipient
         );
         return newItemId;
     }
@@ -69,5 +68,13 @@ contract TrainingJobToken is ERC721URIStorage, Ownable {
 
     function _baseURI() internal view override returns (string memory) {
         return baseURI;
+    }
+
+    modifier onlyScatterProtocolContract() {
+        require(
+            msg.sender == scatterContractAddress,
+            "This method can only be called by the scatter protocol contract"
+        );
+        _;
     }
 }

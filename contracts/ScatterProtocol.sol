@@ -7,6 +7,14 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
+interface ITrainingJobToken {
+    function publishTrainingJob(
+        string memory tokenURI,
+        string memory topicName,
+        address recipient
+    ) external;
+}
+
 // Model Validator: 500,000 Scatter Token Staked
 // Cosmos Validator: 100,000 Scatter Token Staked
 contract ScatterProtocol is ERC20Capped, ERC20Burnable {
@@ -57,6 +65,13 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
     mapping(address => bool) internal requestorDuplicationChecker;
     address[] public networkRequestors;
 
+    // Trainer Information
+    mapping(address => bool) internal trainerDuplicationChecker;
+    address[] public networkTrainers;
+
+    // Information for P2P communication
+    mapping(address => string) public addressToNodeId;
+
     constructor(
         uint256 cap,
         uint256 reward,
@@ -72,6 +87,10 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
 
         trainingJobContract = trainingTokenContract;
         evaluationJobContract = evaluationTokenContract;
+    }
+
+    function setNodeId(string memory nodeId) external {
+        addressToNodeId[msg.sender] = nodeId;
     }
 
     function setTrainingJobContractAddress(
@@ -93,10 +112,38 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
 
     function initTrainerNode() public {
         addressToRoles[msg.sender] = roles.Trainer;
+        updateNetworkParticipants(msg.sender, roles.Trainer);
     }
 
     function initCelestialNode() public {
         addressToRoles[msg.sender] = roles.Celestial;
+    }
+
+    event TrainingInitialized(address requestor, string topicName);
+
+    function startTraining(string memory topicName) public {
+        if (checkIfTopicExistsForRequestor(msg.sender, topicName)) {
+            emit TrainingInitialized(msg.sender, topicName);
+        }
+    }
+
+    function getRoleByAddress(
+        address addressToFind
+    ) public view returns (string memory) {
+        if (addressToRoles[addressToFind] == roles.Requestor) {
+            return "requestor";
+        }
+        if (addressToRoles[addressToFind] == roles.Trainer) {
+            return "trainer";
+        }
+        if (addressToRoles[addressToFind] == roles.Celestial) {
+            return "celestial";
+        }
+        if (addressToRoles[addressToFind] == roles.ModelValidator) {
+            return "validator";
+        }
+
+        return "no role";
     }
 
     function elevateToModelValidator() public {
@@ -196,18 +243,83 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
         super._beforeTokenTransfer(from, to, value);
     }
 
+    function requestorAddTopic(
+        string memory tokenURI,
+        string memory topicName
+    ) external {
+        if (addressToRoles[msg.sender] == roles.Requestor) {
+            ITrainingJobToken(trainingJobContract).publishTrainingJob(
+                tokenURI,
+                topicName,
+                msg.sender
+            );
+        }
+    }
+
+    function trainerAddTopic(
+        address requestorAddress,
+        string memory requestorTopic
+    ) external {
+        if (addressToRoles[msg.sender] == roles.Trainer) {
+            addressToTrainingJobInfo[requestorAddress][requestorTopic]
+                .trainers
+                .push(msg.sender);
+        }
+    }
+
+    function checkIfTopicExistsForRequestor(
+        address nodeAddress,
+        string memory topicName
+    ) public view returns (bool) {
+        return
+            bytes(
+                addressToTrainingJobInfo[nodeAddress][topicName].trainingJobCid
+            ).length > 0;
+    }
+
+    function getTrainersByAddressAndTopic(
+        address requestorAddress,
+        string memory topicName,
+        int256 skip
+    ) external view returns (string memory) {
+        string memory trainerList = "";
+        TrainingJobInfo storage trainingInfo = addressToTrainingJobInfo[
+            requestorAddress
+        ][topicName];
+        int256 minIndex = int256(trainingInfo.trainers.length) < skip + 10
+            ? int256(trainingInfo.trainers.length)
+            : skip + 10;
+
+        for (int256 i = skip; i < int256(minIndex); i++) {
+            if (trainingInfo.trainers[uint256(i)] == address(0)) {
+                continue;
+            }
+
+            trainerList = string.concat(
+                trainerList,
+                Strings.toHexString(
+                    uint256(uint160(trainingInfo.trainers[uint256(i)])),
+                    20
+                )
+            );
+
+            trainerList = string.concat(trainerList, "\n");
+        }
+
+        return trainerList;
+    }
+
     function addTopicForRequestor(
         string memory topicName,
         string memory jobCid,
-        address requestorAddress,
-        uint maxTrainerCount
-    ) external onlyTrainingJobTokenContract {
+        address requestorAddress
+    ) external onlyTrainingJobTokenContract hasPeerNodeConfigured {
         require(
             addressToRoles[requestorAddress] == roles.Requestor,
             "You must change your node's role to requestor before calling this method"
         );
 
-        address[] memory emptyAddressArray = new address[](maxTrainerCount);
+        address[] memory emptyAddressArray = new address[](0);
 
         TrainingJobInfo memory trainingInfo = TrainingJobInfo(
             jobCid,
@@ -245,6 +357,28 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
         return addressList;
     }
 
+    function getTopicsByRequestorAddress(
+        address requestorAddress,
+        int256 skip
+    ) public view returns (string memory) {
+        string memory topicList = "";
+        int256 minIndex = int256(addressToTopics[requestorAddress].length) <
+            skip + 10
+            ? int256(addressToTopics[requestorAddress].length)
+            : skip + 10;
+
+        for (int256 i = skip; i < int256(minIndex); i++) {
+            topicList = string.concat(
+                topicList,
+                addressToTopics[requestorAddress][uint256(i)]
+            );
+
+            topicList = string.concat(topicList, "\n");
+        }
+
+        return topicList;
+    }
+
     function updateNetworkParticipants(
         address participant,
         roles role
@@ -253,6 +387,11 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
             if (!requestorDuplicationChecker[participant]) {
                 networkRequestors.push(participant);
                 requestorDuplicationChecker[participant] = true;
+            }
+        } else if (role == roles.Trainer) {
+            if (!trainerDuplicationChecker[participant]) {
+                networkTrainers.push(participant);
+                trainerDuplicationChecker[participant] = true;
             }
         }
     }
@@ -270,6 +409,14 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
             payable(msg.sender) == owner,
             "Only the owner can call this function"
         );
+        _;
+    }
+
+    modifier hasPeerNodeConfigured() {
+        // require(
+        //     bytes(addressToNodeId[msg.sender]).length > 0,
+        //     "You must have a node id set for other nodes to be able to communicate with you"
+        // );
         _;
     }
 

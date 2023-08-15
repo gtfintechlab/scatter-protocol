@@ -71,10 +71,6 @@ const (
 )
 
 const (
-	UNIVERSAL_COSMOS = "Universal Cosmos"
-)
-
-const (
 	PEER_REQUESTOR = "requestor"
 	PEER_TRAINER   = "trainer"
 )
@@ -93,13 +89,9 @@ type Message struct {
 	Payload     map[string]interface{}
 }
 
-type InformationBox struct {
-	CosmosTopics            *map[string]interface{}
-	InformationBoxMutexLock *sync.Mutex
-}
-
 type PeerNode struct {
 	PeerType             string                    // Type of Peer (requestor or trainer)
+	BlockchainAddress    *string                   // Address of the wallet of this node
 	NodeId               peer.ID                   // ID of Node
 	Start                func(*PeerNode, bool)     // Start Function for node
 	DataStore            *sql.DB                   // DataStore to store information
@@ -109,7 +101,6 @@ type PeerNode struct {
 	DistributedHashTable *dht.IpfsDHT              // Distributed hash table for peer discovery
 	PubSubService        *pubsub.PubSub            // PubSub Service for the node
 	PubSubTopics         *map[string]*pubsub.Topic // PubSub Topics for topics we have subscribed to
-	InformationBox       *InformationBox           // Network Information
 }
 
 type BootstrapNode struct {
@@ -140,9 +131,9 @@ type TrainingInfoFromRequestor struct {
 }
 
 type AddTopicRequestBody struct {
-	Topic       string  `json:"topic"`
-	RequestorId *string `json:"requestorId,omitempty"`
-	Path        *string `json:"path,omitempty"`
+	Topic            string  `json:"topic"`
+	RequestorAddress *string `json:"requestorAddress,omitempty"`
+	Path             *string `json:"path,omitempty"`
 }
 
 type PublishTopicRequestBody struct {
@@ -224,4 +215,11 @@ type SimulationNodeConfig struct {
 	Node  SimulationNode
 	Type  string
 	State map[string]interface{}
+}
+
+type TopicInformation struct {
+	NodeAddress      string
+	NodeType         string
+	TopicName        string
+	TrainingTokenCID string
 }

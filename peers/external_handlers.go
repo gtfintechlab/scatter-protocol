@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
-	"github.com/gtfintechlab/scatter-protocol/cosmos"
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -28,17 +28,17 @@ func switchPeerNodeRole(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
 
-		switch nodeType := node.PeerType; nodeType {
+		switch nodeType := utils.GetRoleByAddress(*node.BlockchainAddress); nodeType {
 		case utils.PEER_REQUESTOR:
-			node.PeerType = utils.PEER_TRAINER
+			utils.ChangeRoleToTrainer()
 
 		case utils.PEER_TRAINER:
-			node.PeerType = utils.PEER_REQUESTOR
+			utils.ChangeRoleToRequestor()
 		}
 
 		networking.SendJson(response, map[string]interface{}{
 			"success": true,
-			"newRole": node.PeerType,
+			"newRole": utils.GetRoleByAddress(*node.BlockchainAddress),
 		})
 	}
 }
@@ -47,42 +47,28 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.PostValidator(request, response)
 
-		switch nodeType := node.PeerType; nodeType {
+		switch nodeType := utils.GetRoleByAddress(*node.BlockchainAddress); nodeType {
 		case utils.PEER_REQUESTOR:
 			var requestBody utils.AddTopicRequestBody
 			json.NewDecoder(request.Body).Decode(&requestBody)
 
-			if checkIfTopicExistsForNode(node, requestBody.Topic) {
+			if utils.CheckIfTopicExistsForRequestor(*node.BlockchainAddress, requestBody.Topic) {
 				networking.SendJson(response, map[string]interface{}{
 					"success": false,
 					"Error":   "Topic already exists for node",
 				})
 				return
 			}
-			var cs *utils.Cosmos
-			addTopicFromInfo(node, node.NodeId.String(), requestBody.Topic, node.PeerType, nil)
-			cs = cosmos.CreateCosmos(node, context.Background(),
-				fmt.Sprintf("%s:%s", node.NodeId.String(), requestBody.Topic))
 
-			go func() {
-				for {
-					message, _ := cs.Subscription.Next(context.Background())
-					HandleCosmosMessage(message, node)
-				}
-			}()
-			zippedFileBytes, _ := networking.ZipFolder("training/requestor")
-			zippedJobPath := fmt.Sprintf("training/requestor/%s_%s.zip", node.NodeId.String(), requestBody.Topic)
+			zippedFileBytes, _ := networking.ZipFolder(*requestBody.Path)
+			zippedJobPath := fmt.Sprintf("%s/%s_%s.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
 			networking.WriteBytesToFile(zippedJobPath, zippedFileBytes.Bytes())
 
-			topicCid, _ := utils.PublishTrainingJob(zippedJobPath, requestBody.Topic)
-			cosmos.AddTopicToUniversalCosmos(node, requestBody.Topic, &utils.PublishTrainingJobPayload{
-				TopicCid: topicCid,
-			})
+			topicCid, _ := utils.AddTopicForRequestor(zippedJobPath, requestBody.Topic)
 
 			networking.SendJson(response, map[string]interface{}{
-				"success":    true,
-				"cosmosId":   cs.CosmosId,
-				"cosmosName": cs.CosmosName,
+				"success":  true,
+				"topicCid": topicCid,
 			})
 		case utils.PEER_TRAINER:
 			var requestBody utils.AddTopicRequestBody
@@ -94,43 +80,86 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 					"Trainer nodes must specify a path to the data of the topic they want to subscribe to")
 				return
 			}
+			utils.AddTopicForTrainer(*requestBody.RequestorAddress, requestBody.Topic)
+			addTopicFromInfo(
+				node,
+				*requestBody.RequestorAddress,
+				requestBody.Topic,
+				utils.GetRoleByAddress(*node.BlockchainAddress),
+				requestBody.Path,
+			)
 
-			addTopicFromInfo(node, node.NodeId.String(), requestBody.Topic, node.PeerType, requestBody.Path)
-			cosmos.JoinCosmos(context.Background(), node,
-				fmt.Sprintf("%s:%s", *requestBody.RequestorId, requestBody.Topic))
+			networking.SendJson(response, map[string]interface{}{
+				"success":            true,
+				"requestor_address":  *requestBody.RequestorAddress,
+				"topic":              requestBody.Topic,
+				"training_data_path": requestBody.Path,
+			})
 		}
 	}
 }
 
+// An endpoint to get one's own topics on the blockchain
 func getOwnTopics(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
 		networking.SendJson(response, map[string]interface{}{
 			"success": true,
-			"topics":  getTopicsByNodeId(node, node.NodeId.String()),
+			"topics":  utils.GetAllTopicsByAddress(*node.BlockchainAddress),
 		})
 	}
 }
 
-func getCosmosTopics(node *utils.PeerNode) http.HandlerFunc {
+// An endpoint to get all published topics on the blockchain
+func getPublishedTopics(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
-		cosmos.GetTopicsFromUniversalCosmos(node)
-		node.InformationBox.InformationBoxMutexLock.Lock()
-		defer node.InformationBox.InformationBoxMutexLock.Unlock()
+
+		addressSkipCount := request.URL.Query().Get("skip")
+		var publishedTopics []utils.TopicInformation
+		var participants []string
+
+		if addressSkipCount != "" {
+			parsedSkipCount, _ := strconv.Atoi(addressSkipCount)
+			participants = utils.GetProtocolRequestors(uint64(parsedSkipCount))
+		} else {
+			participants = utils.GetAllProtocolRequestors()
+		}
+
+		for _, participant := range participants {
+			topics := utils.GetAllTopicsByAddress(participant)
+
+			for _, topic := range topics {
+				publishedTopics = append(publishedTopics, utils.TopicInformation{
+					NodeAddress:      participant,
+					NodeType:         utils.GetRoleByAddress(participant),
+					TopicName:        topic,
+					TrainingTokenCID: utils.GetCidFromAddressAndTopic(participant, topic),
+				})
+			}
+		}
+
 		networking.SendJson(response, map[string]interface{}{
 			"success": true,
-			"topics":  *(node.InformationBox.CosmosTopics),
+			"topics":  publishedTopics,
 		})
 	}
 }
 
+// An endpoint to get trainers for your own topics on the blockchain
 func getTopicTrainers(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
+		topics := utils.GetAllTopicsByAddress(*node.BlockchainAddress)
+		topicTrainerMap := map[string][]string{}
+
+		for _, topic := range topics {
+			trainers := utils.GetAllTrainersByAddressAndTopic(*node.BlockchainAddress, topic)
+			topicTrainerMap[topic] = trainers
+		}
 		networking.SendJson(response, map[string]interface{}{
 			"success":  true,
-			"trainers": getTrainersForAllTopics(node),
+			"trainers": topicTrainerMap,
 		})
 	}
 }
@@ -141,7 +170,7 @@ func initializeTraining(node *utils.PeerNode) http.HandlerFunc {
 
 		var requestBody utils.InitializeTrainingRequestBody
 		json.NewDecoder(request.Body).Decode(&requestBody)
-		switch nodeType := node.PeerType; nodeType {
+		switch nodeType := utils.GetRoleByAddress(*node.BlockchainAddress); nodeType {
 		case utils.PEER_REQUESTOR:
 			trainers := getTrainersByTopic(node, requestBody.Topic)
 			zippedFileBytes, _ := networking.ZipFolder("training/requestor")

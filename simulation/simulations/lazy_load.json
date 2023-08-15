@@ -1,0 +1,30 @@
+{
+    "nodes": [
+        {
+            "id": "bootstrap_node",
+            "type": "bootstrap",
+            "ipv4Address": "127.0.0.1",
+            "tcpPort": 7001 
+        },
+        {
+            "id": "requestor_node",
+            "type": "requestor",
+            "extAddress": ":5002",
+            "datastorePort": 8701,
+            "datastoreUsername": "postgres",
+            "datastorePassword": "postgres",
+            "useMdns": true
+        },
+        {
+            "id": "trainer_node",
+            "type": "trainer",
+            "extAddress": ":6001",
+            "datastorePort": 8702,
+            "datastoreUsername": "postgres",
+            "datastorePassword": "postgres",
+            "useMdns": true
+        }
+    ],
+
+    "steps": []
+}

@@ -15,8 +15,6 @@ import (
 	"time"
 
 	"github.com/gtfintechlab/scatter-protocol/bootstrap"
-	"github.com/gtfintechlab/scatter-protocol/cosmos"
-	celestialDatabase "github.com/gtfintechlab/scatter-protocol/cosmos/db"
 	"github.com/gtfintechlab/scatter-protocol/peers"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
 	"github.com/gtfintechlab/scatter-protocol/utils"
@@ -83,20 +81,6 @@ func initializeAllNodes(nodeList []utils.NodeConfig) map[string]utils.Simulation
 
 			go createdNode.Start(createdNode, *node.UseMdns)
 			simulationNode = utils.SimulationNode{PeerNode: createdNode}
-		case utils.NODE_CELESTIAL:
-			createdNode := cosmos.InitCelestialNode(
-				*node.DatastoreUsername,
-				*node.DatastorePassword,
-				*node.DatastorePort,
-			)
-			clearDatabase(createdNode.DataStore)
-			celestialDatabase.MigrateCelestialDB("up",
-				*node.DatastoreUsername,
-				*node.DatastorePassword,
-				*node.DatastorePort,
-			)
-			go createdNode.Start(createdNode, *node.UseMdns)
-			simulationNode = utils.SimulationNode{CelestialNode: createdNode}
 		}
 
 		nodeConfig[node.Id] = utils.SimulationNodeConfig{

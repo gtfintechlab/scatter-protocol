@@ -23,14 +23,6 @@
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
             "useMdns": true
-        },
-        {
-            "id": "celestial_node",
-            "type": "celestial",
-            "datastorePort": 5432,
-            "datastoreUsername": "postgres",
-            "datastorePassword": "postgres",
-            "useMdns": true
         }
     ],
 
