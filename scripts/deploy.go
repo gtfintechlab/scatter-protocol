@@ -14,7 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	evaluationtoken "github.com/gtfintechlab/scatter-protocol/protocol/evaluation"
-	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter"
+	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter-protocol"
+	scattertoken "github.com/gtfintechlab/scatter-protocol/protocol/scatter-token"
 	trainingtoken "github.com/gtfintechlab/scatter-protocol/protocol/training"
 	"github.com/gtfintechlab/scatter-protocol/utils"
 
@@ -22,7 +23,8 @@ import (
 )
 
 const (
-	SCATTER    = "scatter"
+	PROTOCOL   = "protocol"
+	TOKEN      = "token"
 	EVALUATION = "evaluation"
 	TRAINING   = "training"
 	ALL        = "all"
@@ -40,12 +42,14 @@ func main() {
 	flag.Parse()
 
 	switch tokenType {
-	case SCATTER:
+	case PROTOCOL:
 		deployScatterProtocol()
 	case EVALUATION:
 		deployEvaluationJobToken()
 	case TRAINING:
 		deployTrainingJobToken()
+	case TOKEN:
+		deployScatterToken()
 	case ALL:
 		deployAllContracts()
 	}
@@ -53,23 +57,31 @@ func main() {
 
 func deployAllContracts() {
 	auth := getTransactor()
-	trainingAddress, trainingTransaction, trainingInstance, err := trainingtoken.DeployTrainingtoken(auth, client)
 
+	trainingAddress, trainingTransaction, trainingInstance, err := trainingtoken.DeployTrainingtoken(auth, client)
 	if err != nil {
 		log.Fatal("Failed to deploy training token", err.Error())
 	}
 	time.Sleep(time.Second * 10)
-	evaluationAddress, evaluationTransaction, evaluationInstance, err := evaluationtoken.DeployEvaluationtoken(auth, client)
 
+	evaluationAddress, evaluationTransaction, evaluationInstance, err := evaluationtoken.DeployEvaluationtoken(auth, client)
 	if err != nil {
 		log.Fatal("Failed to deploy evaluation token", err.Error())
 	}
 	time.Sleep(time.Second * 10)
-	scatterProtocolAddress, scatterProtocolTransaction, scatterInstance, err := scatterprotocol.DeployScatterprotocol(
-		auth, client, big.NewInt(int64(100000000000)), big.NewInt(int64(100)),
-		common.HexToAddress(trainingAddress.Hash().Hex()),
-		common.HexToAddress(evaluationAddress.Hash().Hex()))
 
+	scatterTokenAddress, scatterTokenTransaction, scatterTokenInstance, err := scattertoken.DeployScattertoken(auth, client, big.NewInt(int64(100000000000)))
+	if err != nil {
+		log.Fatal("Failed to scatter token", err.Error())
+	}
+	time.Sleep(time.Second * 10)
+
+	scatterProtocolAddress, scatterProtocolTransaction, scatterInstance, err := scatterprotocol.DeployScatterprotocol(
+		auth, client,
+		common.HexToAddress(trainingAddress.Hash().Hex()),
+		common.HexToAddress(evaluationAddress.Hash().Hex()),
+		common.HexToAddress(scatterTokenAddress.Hash().Hex()),
+	)
 	if err != nil {
 		log.Fatal("Failed to deploy scatter protocol", err.Error())
 	}
@@ -77,21 +89,25 @@ func deployAllContracts() {
 
 	trainingInstance.SetScatterContractAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
 	evaluationInstance.SetScatterContractAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+	scatterTokenInstance.SetScatterProtocolAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
 	scatterInstance.InitRequestorNode(auth)
 
 	log.Println("Transaction Info:")
 	log.Printf("Training Token: %s\n", trainingTransaction.Hash())
 	log.Printf("Evaluation Token: %s\n", evaluationTransaction.Hash())
+	log.Printf("Scatter Token: %s\n", scatterTokenTransaction.Hash())
 	log.Printf("Scatter Protocol: %s\n", scatterProtocolTransaction.Hash())
 	log.Println("===============")
 
 	log.Println("Contract Info:")
 	log.Printf("Training Token: %s\n", trainingAddress.Hex())
 	log.Printf("Evaluation Token: %s\n", evaluationAddress.Hex())
+	log.Printf("Scatter Token: %s\n", scatterTokenAddress.Hex())
 	log.Printf("Scatter Protocol: %s\n", scatterProtocolAddress.Hex())
 
 	contractInfo := map[string]string{
 		"SCATTER_PROTOCOL_CONTRACT": scatterProtocolAddress.Hex(),
+		"SCATTER_TOKEN_CONTRACT":    scatterTokenAddress.Hex(),
 		"TRAINING_TOKEN_CONTRACT":   trainingAddress.Hex(),
 		"EVALUATION_TOKEN_CONTRACT": evaluationAddress.Hex(),
 	}
@@ -104,9 +120,24 @@ func deployScatterProtocol() {
 	auth := getTransactor()
 
 	address, transaction, _, err := scatterprotocol.DeployScatterprotocol(
-		auth, client, big.NewInt(int64(100000000000)), big.NewInt(int64(100)),
+		auth, client,
 		common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT),
-		common.HexToAddress(utils.EVALATION_TOKEN_CONTRACT))
+		common.HexToAddress(utils.EVALUATION_TOKEN_CONTRACT),
+		common.HexToAddress(utils.SCATTER_TOKEN_CONTRACT))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Contract Address: " + address.Hex())
+	log.Println("Transaction Hash: " + transaction.Hash().Hex())
+
+}
+
+func deployScatterToken() {
+	auth := getTransactor()
+
+	address, transaction, _, err := scattertoken.DeployScattertoken(
+		auth, client, big.NewInt(int64(100000000000)))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -5,14 +5,7 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-interface IScatterProtocol {
-    function addTopicForRequestor(
-        string memory topicName,
-        string memory jobCid,
-        address requestorAddress
-    ) external;
-}
+import "./IScatterProtocol.sol";
 
 contract TrainingJobToken is ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
@@ -44,7 +37,7 @@ contract TrainingJobToken is ERC721URIStorage, Ownable {
         _safeMint(recipient, newItemId);
         setTokenURI(newItemId, tokenURI);
 
-        IScatterProtocol(scatterContractAddress).addTopicForRequestor(
+        IScatterProtocol(scatterContractAddress).processTrainingJobToken(
             topicName,
             tokenURI,
             recipient

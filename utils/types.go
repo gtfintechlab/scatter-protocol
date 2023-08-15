@@ -32,6 +32,7 @@ var UTIL_RUN_IPFS_NODE = "ipfs"
 
 type Contracts struct {
 	ScatterProtocolContract string `json:"SCATTER_PROTOCOL_CONTRACT"`
+	ScatterTokenContract    string `json:"SCATTER_TOKEN_CONTRACT"`
 	TrainingTokenContract   string `json:"TRAINING_TOKEN_CONTRACT"`
 	EvaluationTokenContract string `json:"EVALUATION_TOKEN_CONTRACT"`
 }
@@ -46,9 +47,10 @@ func ReadContractInfo() Contracts {
 var CONTRACTS = ReadContractInfo()
 
 var (
-	SCATTER_PROTCOL_CONTRACT = CONTRACTS.ScatterProtocolContract
-	TRAINING_TOKEN_CONTRACT  = CONTRACTS.TrainingTokenContract
-	EVALATION_TOKEN_CONTRACT = CONTRACTS.EvaluationTokenContract
+	SCATTER_PROTOCOL_CONTRACT = CONTRACTS.ScatterProtocolContract
+	TRAINING_TOKEN_CONTRACT   = CONTRACTS.TrainingTokenContract
+	EVALUATION_TOKEN_CONTRACT = CONTRACTS.EvaluationTokenContract
+	SCATTER_TOKEN_CONTRACT    = CONTRACTS.ScatterTokenContract
 )
 
 var PROTOCOL_IDENTIFIER protocol.ID = "/scatter-protocol/1.0.0"

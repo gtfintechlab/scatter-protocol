@@ -11,11 +11,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	evaluationtoken "github.com/gtfintechlab/scatter-protocol/protocol/evaluation"
-	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter"
+	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter-protocol"
 	trainingtoken "github.com/gtfintechlab/scatter-protocol/protocol/training"
 	"github.com/gtfintechlab/scatter-protocol/utils"
 	"github.com/joho/godotenv"
@@ -24,9 +23,9 @@ import (
 var _ = godotenv.Load(".env")
 var ethereumClient, _ = ethclient.Dial(os.Getenv("ETHEREUM_NODE"))
 
-var scatterContractAddress common.Address = common.HexToAddress(utils.SCATTER_PROTCOL_CONTRACT)
+var scatterContractAddress common.Address = common.HexToAddress(utils.SCATTER_PROTOCOL_CONTRACT)
 var trainingContractAddress common.Address = common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT)
-var evaluationContractAddress common.Address = common.HexToAddress(utils.EVALATION_TOKEN_CONTRACT)
+var evaluationContractAddress common.Address = common.HexToAddress(utils.EVALUATION_TOKEN_CONTRACT)
 
 var scatterProtocolContract, _ = scatterprotocol.NewScatterprotocol(scatterContractAddress, ethereumClient)
 var trainingTokenContract, _ = trainingtoken.NewTrainingtoken(trainingContractAddress, ethereumClient)
@@ -43,28 +42,6 @@ func InitRequestorNode(node *utils.PeerNode) {
 func InitTrainerNode(node *utils.PeerNode) {
 	auth := getTransactor(node)
 	scatterProtocolContract.InitTrainerNode(auth)
-}
-
-func AddScatterTokenStake(node *utils.PeerNode, stakeAmount *big.Int) *types.Transaction {
-	auth := getTransactor(node)
-	transaction, err := scatterProtocolContract.AddStake(auth, stakeAmount)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	return transaction
-}
-
-func GetScatterTokenStake(node *utils.PeerNode) *big.Int {
-	auth := getTransactor(node)
-	stake, err := scatterProtocolContract.GetOwnStake(&bind.CallOpts{
-		From: auth.From,
-	})
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	return stake
 }
 
 func GetProtocolRequestors(node *utils.PeerNode, skipAmount uint64) []string {

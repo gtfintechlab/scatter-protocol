@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter"
+	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter-protocol"
 	"github.com/gtfintechlab/scatter-protocol/utils"
 	"golang.org/x/exp/slices"
 )
@@ -18,7 +18,7 @@ func TrainingEventListener(node *utils.PeerNode) {
 	contractABI, _ := abi.JSON(strings.NewReader(string(scatterprotocol.ScatterprotocolABI)))
 
 	query := ethereum.FilterQuery{
-		Addresses: []common.Address{common.HexToAddress(utils.SCATTER_PROTCOL_CONTRACT)},
+		Addresses: []common.Address{common.HexToAddress(utils.SCATTER_PROTOCOL_CONTRACT)},
 		Topics:    [][]common.Hash{{contractABI.Events["TrainingInitialized"].ID}},
 	}
 

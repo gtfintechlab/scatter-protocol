@@ -6,27 +6,11 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-
-interface ITrainingJobToken {
-    function publishTrainingJob(
-        string memory tokenURI,
-        string memory topicName,
-        address recipient
-    ) external;
-}
+import "./ITrainingJobToken.sol";
+import "./Shared.sol";
 
 // Model Validator: 500,000 Scatter Token Staked
-// Cosmos Validator: 100,000 Scatter Token Staked
-contract ScatterProtocol is ERC20Capped, ERC20Burnable {
-    enum roles {
-        NoRole,
-        Requestor,
-        Trainer,
-        Celestial,
-        ModelValidator,
-        CosmosValidator
-    }
-
+contract ScatterProtocol {
     struct TrainingJobInfo {
         string trainingJobCid;
         address[] trainers;
@@ -35,14 +19,11 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
     address payable public owner;
     address public trainingJobContract;
     address public evaluationJobContract;
-
-    uint256 public blockReward;
-    uint256 public requiredModelValidatorStake;
-    uint256 public requiredCosmosValidatorStake;
+    address public scatterTokenContract;
 
     mapping(address => uint256) internal addressToStake;
     mapping(address => uint256) internal addressToStakeTime;
-    mapping(address => roles) internal addressToRoles;
+    mapping(address => roles) public addressToRoles;
 
     /*
         Example addressToTrainingJobInfo Mapping:
@@ -72,61 +53,118 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
     // Information for P2P communication
     mapping(address => string) public addressToNodeId;
 
+    // An event that is fire every time a requestor initializes the training procedure
+    event TrainingInitialized(address requestor, string topicName);
+
+    /**
+     *  @dev Deploys the Protocol with associated contracts
+     *  @param trainingTokenContractAddress Contract address for the training job token contract
+     *  @param evaluationTokenContractAddress Contract address for the evaluation job token contract
+     *  @param scatterTokenContractAddress Contract address for the scatter token contract
+     */
     constructor(
-        uint256 cap,
-        uint256 reward,
-        address trainingTokenContract,
-        address evaluationTokenContract
-    ) ERC20("ScatterToken", "ST") ERC20Capped(cap * (10 ** decimals())) {
+        address trainingTokenContractAddress,
+        address evaluationTokenContractAddress,
+        address scatterTokenContractAddress
+    ) {
         owner = payable(msg.sender);
-        _mint(owner, (cap / 100) * 70 * (10 ** decimals()));
-        blockReward = reward * (10 ** decimals());
-
-        requiredModelValidatorStake = 500000;
-        requiredCosmosValidatorStake = 100000;
-
-        trainingJobContract = trainingTokenContract;
-        evaluationJobContract = evaluationTokenContract;
+        trainingJobContract = trainingTokenContractAddress;
+        evaluationJobContract = evaluationTokenContractAddress;
+        scatterTokenContract = scatterTokenContractAddress;
     }
 
+    /**
+     *  @dev maps the address to a p2p node id
+     *  @param nodeId Node id to set the value to
+     */
     function setNodeId(string memory nodeId) external {
         addressToNodeId[msg.sender] = nodeId;
     }
 
+    /**
+     *  @dev Sets the training job contract address
+     *  @param newAddress The new address value of the training job contract
+     */
     function setTrainingJobContractAddress(
         address newAddress
     ) external onlyOwner {
         trainingJobContract = newAddress;
     }
 
+    /**
+     *  @dev Sets the evaluation job contract address
+     *  @param newAddress The new address value of the evaluation job contract
+     */
     function setEvaluationJobContractAddress(
         address newAddress
     ) external onlyOwner {
         evaluationJobContract = newAddress;
     }
 
+    /**
+     *  @dev Sets the scatter token contract address
+     *  @param newAddress The new address value of the scatter token contract
+     */
+    function setScatterTokenContractAddress(
+        address newAddress
+    ) external onlyOwner {
+        scatterTokenContract = newAddress;
+    }
+
+    /**
+     *  @dev Set the current user role to be a requestor
+     */
     function initRequestorNode() public {
         addressToRoles[msg.sender] = roles.Requestor;
         updateNetworkParticipants(msg.sender, roles.Requestor);
     }
 
+    /**
+     *  @dev Set the current user role to be a trainer
+     */
     function initTrainerNode() public {
         addressToRoles[msg.sender] = roles.Trainer;
         updateNetworkParticipants(msg.sender, roles.Trainer);
     }
 
-    function initCelestialNode() public {
-        addressToRoles[msg.sender] = roles.Celestial;
-    }
-
-    event TrainingInitialized(address requestor, string topicName);
-
+    /**
+     *  @dev Start the training procedure for a specific topic
+     *  @param topicName The topic we want to train the model for
+     */
     function startTraining(string memory topicName) public {
         if (checkIfTopicExistsForRequestor(msg.sender, topicName)) {
             emit TrainingInitialized(msg.sender, topicName);
         }
     }
 
+    /**
+     *  @dev Set a role for a specific address (only used by scatter token contract)
+     *  @param addressToUpdate The address we want to set the role for
+     *  @param newRole The new role we want to set this address to
+     */
+    function setRole(
+        address addressToUpdate,
+        roles newRole
+    ) external onlyScatterTokenContract {
+        addressToRoles[addressToUpdate] = newRole;
+    }
+
+    /**
+     *  @dev Get a role for a specific address (only used by scatter token contract)
+     *  @param addressToView The address we want to view
+     *  @return role The role of that specific address
+     */
+    function getEnumRoleByAddress(
+        address addressToView
+    ) external view onlyScatterTokenContract returns (roles) {
+        return addressToRoles[addressToView];
+    }
+
+    /**
+     *  @dev Get the role for a specific address
+     *  @param addressToFind The address we want to get the role for
+     *  @return role The role of the specified address
+     */
     function getRoleByAddress(
         address addressToFind
     ) public view returns (string memory) {
@@ -136,9 +174,6 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
         if (addressToRoles[addressToFind] == roles.Trainer) {
             return "trainer";
         }
-        if (addressToRoles[addressToFind] == roles.Celestial) {
-            return "celestial";
-        }
         if (addressToRoles[addressToFind] == roles.ModelValidator) {
             return "validator";
         }
@@ -146,103 +181,11 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
         return "no role";
     }
 
-    function elevateToModelValidator() public {
-        require(
-            addressToStake[msg.sender] >= requiredModelValidatorStake,
-            "To become a model validator, you must have 500,000 Scatter Token staked"
-        );
-
-        addressToRoles[msg.sender] = roles.ModelValidator;
-    }
-
-    function elevateToCosmosValidator() public {
-        require(
-            addressToStake[msg.sender] >= requiredCosmosValidatorStake,
-            "To become a cosmos validator, you must have 100,000 Scatter Token staked"
-        );
-
-        addressToRoles[msg.sender] = roles.CosmosValidator;
-    }
-
-    function addStake(uint256 amount) public {
-        require(amount > 0, "Stake amount must be positive");
-        _burn(msg.sender, amount);
-        addressToStake[msg.sender] += amount;
-        // Anytime more stake is added, stake timer increases
-        addressToStakeTime[msg.sender] = block.timestamp + 30 days;
-    }
-
-    function removeStake(uint256 amount) public {
-        require(
-            addressToStakeTime[msg.sender] >= block.timestamp,
-            "You must wait 30 days before being able to unstake Scatter Token"
-        );
-        require(
-            amount <= addressToStake[msg.sender],
-            "Amount must be less than staked amount"
-        );
-        require(amount > 0, "Stake amount must be positive");
-
-        _mint(msg.sender, amount);
-        addressToStake[msg.sender] -= amount;
-
-        if (
-            addressToRoles[msg.sender] == roles.ModelValidator &&
-            addressToStake[msg.sender] < requiredModelValidatorStake
-        ) {
-            addressToRoles[msg.sender] = roles.NoRole;
-        }
-
-        if (
-            addressToRoles[msg.sender] == roles.CosmosValidator &&
-            addressToStake[msg.sender] < requiredCosmosValidatorStake
-        ) {
-            addressToRoles[msg.sender] = roles.NoRole;
-        }
-    }
-
-    function getOwnStake() public view returns (uint256) {
-        return addressToStake[msg.sender];
-    }
-
-    function getAccountStake(address account) public view returns (uint256) {
-        return addressToStake[account];
-    }
-
-    function _mint(
-        address account,
-        uint256 amount
-    ) internal virtual override(ERC20Capped, ERC20) {
-        require(
-            ERC20.totalSupply() + amount <= cap(),
-            "ERC20Capped: cap exceeded"
-        );
-        super._mint(account, amount);
-    }
-
-    function setBlockReward(uint256 reward) public onlyOwner {
-        blockReward = reward * (10 ** decimals());
-    }
-
-    function _mintMinerReward() internal {
-        _mint(block.coinbase, blockReward);
-    }
-
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 value
-    ) internal virtual override {
-        if (
-            from != address(0) &&
-            to != block.coinbase &&
-            block.coinbase != address(0)
-        ) {
-            _mintMinerReward();
-        }
-        super._beforeTokenTransfer(from, to, value);
-    }
-
+    /**
+     *  @dev Create a training job NFT for a specific topic
+     *  @param tokenURI The Content ID Hash for the training job zip file
+     *  @param topicName The name of the topic
+     */
     function requestorAddTopic(
         string memory tokenURI,
         string memory topicName
@@ -256,6 +199,11 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
         }
     }
 
+    /**
+     *  @dev Add a trainer to a specific topic
+     *  @param requestorAddress The address of the node that requested the topic
+     *  @param requestorTopic The name of the topic
+     */
     function trainerAddTopic(
         address requestorAddress,
         string memory requestorTopic
@@ -267,6 +215,11 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
         }
     }
 
+    /**
+     *  @dev Check if a requestor has a specific topic
+     *  @param nodeAddress The address of the node
+     *  @param topicName The name of the topic
+     */
     function checkIfTopicExistsForRequestor(
         address nodeAddress,
         string memory topicName
@@ -309,11 +262,11 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
         return trainerList;
     }
 
-    function addTopicForRequestor(
+    function processTrainingJobToken(
         string memory topicName,
         string memory jobCid,
         address requestorAddress
-    ) external onlyTrainingJobTokenContract hasPeerNodeConfigured {
+    ) external onlyTrainingJobTokenContract {
         require(
             addressToRoles[requestorAddress] == roles.Requestor,
             "You must change your node's role to requestor before calling this method"
@@ -400,6 +353,14 @@ contract ScatterProtocol is ERC20Capped, ERC20Burnable {
         require(
             msg.sender == trainingJobContract,
             "This method can only be called by the training job token contract"
+        );
+        _;
+    }
+
+    modifier onlyScatterTokenContract() {
+        require(
+            msg.sender == scatterTokenContract,
+            "This method can only be called by the scatter token contract"
         );
         _;
     }
