@@ -1,14 +1,13 @@
 package utils
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"net/http"
 	"os"
 	"sync"
 
-	"github.com/google/uuid"
+	"github.com/ethereum/go-ethereum/common"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
@@ -90,17 +89,19 @@ type Message struct {
 }
 
 type PeerNode struct {
-	PeerType             string                    // Type of Peer (requestor or trainer)
-	BlockchainAddress    *string                   // Address of the wallet of this node
-	NodeId               peer.ID                   // ID of Node
-	Start                func(*PeerNode, bool)     // Start Function for node
-	DataStore            *sql.DB                   // DataStore to store information
-	DatastoreLock        *sync.Mutex               // Mutex Lock for datastore
-	ExternalServer       *http.Server              // Http Server to communicate with node
-	PeerToPeerServer     *host.Host                // Peer2Peer server to communicate with network
-	DistributedHashTable *dht.IpfsDHT              // Distributed hash table for peer discovery
-	PubSubService        *pubsub.PubSub            // PubSub Service for the node
-	PubSubTopics         *map[string]*pubsub.Topic // PubSub Topics for topics we have subscribed to
+	PeerType             string                      // Type of Peer (requestor or trainer)
+	BlockchainAddress    *string                     // Address of the wallet of this node
+	PrivateKey           *string                     // Private key of the wallet associated with this account
+	NodeId               peer.ID                     // ID of Node
+	Start                func(*PeerNode, bool)       // Start Function for node
+	DataStore            *sql.DB                     // DataStore to store information
+	DatastoreLock        *sync.Mutex                 // Mutex Lock for datastore
+	ExternalServer       *http.Server                // Http Server to communicate with node
+	PeerToPeerServer     *host.Host                  // Peer2Peer server to communicate with network
+	DistributedHashTable *dht.IpfsDHT                // Distributed hash table for peer discovery
+	PubSubService        *pubsub.PubSub              // PubSub Service for the node
+	PubSubTopics         *map[string]*pubsub.Topic   // PubSub Topics for topics we have subscribed to
+	TrainingLock         *map[string]map[string]bool // A training lock to ensure subsequent fired emits don't cause extra training
 }
 
 type BootstrapNode struct {
@@ -148,34 +149,6 @@ type DiscoveryNotifee struct {
 	Host host.Host
 }
 
-type Cosmos struct {
-	Context            context.Context
-	CosmosName         string
-	Topic              *pubsub.Topic
-	CosmosId           uuid.UUID
-	Creator            *PeerNode
-	Subscription       *pubsub.Subscription
-	TrainingInProgress bool
-}
-
-type UniversalCosmos struct {
-	Context            context.Context
-	CosmosName         string
-	Topic              *pubsub.Topic
-	CosmosId           uuid.UUID
-	Creator            *CelestialNode
-	Subscription       *pubsub.Subscription
-	TrainerPeerCount   int
-	TrainingInProgress bool
-}
-
-type CosmosMessage struct {
-	Type     string                     `json:"Type"`
-	Message  string                     `json:"Message"`
-	Payload  *PublishTrainingJobPayload `json:"Payload"`
-	SenderID peer.ID                    `json:"SenderID"`
-}
-
 type PublishTrainingJobPayload struct {
 	TopicCid string `json:"topicCid"`
 }
@@ -203,6 +176,8 @@ type NodeConfig struct {
 	DatastoreUsername *string `json:"datastoreUsername"`
 	DatastorePassword *string `json:"datastorePassword"`
 	UseMdns           *bool   `json:"useMdns"`
+	BlockchainAddress *string `json:"blockchainAddress"`
+	PrivateKey        *string `json:"privateKey"`
 }
 
 type SimulationNode struct {
@@ -222,4 +197,9 @@ type TopicInformation struct {
 	NodeType         string
 	TopicName        string
 	TrainingTokenCID string
+}
+
+type TrainingInitializedEvent struct {
+	Requestor common.Address
+	TopicName string
 }

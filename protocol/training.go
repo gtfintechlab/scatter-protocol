@@ -1,4 +1,4 @@
-package peers
+package protocol
 
 import (
 	"context"
@@ -9,6 +9,8 @@ import (
 	"strings"
 
 	"github.com/docker/docker/client"
+	"github.com/gtfintechlab/scatter-protocol/networking"
+	"github.com/gtfintechlab/scatter-protocol/utils"
 )
 
 func dockerSetup() {
@@ -26,6 +28,7 @@ func dockerSetup() {
 		return
 	}
 }
+
 func buildImage(requestorId string, topicName string) {
 	err := exec.Command(
 		"docker", "build",
@@ -58,9 +61,8 @@ func runContainer(requestorId string, topicName string) {
 	}
 }
 
-func RunTrainingProcedure(requestorId string, topicName string) {
-	dockerSetup()
-	buildImage(requestorId, topicName)
-	runContainer(requestorId, topicName)
-
+func downloadTrainingJob(ipfsCid string, requestorId string) {
+	filePath := fmt.Sprintf("training/trainer/jobs/%s/%s/", requestorId, ipfsCid)
+	fileBytes, _ := utils.GetFileBytesFromIPFS(ipfsCid, filePath)
+	networking.UnzipFolder(fileBytes, filePath)
 }

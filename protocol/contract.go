@@ -1,4 +1,4 @@
-package utils
+package protocol
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/big"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -16,22 +17,36 @@ import (
 	evaluationtoken "github.com/gtfintechlab/scatter-protocol/protocol/evaluation"
 	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter"
 	trainingtoken "github.com/gtfintechlab/scatter-protocol/protocol/training"
+	"github.com/gtfintechlab/scatter-protocol/utils"
 	"github.com/joho/godotenv"
 )
 
 var _ = godotenv.Load(".env")
-var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_NODE"))
+var ethereumClient, _ = ethclient.Dial(os.Getenv("ETHEREUM_NODE"))
 
-var scatterContractAddress common.Address = common.HexToAddress(SCATTER_PROTCOL_CONTRACT)
-var trainingContractAddress common.Address = common.HexToAddress(TRAINING_TOKEN_CONTRACT)
-var evaluationContractAddress common.Address = common.HexToAddress(EVALATION_TOKEN_CONTRACT)
+var scatterContractAddress common.Address = common.HexToAddress(utils.SCATTER_PROTCOL_CONTRACT)
+var trainingContractAddress common.Address = common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT)
+var evaluationContractAddress common.Address = common.HexToAddress(utils.EVALATION_TOKEN_CONTRACT)
 
-var scatterProtocolContract, _ = scatterprotocol.NewScatterprotocol(scatterContractAddress, client)
-var trainingTokenContract, _ = trainingtoken.NewTrainingtoken(trainingContractAddress, client)
-var evaluationTokenContract, _ = evaluationtoken.NewEvaluationtoken(evaluationContractAddress, client)
+var scatterProtocolContract, _ = scatterprotocol.NewScatterprotocol(scatterContractAddress, ethereumClient)
+var trainingTokenContract, _ = trainingtoken.NewTrainingtoken(trainingContractAddress, ethereumClient)
+var evaluationTokenContract, _ = evaluationtoken.NewEvaluationtoken(evaluationContractAddress, ethereumClient)
 
-func AddScatterTokenStake(stakeAmount *big.Int) *types.Transaction {
-	auth := getTransactor()
+var CHAIN_ID, _ = strconv.Atoi(os.Getenv("CHAIN_ID"))
+var CHAIN = big.NewInt(int64(CHAIN_ID))
+
+func InitRequestorNode(node *utils.PeerNode) {
+	auth := getTransactor(node)
+	scatterProtocolContract.InitRequestorNode(auth)
+}
+
+func InitTrainerNode(node *utils.PeerNode) {
+	auth := getTransactor(node)
+	scatterProtocolContract.InitTrainerNode(auth)
+}
+
+func AddScatterTokenStake(node *utils.PeerNode, stakeAmount *big.Int) *types.Transaction {
+	auth := getTransactor(node)
 	transaction, err := scatterProtocolContract.AddStake(auth, stakeAmount)
 
 	if err != nil {
@@ -40,8 +55,8 @@ func AddScatterTokenStake(stakeAmount *big.Int) *types.Transaction {
 	return transaction
 }
 
-func GetScatterTokenStake() *big.Int {
-	auth := getTransactor()
+func GetScatterTokenStake(node *utils.PeerNode) *big.Int {
+	auth := getTransactor(node)
 	stake, err := scatterProtocolContract.GetOwnStake(&bind.CallOpts{
 		From: auth.From,
 	})
@@ -52,65 +67,65 @@ func GetScatterTokenStake() *big.Int {
 	return stake
 }
 
-func GetProtocolRequestors(skipAmount uint64) []string {
-	auth := getTransactor()
+func GetProtocolRequestors(node *utils.PeerNode, skipAmount uint64) []string {
+	auth := getTransactor(node)
 	skip := big.NewInt(int64(skipAmount))
 	addresses, _ := scatterProtocolContract.GetRequestorAddresses(&bind.CallOpts{
 		From: auth.From,
 	}, skip)
 
-	return deleteEmptyElements(strings.Split(strings.Trim(addresses, " "), "\n"))
+	return utils.DeleteEmptyElements(strings.Split(strings.Trim(addresses, " "), "\n"))
 }
 
-func GetAllProtocolRequestors() []string {
+func GetAllProtocolRequestors(node *utils.PeerNode) []string {
 	requestorList := []string{}
 	skipAmount := 0
-	currentRequestorList := GetProtocolRequestors(uint64(skipAmount))
+	currentRequestorList := GetProtocolRequestors(node, uint64(skipAmount))
 
 	for len(currentRequestorList) != 0 {
 		requestorList = append(requestorList, currentRequestorList...)
 		skipAmount += 10
-		currentRequestorList = GetProtocolRequestors(uint64(skipAmount))
+		currentRequestorList = GetProtocolRequestors(node, uint64(skipAmount))
 
 	}
 
 	return requestorList
 }
 
-func GetTopicsByAddress(address string, skipAmount uint64) []string {
-	auth := getTransactor()
+func GetTopicsByAddress(node *utils.PeerNode, address string, skipAmount uint64) []string {
+	auth := getTransactor(node)
 	skip := big.NewInt(int64(skipAmount))
 	topics, _ := scatterProtocolContract.GetTopicsByRequestorAddress(&bind.CallOpts{
 		From: auth.From,
 	}, common.HexToAddress(address), skip)
 
-	return deleteEmptyElements(strings.Split(strings.Trim(topics, " "), "\n"))
+	return utils.DeleteEmptyElements(strings.Split(strings.Trim(topics, " "), "\n"))
 }
 
-func GetTrainersByAddressAndTopic(address string, topicName string, skipAmount uint64) []string {
-	auth := getTransactor()
+func GetTrainersByAddressAndTopic(node *utils.PeerNode, address string, topicName string, skipAmount uint64) []string {
+	auth := getTransactor(node)
 	skip := big.NewInt(int64(skipAmount))
 	trainers, _ := scatterProtocolContract.GetTrainersByAddressAndTopic(&bind.CallOpts{
 		From: auth.From,
 	}, common.HexToAddress(address), topicName, skip)
-	return deleteEmptyElements(strings.Split(strings.Trim(trainers, " "), "\n"))
+	return utils.DeleteEmptyElements(strings.Split(strings.Trim(trainers, " "), "\n"))
 }
 
-func GetAllTrainersByAddressAndTopic(address string, topicName string) []string {
+func GetAllTrainersByAddressAndTopic(node *utils.PeerNode, address string, topicName string) []string {
 	trainerList := []string{}
 	skipAmount := 0
-	currentTrainerList := GetTrainersByAddressAndTopic(address, topicName, uint64(skipAmount))
+	currentTrainerList := GetTrainersByAddressAndTopic(node, address, topicName, uint64(skipAmount))
 	for len(currentTrainerList) != 0 {
 		trainerList = append(trainerList, currentTrainerList...)
 		skipAmount += 10
-		currentTrainerList = GetTrainersByAddressAndTopic(address, topicName, uint64(skipAmount))
+		currentTrainerList = GetTrainersByAddressAndTopic(node, address, topicName, uint64(skipAmount))
 	}
 
 	return trainerList
 }
 
-func CheckIfTopicExistsForRequestor(address string, topicName string) bool {
-	auth := getTransactor()
+func CheckIfTopicExistsForRequestor(node *utils.PeerNode, address string, topicName string) bool {
+	auth := getTransactor(node)
 	exists, _ := scatterProtocolContract.CheckIfTopicExistsForRequestor(&bind.CallOpts{
 		From: auth.From,
 	}, common.HexToAddress(address), topicName)
@@ -118,21 +133,26 @@ func CheckIfTopicExistsForRequestor(address string, topicName string) bool {
 	return exists
 }
 
-func GetAllTopicsByAddress(address string) []string {
+func GetAllTopicsByAddress(node *utils.PeerNode, address string) []string {
 	topicList := []string{}
 	skipAmount := 0
-	currentTopicList := GetTopicsByAddress(address, uint64(skipAmount))
+	currentTopicList := GetTopicsByAddress(node, address, uint64(skipAmount))
 	for len(currentTopicList) != 0 {
 		topicList = append(topicList, currentTopicList...)
 		skipAmount += 10
-		currentTopicList = GetTopicsByAddress(address, uint64(skipAmount))
+		currentTopicList = GetTopicsByAddress(node, address, uint64(skipAmount))
 	}
 
 	return topicList
 }
 
-func GetRoleByAddress(address string) string {
-	auth := getTransactor()
+func StartTraining(node *utils.PeerNode, topicName string) {
+	auth := getTransactor(node)
+	scatterProtocolContract.StartTraining(auth, topicName)
+}
+
+func GetRoleByAddress(node *utils.PeerNode, address string) string {
+	auth := getTransactor(node)
 	role, _ := scatterProtocolContract.GetRoleByAddress(&bind.CallOpts{
 		From: auth.From,
 	}, common.HexToAddress(address))
@@ -140,8 +160,8 @@ func GetRoleByAddress(address string) string {
 	return role
 }
 
-func GetCidFromAddressAndTopic(address string, topicName string) string {
-	auth := getTransactor()
+func GetCidFromAddressAndTopic(node *utils.PeerNode, address string, topicName string) string {
+	auth := getTransactor(node)
 	trainingInfo, err := scatterProtocolContract.AddressToTrainingJobInfo(&bind.CallOpts{
 		From: auth.From,
 	}, common.HexToAddress(address), topicName)
@@ -153,9 +173,9 @@ func GetCidFromAddressAndTopic(address string, topicName string) string {
 	return trainingInfo
 }
 
-func AddTopicForRequestor(trainingJobPath string, topicName string) (string, string) {
-	auth := getTransactor()
-	ipfsCid := UploadFileToIpfs(trainingJobPath)
+func AddTopicForRequestor(node *utils.PeerNode, trainingJobPath string, topicName string) (string, string) {
+	auth := getTransactor(node)
+	ipfsCid := utils.UploadFileToIpfs(trainingJobPath)
 	transaction, err := scatterProtocolContract.RequestorAddTopic(
 		auth, ipfsCid, topicName)
 
@@ -165,8 +185,8 @@ func AddTopicForRequestor(trainingJobPath string, topicName string) (string, str
 	return ipfsCid, transaction.Hash().Hex()
 }
 
-func AddTopicForTrainer(address string, topicName string) {
-	auth := getTransactor()
+func AddTopicForTrainer(node *utils.PeerNode, address string, topicName string) {
+	auth := getTransactor(node)
 	_, err := scatterProtocolContract.TrainerAddTopic(
 		auth, common.HexToAddress(address), topicName)
 
@@ -176,24 +196,24 @@ func AddTopicForTrainer(address string, topicName string) {
 
 }
 
-func ChangeRoleToTrainer() {
-	auth := getTransactor()
+func ChangeRoleToTrainer(node *utils.PeerNode) {
+	auth := getTransactor(node)
 	scatterProtocolContract.InitTrainerNode(auth)
 }
 
-func ChangeRoleToRequestor() {
-	auth := getTransactor()
+func ChangeRoleToRequestor(node *utils.PeerNode) {
+	auth := getTransactor(node)
 	scatterProtocolContract.InitRequestorNode(auth)
 }
 
-func SetNodeId(nodeId string) {
-	auth := getTransactor()
+func SetNodeId(node *utils.PeerNode, nodeId string) {
+	auth := getTransactor(node)
 	scatterProtocolContract.SetNodeId(auth, nodeId)
 }
 
-func PublishEvaluationJob(evaluationJobPath string) string {
-	auth := getTransactor()
-	ipfsCid := UploadFileToIpfs(evaluationJobPath)
+func PublishEvaluationJob(node *utils.PeerNode, evaluationJobPath string) string {
+	auth := getTransactor(node)
+	ipfsCid := utils.UploadFileToIpfs(evaluationJobPath)
 	transaction, err := evaluationTokenContract.PublishEvaluationJob(auth, auth.From, ipfsCid)
 
 	if err != nil {
@@ -202,14 +222,14 @@ func PublishEvaluationJob(evaluationJobPath string) string {
 	return transaction.Hash().String()
 }
 
-func getTransactor() *bind.TransactOpts {
+func getTransactor(node *utils.PeerNode) *bind.TransactOpts {
 
-	privateKey, err := crypto.HexToECDSA(os.Getenv("PRIVATE_KEY"))
+	privateKey, err := crypto.HexToECDSA(*node.PrivateKey)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(SEPOLIA))
+	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
 	auth.Value = big.NewInt(0)
 
 	return auth

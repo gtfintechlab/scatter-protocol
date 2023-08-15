@@ -3,7 +3,6 @@ package peers
 import (
 	"context"
 	"log"
-	"os"
 	"sync"
 
 	_ "github.com/lib/pq"
@@ -11,13 +10,16 @@ import (
 	"net/http"
 
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
+	protocol "github.com/gtfintechlab/scatter-protocol/protocol"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 	libp2p "github.com/libp2p/go-libp2p"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	network "github.com/libp2p/go-libp2p/core/network"
 )
 
-func InitPeerNode(peerType string, serverAddress string, databaseUsername string, databasePassword string, databasePort int) *utils.PeerNode {
+func InitPeerNode(peerType string, serverAddress string, databaseUsername string,
+	databasePassword string, databasePort int, blockchainAddress string,
+	privateKey string) *utils.PeerNode {
 	// Create a new libp2p host for the new node
 	node, _ := libp2p.New()
 	table, _ := networking.NewDHT(context.Background(), node)
@@ -28,13 +30,13 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 	log.Println("Peer Node:", node.ID())
 
 	ps, _ := pubsub.NewGossipSub(context.Background(), node)
-	blockchainAddress := os.Getenv("BLOCKCHAIN_ADDRESS")
 	database := connectToPostgres(peerType, databaseUsername, databasePassword, databasePort)
 	peerNode := utils.PeerNode{
 		PeerType:          peerType,
 		Start:             StartPeer,
 		NodeId:            node.ID(),
 		BlockchainAddress: &blockchainAddress,
+		PrivateKey:        &privateKey,
 		ExternalServer: &http.Server{
 			Addr: serverAddress,
 		},
@@ -44,10 +46,11 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 		DataStore:            database,
 		PubSubTopics:         &map[string]*pubsub.Topic{},
 		DatastoreLock:        &sync.Mutex{},
+		TrainingLock:         &map[string]map[string]bool{},
 	}
-	utils.SetNodeId(node.ID().String())
+	protocol.SetNodeId(&peerNode, node.ID().String())
 	getInitialTopics(utils.DATA_DIRECTORY, &peerNode)
-
+	go protocol.TrainingEventListener(&peerNode)
 	node.SetStreamHandler(utils.PROTOCOL_IDENTIFIER, peerStreamHandler(&peerNode))
 
 	return &peerNode
@@ -75,8 +78,6 @@ func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 	return func(stream network.Stream) {
 		message := networking.DecodeMessage(&stream)
 		switch messageType := message.MessageType; messageType {
-		case utils.PEER_START_TRAINING:
-			go peerStartTrainingHandler(node, &message, &stream)
 		}
 	}
 }

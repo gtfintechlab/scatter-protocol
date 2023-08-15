@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
+	"os"
 	"strconv"
 
 	bootstrap "github.com/gtfintechlab/scatter-protocol/bootstrap"
@@ -11,9 +11,12 @@ import (
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
 	"github.com/gtfintechlab/scatter-protocol/simulation"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	var _ = godotenv.Load(".env")
+
 	var util string
 	var nodeType string
 	var tcpPort int
@@ -60,7 +63,8 @@ func main() {
 		} else {
 			dbPort = 8702
 		}
-		peerNode := peer.InitPeerNode(peerType, extAddress, "postgres", "postgres", dbPort)
+		peerNode := peer.InitPeerNode(peerType, extAddress, "postgres", "postgres", dbPort,
+			os.Getenv("BLOCKCHAIN_ADDRESS"), os.Getenv("PRIVATE_KEY"))
 		peerNode.Start(peerNode, mdnsProtocol)
 	}
 
@@ -68,8 +72,6 @@ func main() {
 		utils.GenerateKeys()
 	} else if util == utils.UTIL_DEBUG_MODE {
 		log.Println("Debug Mode")
-		utils.AddTopicForRequestor("test.png", "topic!")
-		fmt.Println(utils.GetAllTopicsByAddress("0x89D9cf4Cc89A8058c5bDcBA525FFb14Fe15f614B"))
 	} else if util == utils.UTIL_PEER_DATABASE_MIGRATION {
 		var dbPort int
 		if peerType == utils.PEER_REQUESTOR {

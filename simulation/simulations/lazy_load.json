@@ -13,7 +13,9 @@
             "datastorePort": 8701,
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
-            "useMdns": true
+            "useMdns": true,
+            "blockchainAddress": "0x89D9cf4Cc89A8058c5bDcBA525FFb14Fe15f614B",
+            "privateKey": "58a83c4aead5717f1c43567d82e504609345eb75b11312a057f9e600a7788ff7"
         },
         {
             "id": "trainer_node",
@@ -22,7 +24,9 @@
             "datastorePort": 8702,
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
-            "useMdns": true
+            "useMdns": true,
+            "blockchainAddress": "0xE4505606D2DD1B47A782bF4149f073EB91E0A6Bb",
+            "privateKey": "f898575dc21b5a4fc16ee69d8482b63b22ed23326c08efb495bf9417c60c4f0c"
         }
     ],
 

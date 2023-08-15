@@ -17,6 +17,7 @@ import (
 	"github.com/gtfintechlab/scatter-protocol/bootstrap"
 	"github.com/gtfintechlab/scatter-protocol/peers"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
+	"github.com/gtfintechlab/scatter-protocol/protocol"
 	"github.com/gtfintechlab/scatter-protocol/utils"
 )
 
@@ -70,6 +71,8 @@ func initializeAllNodes(nodeList []utils.NodeConfig) map[string]utils.Simulation
 				*node.DatastoreUsername,
 				*node.DatastorePassword,
 				*node.DatastorePort,
+				*node.BlockchainAddress,
+				*node.PrivateKey,
 			)
 			clearDatabase(createdNode.DataStore)
 			peerDatabase.MigratePeerDB("up",
@@ -79,6 +82,11 @@ func initializeAllNodes(nodeList []utils.NodeConfig) map[string]utils.Simulation
 				*node.DatastorePort,
 			)
 
+			if nodeType == utils.PEER_REQUESTOR {
+				protocol.InitRequestorNode(createdNode)
+			} else {
+				protocol.InitTrainerNode(createdNode)
+			}
 			go createdNode.Start(createdNode, *node.UseMdns)
 			simulationNode = utils.SimulationNode{PeerNode: createdNode}
 		}

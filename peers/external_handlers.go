@@ -1,15 +1,14 @@
 package peers
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
+	protocol "github.com/gtfintechlab/scatter-protocol/protocol"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
-	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 func health(node *utils.PeerNode) http.HandlerFunc {
@@ -28,17 +27,17 @@ func switchPeerNodeRole(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
 
-		switch nodeType := utils.GetRoleByAddress(*node.BlockchainAddress); nodeType {
+		switch nodeType := protocol.GetRoleByAddress(node, *node.BlockchainAddress); nodeType {
 		case utils.PEER_REQUESTOR:
-			utils.ChangeRoleToTrainer()
+			protocol.ChangeRoleToTrainer(node)
 
 		case utils.PEER_TRAINER:
-			utils.ChangeRoleToRequestor()
+			protocol.ChangeRoleToRequestor(node)
 		}
 
 		networking.SendJson(response, map[string]interface{}{
 			"success": true,
-			"newRole": utils.GetRoleByAddress(*node.BlockchainAddress),
+			"newRole": protocol.GetRoleByAddress(node, *node.BlockchainAddress),
 		})
 	}
 }
@@ -47,12 +46,12 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.PostValidator(request, response)
 
-		switch nodeType := utils.GetRoleByAddress(*node.BlockchainAddress); nodeType {
+		switch nodeType := protocol.GetRoleByAddress(node, *node.BlockchainAddress); nodeType {
 		case utils.PEER_REQUESTOR:
 			var requestBody utils.AddTopicRequestBody
 			json.NewDecoder(request.Body).Decode(&requestBody)
 
-			if utils.CheckIfTopicExistsForRequestor(*node.BlockchainAddress, requestBody.Topic) {
+			if protocol.CheckIfTopicExistsForRequestor(node, *node.BlockchainAddress, requestBody.Topic) {
 				networking.SendJson(response, map[string]interface{}{
 					"success": false,
 					"Error":   "Topic already exists for node",
@@ -64,8 +63,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			zippedJobPath := fmt.Sprintf("%s/%s_%s.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
 			networking.WriteBytesToFile(zippedJobPath, zippedFileBytes.Bytes())
 
-			topicCid, _ := utils.AddTopicForRequestor(zippedJobPath, requestBody.Topic)
-
+			topicCid, _ := protocol.AddTopicForRequestor(node, zippedJobPath, requestBody.Topic)
 			networking.SendJson(response, map[string]interface{}{
 				"success":  true,
 				"topicCid": topicCid,
@@ -80,12 +78,12 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 					"Trainer nodes must specify a path to the data of the topic they want to subscribe to")
 				return
 			}
-			utils.AddTopicForTrainer(*requestBody.RequestorAddress, requestBody.Topic)
+			protocol.AddTopicForTrainer(node, *requestBody.RequestorAddress, requestBody.Topic)
 			addTopicFromInfo(
 				node,
 				*requestBody.RequestorAddress,
 				requestBody.Topic,
-				utils.GetRoleByAddress(*node.BlockchainAddress),
+				protocol.GetRoleByAddress(node, *node.BlockchainAddress),
 				requestBody.Path,
 			)
 
@@ -105,7 +103,7 @@ func getOwnTopics(node *utils.PeerNode) http.HandlerFunc {
 		networking.GetValidator(request, response)
 		networking.SendJson(response, map[string]interface{}{
 			"success": true,
-			"topics":  utils.GetAllTopicsByAddress(*node.BlockchainAddress),
+			"topics":  protocol.GetAllTopicsByAddress(node, *node.BlockchainAddress),
 		})
 	}
 }
@@ -121,20 +119,20 @@ func getPublishedTopics(node *utils.PeerNode) http.HandlerFunc {
 
 		if addressSkipCount != "" {
 			parsedSkipCount, _ := strconv.Atoi(addressSkipCount)
-			participants = utils.GetProtocolRequestors(uint64(parsedSkipCount))
+			participants = protocol.GetProtocolRequestors(node, uint64(parsedSkipCount))
 		} else {
-			participants = utils.GetAllProtocolRequestors()
+			participants = protocol.GetAllProtocolRequestors(node)
 		}
 
 		for _, participant := range participants {
-			topics := utils.GetAllTopicsByAddress(participant)
+			topics := protocol.GetAllTopicsByAddress(node, participant)
 
 			for _, topic := range topics {
 				publishedTopics = append(publishedTopics, utils.TopicInformation{
 					NodeAddress:      participant,
-					NodeType:         utils.GetRoleByAddress(participant),
+					NodeType:         protocol.GetRoleByAddress(node, participant),
 					TopicName:        topic,
-					TrainingTokenCID: utils.GetCidFromAddressAndTopic(participant, topic),
+					TrainingTokenCID: protocol.GetCidFromAddressAndTopic(node, participant, topic),
 				})
 			}
 		}
@@ -150,11 +148,11 @@ func getPublishedTopics(node *utils.PeerNode) http.HandlerFunc {
 func getTopicTrainers(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.GetValidator(request, response)
-		topics := utils.GetAllTopicsByAddress(*node.BlockchainAddress)
+		topics := protocol.GetAllTopicsByAddress(node, *node.BlockchainAddress)
 		topicTrainerMap := map[string][]string{}
 
 		for _, topic := range topics {
-			trainers := utils.GetAllTrainersByAddressAndTopic(*node.BlockchainAddress, topic)
+			trainers := protocol.GetAllTrainersByAddressAndTopic(node, *node.BlockchainAddress, topic)
 			topicTrainerMap[topic] = trainers
 		}
 		networking.SendJson(response, map[string]interface{}{
@@ -167,29 +165,10 @@ func getTopicTrainers(node *utils.PeerNode) http.HandlerFunc {
 func initializeTraining(node *utils.PeerNode) http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.PostValidator(request, response)
-
 		var requestBody utils.InitializeTrainingRequestBody
 		json.NewDecoder(request.Body).Decode(&requestBody)
-		switch nodeType := utils.GetRoleByAddress(*node.BlockchainAddress); nodeType {
-		case utils.PEER_REQUESTOR:
-			trainers := getTrainersByTopic(node, requestBody.Topic)
-			zippedFileBytes, _ := networking.ZipFolder("training/requestor")
-			for _, trainer := range trainers {
-				peerId, _ := peer.Decode(trainer)
-				stream, _ := (*node.PeerToPeerServer).NewStream(
-					context.Background(),
-					peerId,
-					utils.PROTOCOL_IDENTIFIER,
-				)
-				networking.SendMessage(&stream, utils.Message{
-					MessageType: utils.PEER_START_TRAINING,
-					Payload: map[string]interface{}{
-						"files": zippedFileBytes.Bytes(),
-						"topic": requestBody.Topic,
-					},
-				})
-			}
-		}
+
+		protocol.StartTraining(node, requestBody.Topic)
 
 	}
 }

@@ -2,7 +2,7 @@ package utils
 
 import "strings"
 
-func deleteEmptyElements(source []string) []string {
+func DeleteEmptyElements(source []string) []string {
 	var result []string
 	for _, str := range source {
 		if strings.Trim(str, " ") != "" {

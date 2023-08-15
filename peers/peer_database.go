@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	protocol "github.com/gtfintechlab/scatter-protocol/protocol"
+
 	"github.com/gtfintechlab/scatter-protocol/utils"
 )
 
@@ -122,7 +124,7 @@ func checkIfTopicExistsForNode(node *utils.PeerNode, topicName string) bool {
 func getInitialTopics(rootDir string, node *utils.PeerNode) error {
 	node.DatastoreLock.Lock()
 	defer node.DatastoreLock.Unlock()
-	if utils.GetRoleByAddress(*node.BlockchainAddress) == utils.PEER_REQUESTOR {
+	if protocol.GetRoleByAddress(node, *node.BlockchainAddress) == utils.PEER_REQUESTOR {
 		return nil
 	}
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
@@ -141,7 +143,7 @@ func getInitialTopics(rootDir string, node *utils.PeerNode) error {
 					log.Fatal(err)
 				}
 				defer statement.Close()
-				statement.Exec(node.NodeId.String(), info.Name(), utils.GetRoleByAddress(*node.BlockchainAddress), path)
+				statement.Exec(node.NodeId.String(), info.Name(), protocol.GetRoleByAddress(node, *node.BlockchainAddress), path)
 			} else if depth > 1 {
 				// If the depth is greater than 1, don't traverse further into subdirectories
 				return filepath.SkipDir

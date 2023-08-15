@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -52,7 +53,7 @@ func RunIpfsNode(p2pPort int, gatewayPort int, rpcApiPort int) {
 }
 
 func UploadFileToIpfs(filePath string) string {
-	shell := ipfs.NewShell("localhost:8080")
+	shell := ipfs.NewShell(os.Getenv("IPFS_NODE_URL"))
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatal("Error opening file:", err)
@@ -67,4 +68,16 @@ func UploadFileToIpfs(filePath string) string {
 	shell.Pin(cid)
 
 	return cid
+}
+
+func GetFileBytesFromIPFS(hash string, path string) ([]byte, error) {
+	shell := ipfs.NewShell(os.Getenv("IPFS_NODE_URL"))
+	file, err := shell.Cat(hash)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer file.Close()
+	bytes, _ := io.ReadAll(file)
+
+	return bytes, nil
 }
