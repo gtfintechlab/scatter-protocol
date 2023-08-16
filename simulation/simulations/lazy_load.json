@@ -38,5 +38,42 @@
         }
     ],
 
-    "steps": []
+    "steps": [
+        {
+            "description": "Requestor is requesting the network to train a model",
+            "nodeId": "requestor_node",
+            "action": "POST /node/topic/add",
+            "body": {
+                "topic": "requestor topic 1",
+                "path": "training/requestor",
+                "reward": 100
+            }
+        },
+        {
+            "description": "Trainer is searching for all topics that have been published",
+            "nodeId": "trainer_node",
+            "action": "GET /node/topics/published",
+
+            "_comment": "stateKey will make the result of this action accessible across other actions this node takes part in",
+            "stateKey": "PUBLISHED_TOPICS" 
+        },
+        {
+            "description": "Trainer is adding the topic that has been found",
+            "nodeId": "trainer_node",
+            "action": "POST /node/topic/add",
+            "body": {
+                "requestorAddress": "{PUBLISHED_TOPICS.topics[0].NodeAddress}",
+                "topic": "{PUBLISHED_TOPICS.topics[0].TopicName}",
+                "path": "/home/samrat/Documents/scatterchain/training/data/example"
+            }
+        },
+        {
+            "description": "Requestor is starting the training procedure",
+            "nodeId": "requestor_node",
+            "action": "POST /node/training/start",
+            "body": {
+                "topic": "requestor topic 1"
+            }
+        }
+    ]
 }

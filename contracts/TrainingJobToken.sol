@@ -29,7 +29,8 @@ contract TrainingJobToken is ERC721URIStorage, Ownable {
     function publishTrainingJob(
         string memory tokenURI,
         string memory topicName,
-        address recipient
+        address recipient,
+        uint256 pooledReward
     ) external onlyScatterProtocolContract returns (uint256) {
         _tokenIds.increment();
 
@@ -40,7 +41,8 @@ contract TrainingJobToken is ERC721URIStorage, Ownable {
         IScatterProtocol(scatterContractAddress).processTrainingJobToken(
             topicName,
             tokenURI,
-            recipient
+            recipient,
+            pooledReward
         );
         return newItemId;
     }

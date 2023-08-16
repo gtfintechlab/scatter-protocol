@@ -3,6 +3,7 @@ package utils
 import (
 	"database/sql"
 	"encoding/json"
+	"math/big"
 	"net/http"
 	"os"
 	"sync"
@@ -129,6 +130,7 @@ type AddTopicRequestBody struct {
 	Topic            string  `json:"topic"`
 	RequestorAddress *string `json:"requestorAddress,omitempty"`
 	Path             *string `json:"path,omitempty"`
+	Reward           *int64  `json:"reward,omitempty"`
 }
 
 type PublishTopicRequestBody struct {
@@ -199,6 +201,7 @@ type TopicInformation struct {
 	NodeType         string
 	TopicName        string
 	TrainingTokenCID string
+	PooledReward     big.Int
 }
 
 type TrainingInitializedEvent struct {

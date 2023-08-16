@@ -29,17 +29,20 @@ func dockerSetup() {
 	}
 }
 
-func buildImage(requestorId string, topicName string) {
+func buildImage(requestorId string, ipfsCid string, dataPath string) {
+	parentDirectory, _ := os.Getwd()
+	os.Setenv("DOCKER_BUILDKIT", "0")
 	err := exec.Command(
 		"docker", "build",
-		"--build-arg", fmt.Sprintf("NODE_ID=%s", requestorId),
-		"--build-arg", fmt.Sprintf("TOPIC_NAME=%s", strings.ReplaceAll(topicName, " ", "-")),
-		"-t", fmt.Sprintf("outer-image:%s", requestorId), "training/trainer",
+		"--build-arg", fmt.Sprintf("DATA_PATH=%s", dataPath),
+		"-t", fmt.Sprintf("%s:%s", strings.ToLower(requestorId), strings.ToLower(ipfsCid)),
+		"-f", fmt.Sprintf("%s/training/trainer/jobs/%s/%s", parentDirectory, requestorId, ipfsCid), ".",
 	).Run()
 
 	if err != nil {
-		log.Fatalf("Failed to build image for %s:%s with error: %s", requestorId, topicName, err)
+		log.Fatal("An error occurred when building the image ", err)
 	}
+
 }
 
 func runContainer(requestorId string, topicName string) {

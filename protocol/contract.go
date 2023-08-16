@@ -150,14 +150,14 @@ func GetCidFromAddressAndTopic(node *utils.PeerNode, address string, topicName s
 		log.Fatal(err)
 	}
 
-	return trainingInfo
+	return trainingInfo.TrainingJobCid
 }
 
-func AddTopicForRequestor(node *utils.PeerNode, trainingJobPath string, topicName string) (string, string) {
+func AddTopicForRequestor(node *utils.PeerNode, trainingJobPath string, topicName string, reward int64) (string, string) {
 	auth := getTransactor(node)
 	ipfsCid := utils.UploadFileToIpfs(trainingJobPath)
 	transaction, err := scatterProtocolContract.RequestorAddTopic(
-		auth, ipfsCid, topicName)
+		auth, ipfsCid, topicName, big.NewInt(reward))
 
 	if err != nil {
 		log.Fatal(err)
@@ -206,6 +206,16 @@ func GetScatterTokenBalance(node *utils.PeerNode) *big.Int {
 	auth := getTransactor(node)
 	balance, _ := scatterTokenContract.BalanceOf(&bind.CallOpts{From: auth.From}, auth.From)
 	return balance
+}
+
+func GetPooledRewardByAddressAndTopic(node *utils.PeerNode, address string, topicName string) big.Int {
+	auth := getTransactor(node)
+	trainingJobInfo, err := scatterProtocolContract.AddressToTrainingJobInfo(&bind.CallOpts{From: auth.From}, common.HexToAddress(address), topicName)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return *trainingJobInfo.PooledReward
 }
 
 func getTransactor(node *utils.PeerNode) *bind.TransactOpts {

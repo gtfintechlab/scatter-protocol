@@ -6,6 +6,7 @@ interface ITrainingJobToken {
     function publishTrainingJob(
         string memory tokenURI,
         string memory topicName,
-        address recipient
+        address recipient,
+        uint256 pooledReward
     ) external;
 }

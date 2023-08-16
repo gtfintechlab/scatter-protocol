@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
+	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
 	protocol "github.com/gtfintechlab/scatter-protocol/protocol"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 	libp2p "github.com/libp2p/go-libp2p"
@@ -30,7 +31,7 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 	log.Println("Peer Node:", node.ID())
 
 	ps, _ := pubsub.NewGossipSub(context.Background(), node)
-	database := connectToPostgres(peerType, databaseUsername, databasePassword, databasePort)
+	database := peerDatabase.ConnectToPostgres(peerType, databaseUsername, databasePassword, databasePort)
 	peerNode := utils.PeerNode{
 		PeerType:          peerType,
 		Start:             StartPeer,
@@ -49,7 +50,6 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 		TrainingLock:         &map[string]map[string]bool{},
 	}
 	protocol.SetNodeId(&peerNode, node.ID().String())
-	getInitialTopics(utils.DATA_DIRECTORY, &peerNode)
 	go protocol.TrainingEventListener(&peerNode)
 	node.SetStreamHandler(utils.PROTOCOL_IDENTIFIER, peerStreamHandler(&peerNode))
 

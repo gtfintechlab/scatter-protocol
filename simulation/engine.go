@@ -164,15 +164,15 @@ func parseBody(body *map[string]interface{}, nodeState map[string]interface{}) *
 	useStateRegex := regexp.MustCompile(`^{.*}$`)
 
 	for key, value := range *body {
-		assertedValue := value.(string)
-		if useStateRegex.MatchString(assertedValue) {
+		assertedValue, ok := value.(string)
+
+		if ok && useStateRegex.MatchString(assertedValue) {
 			// Remove all the curly braces so we can start processing this
 			assertedValue = strings.Replace(assertedValue, "{", "", -1)
 			assertedValue = strings.Replace(assertedValue, "}", "", -1)
 
 			// Split the expressions into parts
 			parts := strings.Split(assertedValue, ".")
-
 			var currentExpression any
 			indexingRegex := regexp.MustCompile(`\[.*?]`)
 

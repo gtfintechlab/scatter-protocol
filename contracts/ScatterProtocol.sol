@@ -11,11 +11,12 @@ import "./IScatterToken.sol";
 
 import "./Shared.sol";
 
-// Model Validator: 500,000 Scatter Token Staked
+// Model Validator: 10,000 Scatter Token Staked
 contract ScatterProtocol {
     struct TrainingJobInfo {
         string trainingJobCid;
         address[] trainers;
+        uint256 pooledReward;
     }
 
     address payable public owner;
@@ -251,13 +252,15 @@ contract ScatterProtocol {
      */
     function requestorAddTopic(
         string memory tokenURI,
-        string memory topicName
+        string memory topicName,
+        uint256 pooledReward
     ) external {
         if (addressToRoles[msg.sender] == roles.Requestor) {
             ITrainingJobToken(trainingJobContract).publishTrainingJob(
                 tokenURI,
                 topicName,
-                msg.sender
+                msg.sender,
+                pooledReward
             );
         }
     }
@@ -340,7 +343,8 @@ contract ScatterProtocol {
     function processTrainingJobToken(
         string memory topicName,
         string memory jobCid,
-        address requestorAddress
+        address requestorAddress,
+        uint256 pooledReward
     ) external onlyTrainingJobTokenContract {
         require(
             addressToRoles[requestorAddress] == roles.Requestor,
@@ -351,7 +355,8 @@ contract ScatterProtocol {
 
         TrainingJobInfo memory trainingInfo = TrainingJobInfo(
             jobCid,
-            emptyAddressArray
+            emptyAddressArray,
+            pooledReward
         );
         addressToTrainingJobInfo[requestorAddress][topicName] = trainingInfo;
 

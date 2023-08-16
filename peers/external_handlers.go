@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 
 	networking "github.com/gtfintechlab/scatter-protocol/networking"
+	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
 	protocol "github.com/gtfintechlab/scatter-protocol/protocol"
 	utils "github.com/gtfintechlab/scatter-protocol/utils"
 )
@@ -62,8 +64,8 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			zippedFileBytes, _ := networking.ZipFolder(*requestBody.Path)
 			zippedJobPath := fmt.Sprintf("%s/%s_%s.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
 			networking.WriteBytesToFile(zippedJobPath, zippedFileBytes.Bytes())
-
-			topicCid, _ := protocol.AddTopicForRequestor(node, zippedJobPath, requestBody.Topic)
+			topicCid, _ := protocol.AddTopicForRequestor(node, zippedJobPath, requestBody.Topic, *requestBody.Reward)
+			os.RemoveAll(zippedJobPath)
 			networking.SendJson(response, map[string]interface{}{
 				"success":  true,
 				"topicCid": topicCid,
@@ -79,11 +81,11 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				return
 			}
 			protocol.AddTopicForTrainer(node, *requestBody.RequestorAddress, requestBody.Topic)
-			addTopicFromInfo(
+			peerDatabase.AddTopicFromInfo(
 				node,
 				*requestBody.RequestorAddress,
+				protocol.GetCidFromAddressAndTopic(node, *requestBody.RequestorAddress, requestBody.Topic),
 				requestBody.Topic,
-				protocol.GetRoleByAddress(node, *node.BlockchainAddress),
 				requestBody.Path,
 			)
 
@@ -133,6 +135,7 @@ func getPublishedTopics(node *utils.PeerNode) http.HandlerFunc {
 					NodeType:         protocol.GetRoleByAddress(node, participant),
 					TopicName:        topic,
 					TrainingTokenCID: protocol.GetCidFromAddressAndTopic(node, participant, topic),
+					PooledReward:     protocol.GetPooledRewardByAddressAndTopic(node, participant, topic),
 				})
 			}
 		}

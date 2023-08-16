@@ -9,6 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
+
 	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter-protocol"
 	"github.com/gtfintechlab/scatter-protocol/utils"
 	"golang.org/x/exp/slices"
@@ -63,8 +65,8 @@ func TrainingEventListener(node *utils.PeerNode) {
 func RunTrainingProcedure(node *utils.PeerNode, requestorId string, topicName string) {
 	dockerSetup()
 	ipfsCid := GetCidFromAddressAndTopic(node, requestorId, topicName)
+	dataPath := peerDatabase.GetDatapathFromAddressAndIpfs(node, requestorId, ipfsCid)
 	downloadTrainingJob(ipfsCid, requestorId)
-
-	// buildImage(requestorId, topicName)
+	buildImage(requestorId, ipfsCid, dataPath)
 	// runContainer(requestorId, topicName)
 }

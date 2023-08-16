@@ -7,7 +7,8 @@ interface IScatterProtocol {
     function processTrainingJobToken(
         string memory topicName,
         string memory jobCid,
-        address requestorAddress
+        address requestorAddress,
+        uint256 pooledReward
     ) external;
 
     function getEnumRoleByAddress(
