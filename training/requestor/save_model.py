@@ -40,6 +40,7 @@ class CustomModel(nn.Module):
         self.optimizer = torch.optim.Adadelta(self.parameters(), lr=self.learningRate)
 
     def forward(self, x):
+        x = x.detach()
         # Convolution Layer
         x = self.convolutionOne(x)
         x = F.relu(x)

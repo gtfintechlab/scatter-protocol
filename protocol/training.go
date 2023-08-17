@@ -31,17 +31,37 @@ func dockerSetup() {
 
 func buildImage(requestorId string, ipfsCid string, dataPath string) {
 	basePath, _ := os.Getwd()
-	os.MkdirAll(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/output", basePath, requestorId, ipfsCid), 0700)
-	os.MkdirAll(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/data", basePath, requestorId, ipfsCid), 0700)
+	requestorIdLower := strings.ToLower(requestorId)
+	ipfsCidLower := strings.ToLower(ipfsCid)
 
-	exec.Command("cp", "--recursive", dataPath, fmt.Sprintf("%s/training/trainer/jobs/%s/%s/data/", basePath, requestorId, ipfsCid)).Run()
+	os.MkdirAll(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/output",
+		basePath,
+		requestorIdLower,
+		ipfsCidLower,
+	),
+		0700,
+	)
+	os.MkdirAll(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/data",
+		basePath,
+		requestorIdLower,
+		ipfsCidLower,
+	),
+		0700,
+	)
+
+	exec.Command("cp", "--recursive", dataPath,
+		fmt.Sprintf("%s/training/trainer/jobs/%s/%s/data/",
+			basePath,
+			requestorIdLower,
+			ipfsCidLower,
+		),
+	).Run()
 
 	cmd := exec.Command(
 		"docker", "build",
-		// "--build-arg", fmt.Sprintf("DATA_PATH=%s", dataPath),
-		"-t", fmt.Sprintf("%s:%s", strings.ToLower(requestorId), strings.ToLower(ipfsCid)),
-		"-f", fmt.Sprintf("%s/training/trainer/jobs/%s/%s/Dockerfile", basePath, requestorId, ipfsCid),
-		fmt.Sprintf("%s/training/trainer/jobs/%s/%s/", basePath, requestorId, ipfsCid),
+		"-t", fmt.Sprintf("%s:%s", requestorIdLower, ipfsCidLower),
+		"-f", fmt.Sprintf("%s/training/trainer/jobs/%s/%s/Dockerfile", basePath, requestorIdLower, ipfsCidLower),
+		fmt.Sprintf("%s/training/trainer/jobs/%s/%s/", basePath, requestorIdLower, ipfsCidLower),
 	)
 
 	fmt.Println(cmd.String())
@@ -56,23 +76,28 @@ func buildImage(requestorId string, ipfsCid string, dataPath string) {
 }
 
 func runContainer(requestorId string, ipfsCid string) {
+	requestorIdLower := strings.ToLower(requestorId)
+	ipfsCidLower := strings.ToLower(ipfsCid)
 	basePath, _ := os.Getwd()
 	cmd := exec.Command(
 		"docker", "run",
-		"-v", fmt.Sprintf("\"%s/training/trainer/jobs/%s/%s/output:/tmp/output/\"",
+		"-v", fmt.Sprintf("%s/training/trainer/jobs/%s/%s/output:/tmp/output/",
 			basePath,
-			requestorId, ipfsCid),
-		"-it", fmt.Sprintf("%s:%s", strings.ToLower(requestorId), strings.ToLower(ipfsCid)),
+			requestorIdLower, ipfsCidLower),
+		fmt.Sprintf("%s:%s", requestorIdLower, ipfsCidLower),
 	)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
 	fmt.Println(cmd)
 	err := cmd.Run()
 	if err != nil {
-		log.Fatalf("Failed to run container for %s:%s with error: %s", requestorId, ipfsCid, err)
+		log.Fatalf("Failed to run container for %s:%s with error: %s", requestorIdLower, ipfsCidLower, err)
 	}
 }
 
 func downloadTrainingJob(ipfsCid string, requestorId string) {
-	filePath := fmt.Sprintf("training/trainer/jobs/%s/%s/", requestorId, ipfsCid)
+	filePath := fmt.Sprintf("training/trainer/jobs/%s/%s/", strings.ToLower(requestorId), strings.ToLower(ipfsCid))
 	fileBytes, _ := utils.GetFileBytesFromIPFS(ipfsCid, filePath)
 	networking.UnzipFolder(fileBytes, filePath)
 }
