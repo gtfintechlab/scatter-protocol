@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	evaluationtoken "github.com/gtfintechlab/scatter-protocol/protocol/evaluation"
+	modelToken "github.com/gtfintechlab/scatter-protocol/protocol/model"
 	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter-protocol"
 	scattertoken "github.com/gtfintechlab/scatter-protocol/protocol/scatter-token"
 	trainingtoken "github.com/gtfintechlab/scatter-protocol/protocol/training"
@@ -24,6 +25,7 @@ import (
 
 const (
 	PROTOCOL   = "protocol"
+	MODEL      = "model"
 	TOKEN      = "token"
 	EVALUATION = "evaluation"
 	TRAINING   = "training"
@@ -57,6 +59,8 @@ func DeployContracts(contract string, privateKey string) {
 		deployTrainingJobToken(privateKey)
 	case TOKEN:
 		deployScatterToken(privateKey)
+	case MODEL:
+		deployModelToken(privateKey)
 	case ALL:
 		deployAllContracts(privateKey)
 	}
@@ -77,6 +81,12 @@ func deployAllContracts(privateKey string) {
 	}
 	time.Sleep(time.Second * 10)
 
+	modelAddress, modelTransaction, modelInstance, err := modelToken.DeployModeltoken(auth, client)
+	if err != nil {
+		log.Fatal("Failed to deploy model token", err.Error())
+	}
+	time.Sleep(time.Second * 10)
+
 	scatterTokenAddress, scatterTokenTransaction, scatterTokenInstance, err := scattertoken.DeployScattertoken(auth, client, big.NewInt(int64(100000000000)))
 	if err != nil {
 		log.Fatal("Failed to scatter token", err.Error())
@@ -88,6 +98,7 @@ func deployAllContracts(privateKey string) {
 		common.HexToAddress(trainingAddress.Hash().Hex()),
 		common.HexToAddress(evaluationAddress.Hash().Hex()),
 		common.HexToAddress(scatterTokenAddress.Hash().Hex()),
+		common.HexToAddress(modelAddress.Hash().Hex()),
 	)
 	if err != nil {
 		log.Fatal("Failed to deploy scatter protocol", err.Error())
@@ -97,10 +108,12 @@ func deployAllContracts(privateKey string) {
 	trainingInstance.SetScatterContractAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
 	evaluationInstance.SetScatterContractAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
 	scatterTokenInstance.SetScatterProtocolAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+	modelInstance.SetScatterContractAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
 	scatterInstance.InitRequestorNode(auth)
 
 	log.Println("Transaction Info:")
 	log.Printf("Training Token: %s\n", trainingTransaction.Hash())
+	log.Printf("Model Token: %s\n", modelTransaction.Hash())
 	log.Printf("Evaluation Token: %s\n", evaluationTransaction.Hash())
 	log.Printf("Scatter Token: %s\n", scatterTokenTransaction.Hash())
 	log.Printf("Scatter Protocol: %s\n", scatterProtocolTransaction.Hash())
@@ -108,6 +121,7 @@ func deployAllContracts(privateKey string) {
 
 	log.Println("Contract Info:")
 	log.Printf("Training Token: %s\n", trainingAddress.Hex())
+	log.Printf("Model Token: %s\n", modelAddress.Hex())
 	log.Printf("Evaluation Token: %s\n", evaluationAddress.Hex())
 	log.Printf("Scatter Token: %s\n", scatterTokenAddress.Hex())
 	log.Printf("Scatter Protocol: %s\n", scatterProtocolAddress.Hex())
@@ -117,6 +131,7 @@ func deployAllContracts(privateKey string) {
 		"SCATTER_TOKEN_CONTRACT":    scatterTokenAddress.Hex(),
 		"TRAINING_TOKEN_CONTRACT":   trainingAddress.Hex(),
 		"EVALUATION_TOKEN_CONTRACT": evaluationAddress.Hex(),
+		"MODEL_TOKEN_CONTRACT":      modelAddress.Hex(),
 	}
 
 	jsonData, _ := json.MarshalIndent(contractInfo, "", "  ")
@@ -130,7 +145,8 @@ func deployScatterProtocol(privateKey string) {
 		auth, client,
 		common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT),
 		common.HexToAddress(utils.EVALUATION_TOKEN_CONTRACT),
-		common.HexToAddress(utils.SCATTER_TOKEN_CONTRACT))
+		common.HexToAddress(utils.SCATTER_TOKEN_CONTRACT),
+		common.HexToAddress(utils.MODEL_TOKEN_CONTRACT))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,6 +174,19 @@ func deployEvaluationJobToken(privateKey string) {
 	auth := GetTransactor(privateKey)
 
 	address, transaction, _, err := evaluationtoken.DeployEvaluationtoken(auth, client)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Contract Address: " + address.Hex())
+	log.Println("Transaction Hash: " + transaction.Hash().Hex())
+
+}
+
+func deployModelToken(privateKey string) {
+	auth := GetTransactor(privateKey)
+
+	address, transaction, _, err := modelToken.DeployModeltoken(auth, client)
 	if err != nil {
 		log.Fatal(err)
 	}

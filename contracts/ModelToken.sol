@@ -5,8 +5,9 @@ pragma solidity 0.8.17;
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./IScatterProtocol.sol";
 
-contract TrainingJobToken is ERC721URIStorage, Ownable {
+contract ModelToken is ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     mapping(uint256 => string) private _tokenURIs;
     string baseURI;
@@ -15,7 +16,7 @@ contract TrainingJobToken is ERC721URIStorage, Ownable {
 
     Counters.Counter private _tokenIds;
 
-    constructor() ERC721("Scatter Protocol Training Jobs", "SPTJ") {
+    constructor() ERC721("Scatter Protocol Models", "SPM") {
         protocolDeployer = payable(msg.sender);
     }
 
@@ -25,7 +26,7 @@ contract TrainingJobToken is ERC721URIStorage, Ownable {
         scatterContractAddress = contractAddress;
     }
 
-    function publishTrainingJob(
+    function publishModel(
         string memory tokenURI,
         address recipient
     ) external onlyScatterProtocolContract returns (uint256) {

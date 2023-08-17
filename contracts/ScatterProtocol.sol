@@ -7,7 +7,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./ITrainingJobToken.sol";
+import "./IEvaluationJobToken.sol";
 import "./IScatterToken.sol";
+import "./IModelToken.sol";
 
 import "./Shared.sol";
 
@@ -23,6 +25,7 @@ contract ScatterProtocol {
     address public trainingJobContract;
     address public evaluationJobContract;
     address public scatterTokenContract;
+    address public modelTokenContract;
 
     mapping(address => uint256) internal addressToStake;
     mapping(address => uint256) internal addressToStakeTime;
@@ -63,8 +66,57 @@ contract ScatterProtocol {
     // Information for P2P communication
     mapping(address => string) public addressToNodeId;
 
+    /*
+        Example trainerTrainingMap & validatorTrainingMap Mapping:
+        {
+            requestor 1 address: {
+                topic 1: {
+                    trainer / validator 1: true,
+                    trainer 2 / validator 2: false,
+                }
+            }
+            requestor 2 address: {...}
+        }
+     */
+    // Used to check if a trainer is already subscribed to a topic
+    mapping(address => mapping(string => mapping(address => bool)))
+        public trainerTrainingMap;
+
+    // Mapping of validators for each topic
+    mapping(address => mapping(string => mapping(address => bool)))
+        public validatorTrainingMap;
+
+    /*
+        Example modelLogger Mapping:
+        {
+            requestor address: {
+                topic name: {
+                    trainer address: {
+                        validator address: true,
+                        validator 2 address: false
+                    }
+                }
+            }
+        }
+    */
+    // Allows the protocol to keep track of model URIs for trainers
+    mapping(address => mapping(string => mapping(address => string)))
+        public modelLogger;
+
+    // Random nonce to generate pseudorandom number
+    uint randomNonce = 1;
+
+    // Percent of validators we want to use to validate models
+    uint256 modelValidationPercentage = 100;
+
     // An event that is fire every time a requestor initializes the training procedure
     event TrainingInitialized(address requestor, string topicName);
+
+    // An event fired by the trainer when they are ready to send their model over to the validators
+    event ModelReadyToValidate(address requestor, string topicName);
+
+    // An event that is fired when all of the trainers have submitted their models and are ready to be evaluated
+    event RequestForEvaluationSet(address requestor, string topicName);
 
     /**
      *  @dev Deploys the Protocol with associated contracts
@@ -75,12 +127,14 @@ contract ScatterProtocol {
     constructor(
         address trainingTokenContractAddress,
         address evaluationTokenContractAddress,
-        address scatterTokenContractAddress
+        address scatterTokenContractAddress,
+        address modelTokenContractAddress
     ) {
         owner = payable(msg.sender);
         trainingJobContract = trainingTokenContractAddress;
         evaluationJobContract = evaluationTokenContractAddress;
         scatterTokenContract = scatterTokenContractAddress;
+        modelTokenContract = modelTokenContractAddress;
     }
 
     /**
@@ -168,7 +222,7 @@ contract ScatterProtocol {
      */
     function initModelValidator() public {
         bool canBePromoted = IScatterToken(scatterTokenContract)
-            .canBecomeModelValidator();
+            .canBecomeValidator();
         require(
             canBePromoted,
             "Your node is not eligible to become a model validator"
@@ -183,7 +237,7 @@ contract ScatterProtocol {
             networkTrainerOrder,
             msg.sender
         );
-        addressToRoles[msg.sender] = roles.ModelValidator;
+        addressToRoles[msg.sender] = roles.Validator;
         _addToOrderedArray(
             networkValidators,
             networkValidatorOrder,
@@ -192,11 +246,26 @@ contract ScatterProtocol {
     }
 
     /**
-     *  @dev Start the training procedure for a specific topic
+     *  @dev Start the training procedure for a specific topic - chooses random validators
      *  @param topicName The topic we want to train the model for
      */
-    function startTraining(string memory topicName) public {
+    function startTraining(string memory topicName) public isRequestor {
         if (checkIfTopicExistsForRequestor(msg.sender, topicName)) {
+            uint256 validatorCount = uint256(
+                (networkValidators.length * modelValidationPercentage) / 100
+            );
+
+            address[] memory chosenValidators = _getRandomAddressSubset(
+                networkValidators,
+                validatorCount
+            );
+
+            for (uint i = 0; i < chosenValidators.length; i++) {
+                validatorTrainingMap[msg.sender][topicName][
+                    chosenValidators[i]
+                ] = true;
+            }
+
             emit TrainingInitialized(msg.sender, topicName);
         }
     }
@@ -238,15 +307,19 @@ contract ScatterProtocol {
         if (addressToRoles[addressToFind] == roles.Trainer) {
             return "trainer";
         }
-        if (addressToRoles[addressToFind] == roles.ModelValidator) {
+        if (addressToRoles[addressToFind] == roles.Validator) {
             return "validator";
+        }
+
+        if (addressToRoles[addressToFind] == roles.Challenger) {
+            return "challenge";
         }
 
         return "no role";
     }
 
     /**
-     *  @dev Create a training job NFT for a specific topic
+     *  @dev Create a training job NFT for a specific topic + locks up the respective amount of token
      *  @param tokenURI The Content ID Hash for the training job zip file
      *  @param topicName The name of the topic
      */
@@ -254,15 +327,29 @@ contract ScatterProtocol {
         string memory tokenURI,
         string memory topicName,
         uint256 pooledReward
-    ) external {
-        if (addressToRoles[msg.sender] == roles.Requestor) {
-            ITrainingJobToken(trainingJobContract).publishTrainingJob(
-                tokenURI,
-                topicName,
-                msg.sender,
-                pooledReward
-            );
-        }
+    ) external isRequestor {
+        ITrainingJobToken(trainingJobContract).publishTrainingJob(
+            tokenURI,
+            msg.sender
+        );
+
+        address[] memory emptyAddressArray = new address[](0);
+
+        TrainingJobInfo memory trainingInfo = TrainingJobInfo(
+            tokenURI,
+            emptyAddressArray,
+            pooledReward
+        );
+        addressToTrainingJobInfo[msg.sender][topicName] = trainingInfo;
+
+        // Enables trainers to view all topics by a specific network participant
+        addressToTopics[msg.sender].push(topicName);
+
+        IScatterToken(scatterTokenContract).requestorLockToken(
+            msg.sender,
+            topicName,
+            pooledReward
+        );
     }
 
     /**
@@ -273,12 +360,20 @@ contract ScatterProtocol {
     function trainerAddTopic(
         address requestorAddress,
         string memory requestorTopic
-    ) external {
-        if (addressToRoles[msg.sender] == roles.Trainer) {
-            addressToTrainingJobInfo[requestorAddress][requestorTopic]
-                .trainers
-                .push(msg.sender);
+    ) external isTrainer {
+        bool alreadyInTraining = trainerTrainingMap[requestorAddress][
+            requestorTopic
+        ][msg.sender];
+
+        if (alreadyInTraining) {
+            return;
         }
+
+        addressToTrainingJobInfo[requestorAddress][requestorTopic]
+            .trainers
+            .push(msg.sender);
+
+        trainerTrainingMap[requestorAddress][requestorTopic][msg.sender] = true;
     }
 
     /**
@@ -335,36 +430,6 @@ contract ScatterProtocol {
     }
 
     /**
-     *  @dev Add a new training job to the state
-     *  @param topicName The name of the topic
-     *  @param jobCid The content ID hash of the training job files
-     *  @param requestorAddress The address of the requestor
-     */
-    function processTrainingJobToken(
-        string memory topicName,
-        string memory jobCid,
-        address requestorAddress,
-        uint256 pooledReward
-    ) external onlyTrainingJobTokenContract {
-        require(
-            addressToRoles[requestorAddress] == roles.Requestor,
-            "You must change your node's role to requestor before calling this method"
-        );
-
-        address[] memory emptyAddressArray = new address[](0);
-
-        TrainingJobInfo memory trainingInfo = TrainingJobInfo(
-            jobCid,
-            emptyAddressArray,
-            pooledReward
-        );
-        addressToTrainingJobInfo[requestorAddress][topicName] = trainingInfo;
-
-        // Enables trainers to view all topics by a specific network participant
-        addressToTopics[requestorAddress].push(topicName);
-    }
-
-    /**
      *  @dev Return a new line concatenated string with a list of addresses
      *  @param skip number of elements to skip in array
      */
@@ -418,6 +483,46 @@ contract ScatterProtocol {
         return topicList;
     }
 
+    function publishModelToProtocol(
+        string memory modelURI,
+        address requestorAddress,
+        string memory topicName
+    ) external isTrainer {
+        IModelToken(modelTokenContract).publishModel(modelURI, msg.sender);
+        modelLogger[requestorAddress][topicName][msg.sender] = modelURI;
+
+        address[] memory trainers = addressToTrainingJobInfo[requestorAddress][
+            topicName
+        ].trainers;
+
+        // Check if we are ready to validate all the models from all of the trainers
+        for (uint i = 0; i < trainers.length; i++) {
+            if (
+                keccak256(
+                    bytes(modelLogger[requestorAddress][topicName][trainers[i]])
+                ) == keccak256(bytes(""))
+            ) {
+                return;
+            }
+        }
+
+        // Only emit a request for the evaluation data once we know all the trainers have trained their model
+        // This ensures that trainers do not exploit the evaluation data to train their model beforehand
+        emit RequestForEvaluationSet(requestorAddress, topicName);
+    }
+
+    function submitEvaluationSet(
+        string memory topicName,
+        string memory evaluationSetURI
+    ) public isRequestor {
+        IEvaluationJobToken(evaluationJobContract).publishEvaluationJob(
+            evaluationSetURI,
+            msg.sender
+        );
+
+        emit ModelReadyToValidate(msg.sender, topicName);
+    }
+
     /**
      *  @dev Modifier to ensure only the training job token contract can run a function
      */
@@ -454,6 +559,38 @@ contract ScatterProtocol {
         //     bytes(addressToNodeId[msg.sender]).length > 0,
         //     "You must have a node id set for other nodes to be able to communicate with you"
         // );
+        _;
+    }
+
+    modifier isRequestor() {
+        require(
+            addressToRoles[msg.sender] == roles.Requestor,
+            "You must change your node's role to requestor before calling this method"
+        );
+        _;
+    }
+
+    modifier isTrainer() {
+        require(
+            addressToRoles[msg.sender] == roles.Trainer,
+            "You must change your node's role to trainer before calling this method"
+        );
+        _;
+    }
+
+    modifier isValidator() {
+        require(
+            addressToRoles[msg.sender] == roles.Validator,
+            "You must change your node's role to validator before calling this method"
+        );
+        _;
+    }
+
+    modifier isChallenger() {
+        require(
+            addressToRoles[msg.sender] == roles.Challenger,
+            "You must change your node's role to challenger before calling this method"
+        );
         _;
     }
 
@@ -507,5 +644,51 @@ contract ScatterProtocol {
 
         array.pop();
         delete orderMap[addressToRemove];
+    }
+
+    function _pseudoRandomNumber() private returns (uint) {
+        randomNonce++;
+        return
+            uint(
+                keccak256(
+                    abi.encodePacked(
+                        block.difficulty,
+                        block.timestamp,
+                        networkValidators,
+                        randomNonce
+                    )
+                )
+            );
+    }
+
+    function _getRandomAddressSubset(
+        address[] memory arr,
+        uint256 count
+    ) private returns (address[] memory) {
+        require(
+            count <= arr.length,
+            "Count should be less than or equal to array length"
+        );
+
+        address[] memory shuffled = _shuffle(arr);
+        address[] memory result = new address[](count);
+
+        for (uint256 i = 0; i < count; i++) {
+            result[i] = shuffled[i];
+        }
+
+        return result;
+    }
+
+    function _shuffle(address[] memory arr) private returns (address[] memory) {
+        address[] memory shuffled = arr;
+        uint256 n = shuffled.length;
+
+        for (uint256 i = n - 1; i > 0; i--) {
+            uint256 j = _pseudoRandomNumber() % (i + 1);
+            (shuffled[i], shuffled[j]) = (shuffled[j], shuffled[i]);
+        }
+
+        return shuffled;
     }
 }

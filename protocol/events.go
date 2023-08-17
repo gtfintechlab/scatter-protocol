@@ -62,6 +62,35 @@ func TrainingEventListener(node *utils.PeerNode) {
 	}
 }
 
+func ModelValidationListener(node *utils.PeerNode) {
+	contractABI, _ := abi.JSON(strings.NewReader(string(scatterprotocol.ScatterprotocolABI)))
+
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{common.HexToAddress(utils.SCATTER_PROTOCOL_CONTRACT)},
+		Topics:    [][]common.Hash{{contractABI.Events["ModelReadyToValidate"].ID}},
+	}
+
+	logs := make(chan types.Log)
+	subscription, err := ethereumClient.SubscribeFilterLogs(context.Background(), query, logs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer subscription.Unsubscribe()
+
+	for {
+		select {
+		case err := <-subscription.Err():
+			log.Fatal(err)
+		case event := <-logs:
+			eventUnpacked := utils.ModelReadyToValidateEvent{}
+			contractABI.UnpackIntoInterface(&eventUnpacked, "ModelReadyToValidate", event.Data)
+			if IsValidatorForRequestorAndTopic(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName) {
+				go RunEvaluationProcedure()
+			}
+		}
+	}
+}
+
 func RunTrainingProcedure(node *utils.PeerNode, requestorId string, topicName string) {
 	dockerSetup()
 	ipfsCid := GetCidFromAddressAndTopic(node, requestorId, topicName)
@@ -70,3 +99,5 @@ func RunTrainingProcedure(node *utils.PeerNode, requestorId string, topicName st
 	buildImage(requestorId, ipfsCid, dataPath)
 	runContainer(requestorId, ipfsCid)
 }
+
+func RunEvaluationProcedure() {}

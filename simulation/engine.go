@@ -86,6 +86,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				*environment.EthereumNode,
 				utils.SCATTER_TOKEN_CONTRACT,
 			)
+
 			clearDatabase(createdNode.DataStore)
 			peerDatabase.MigratePeerDB("up",
 				node.Type,
@@ -94,11 +95,13 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				*node.DatastorePort,
 			)
 
-			if nodeType == utils.PEER_REQUESTOR {
+			switch nodeType {
+			case utils.PEER_REQUESTOR:
 				protocol.InitRequestorNode(createdNode)
-			} else {
+			case utils.PEER_TRAINER:
 				protocol.InitTrainerNode(createdNode)
 			}
+
 			go createdNode.Start(createdNode, *node.UseMdns)
 			simulationNode = utils.SimulationNode{PeerNode: createdNode}
 		}

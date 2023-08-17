@@ -15,6 +15,8 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
     mapping(address => uint256) public addressToStake;
     mapping(address => uint256) internal addressToStakeTime;
 
+    mapping(address => mapping(string => uint256)) requestorLockedTokenForTrainingJob;
+
     address public scatterProtocolAddress;
 
     event TokensStaked(address from, uint256 amount);
@@ -53,6 +55,21 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
         super._mint(account, amount);
     }
 
+    function requestorLockToken(
+        address requestorAddress,
+        string memory topicName,
+        uint256 amount
+    ) external onlyScatterProtocolContract {
+        require(
+            amount <= this.balanceOf(msg.sender),
+            "Cannot lock more tokens than you own"
+        );
+        _burn(msg.sender, amount);
+        requestorLockedTokenForTrainingJob[requestorAddress][
+            topicName
+        ] = amount;
+    }
+
     function stakeToken(uint256 amount) public noReentrant {
         require(
             amount <= this.balanceOf(msg.sender),
@@ -82,7 +99,7 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
         roles messageSenderRole = IScatterProtocol(scatterProtocolAddress)
             .getEnumRoleByAddress(msg.sender);
         if (
-            messageSenderRole == roles.ModelValidator &&
+            messageSenderRole == roles.Validator &&
             addressToStake[msg.sender] < requiredModelValidatorStake
         ) {
             IScatterProtocol(scatterProtocolAddress).setRole(
@@ -100,8 +117,16 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
         return addressToStake[account];
     }
 
-    function canBecomeModelValidator() external view returns (bool) {
+    function canBecomeValidator() external view returns (bool) {
         return addressToStake[msg.sender] >= requiredModelValidatorStake;
+    }
+
+    modifier onlyScatterProtocolContract() {
+        require(
+            msg.sender == scatterProtocolAddress,
+            "This method can only be called by the scatter protocol contract"
+        );
+        _;
     }
 
     modifier onlyOwner() {

@@ -37,6 +37,7 @@ type Contracts struct {
 	ScatterTokenContract    string `json:"SCATTER_TOKEN_CONTRACT"`
 	TrainingTokenContract   string `json:"TRAINING_TOKEN_CONTRACT"`
 	EvaluationTokenContract string `json:"EVALUATION_TOKEN_CONTRACT"`
+	ModelTokenContract      string `json:"MODEL_TOKEN_CONTRACT"`
 }
 
 func ReadContractInfo() Contracts {
@@ -53,6 +54,7 @@ var (
 	TRAINING_TOKEN_CONTRACT   = CONTRACTS.TrainingTokenContract
 	EVALUATION_TOKEN_CONTRACT = CONTRACTS.EvaluationTokenContract
 	SCATTER_TOKEN_CONTRACT    = CONTRACTS.ScatterTokenContract
+	MODEL_TOKEN_CONTRACT      = CONTRACTS.ModelTokenContract
 )
 
 var PROTOCOL_IDENTIFIER protocol.ID = "/scatter-protocol/1.0.0"
@@ -205,6 +207,12 @@ type TopicInformation struct {
 }
 
 type TrainingInitializedEvent struct {
+	Requestor common.Address
+	TopicName string
+}
+
+type ModelReadyToValidateEvent struct {
+	Trainer   common.Address
 	Requestor common.Address
 	TopicName string
 }

@@ -6,5 +6,6 @@ enum roles {
     NoRole,
     Requestor,
     Trainer,
-    ModelValidator
+    Validator,
+    Challenger
 }

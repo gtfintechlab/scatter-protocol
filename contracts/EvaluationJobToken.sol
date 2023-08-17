@@ -15,7 +15,7 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable {
 
     Counters.Counter private _tokenIds;
 
-    constructor() ERC721("Scatter Protocol Evaluation Jobs", "SPTJ") {
+    constructor() ERC721("Scatter Protocol Evaluation Jobs", "SPEJ") {
         protocolDeployer = payable(msg.sender);
     }
 

@@ -191,6 +191,24 @@ func SetNodeId(node *utils.PeerNode, nodeId string) {
 	scatterProtocolContract.SetNodeId(auth, nodeId)
 }
 
+func GetNodeIdFromAddress(node *utils.PeerNode, blockchainAddress string) string {
+	auth := getTransactor(node)
+	nodeId, _ := scatterProtocolContract.AddressToNodeId(&bind.CallOpts{From: auth.From}, common.HexToAddress(blockchainAddress))
+
+	return nodeId
+}
+
+func IsValidatorForRequestorAndTopic(node *utils.PeerNode, requestorAddress string, topicName string) bool {
+	auth := getTransactor(node)
+	isValidator, _ := scatterProtocolContract.ValidatorTrainingMap(
+		&bind.CallOpts{From: auth.From},
+		common.HexToAddress(requestorAddress),
+		topicName,
+		auth.From,
+	)
+
+	return isValidator
+}
 func PublishEvaluationJob(node *utils.PeerNode, evaluationJobPath string) string {
 	auth := getTransactor(node)
 	ipfsCid := utils.UploadFileToIpfs(evaluationJobPath)
