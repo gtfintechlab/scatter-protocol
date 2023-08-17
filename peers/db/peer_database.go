@@ -11,7 +11,6 @@ import (
 )
 
 func GetDatapathFromAddressAndIpfs(node *utils.PeerNode, nodeAddress string, ipfsCid string) string {
-	fmt.Println(nodeAddress, ipfsCid)
 	rows, err := node.DataStore.Query(`
 		SELECT data_path FROM topic_mappings
 		WHERE (node_address = $1) AND (ipfs_id = $2);

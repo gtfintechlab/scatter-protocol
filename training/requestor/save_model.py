@@ -2,7 +2,7 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from training.trainer.data import CustomDataset
+from data import CustomDataset
 
 
 class CustomModel(nn.Module):
@@ -111,16 +111,11 @@ class CustomModel(nn.Module):
         )
 
     def saveModel(self, pathName):
-        torch.onnx.export(
-            model,
-            next(iter(model.trainLoader))[0],
-            pathName,
-            verbose=True,
-        )
+        torch.save(model.state_dict(), pathName)
 
 
 if __name__ == "__main__":
-    dataset = CustomDataset(trainDataPath="../data/example")
+    dataset = CustomDataset(trainDataPath="./data/example")
     model = CustomModel(dataset=dataset)
-    model.eval()
-    model.saveModel("models/example.onnx")
+    model.trainModel()
+    model.saveModel("./output/example.pt")

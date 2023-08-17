@@ -30,14 +30,24 @@ func dockerSetup() {
 }
 
 func buildImage(requestorId string, ipfsCid string, dataPath string) {
-	parentDirectory, _ := os.Getwd()
-	os.Setenv("DOCKER_BUILDKIT", "0")
-	err := exec.Command(
+	basePath, _ := os.Getwd()
+	os.MkdirAll(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/output", basePath, requestorId, ipfsCid), 0700)
+	os.MkdirAll(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/data", basePath, requestorId, ipfsCid), 0700)
+
+	exec.Command("cp", "--recursive", dataPath, fmt.Sprintf("%s/training/trainer/jobs/%s/%s/data/", basePath, requestorId, ipfsCid)).Run()
+
+	cmd := exec.Command(
 		"docker", "build",
-		"--build-arg", fmt.Sprintf("DATA_PATH=%s", dataPath),
+		// "--build-arg", fmt.Sprintf("DATA_PATH=%s", dataPath),
 		"-t", fmt.Sprintf("%s:%s", strings.ToLower(requestorId), strings.ToLower(ipfsCid)),
-		"-f", fmt.Sprintf("%s/training/trainer/jobs/%s/%s", parentDirectory, requestorId, ipfsCid), ".",
-	).Run()
+		"-f", fmt.Sprintf("%s/training/trainer/jobs/%s/%s/Dockerfile", basePath, requestorId, ipfsCid),
+		fmt.Sprintf("%s/training/trainer/jobs/%s/%s/", basePath, requestorId, ipfsCid),
+	)
+
+	fmt.Println(cmd.String())
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
 
 	if err != nil {
 		log.Fatal("An error occurred when building the image ", err)
@@ -45,22 +55,19 @@ func buildImage(requestorId string, ipfsCid string, dataPath string) {
 
 }
 
-func runContainer(requestorId string, topicName string) {
+func runContainer(requestorId string, ipfsCid string) {
 	basePath, _ := os.Getwd()
 	cmd := exec.Command(
 		"docker", "run",
-		"--privileged",
-		"-v", "/var/run/docker.sock:/var/run/docker.sock",
-		"-v", fmt.Sprintf("\"%s/training/trainer/jobs/%s/%s/output:/tmp/%s/%s/output/\"",
+		"-v", fmt.Sprintf("\"%s/training/trainer/jobs/%s/%s/output:/tmp/output/\"",
 			basePath,
-			requestorId, strings.ReplaceAll(topicName, " ", "-"),
-			requestorId, strings.ReplaceAll(topicName, " ", "-")),
-		"-it", fmt.Sprintf("outer-image:%s", requestorId),
+			requestorId, ipfsCid),
+		"-it", fmt.Sprintf("%s:%s", strings.ToLower(requestorId), strings.ToLower(ipfsCid)),
 	)
-
+	fmt.Println(cmd)
 	err := cmd.Run()
 	if err != nil {
-		log.Fatalf("Failed to run container for %s:%s with error: %s", requestorId, topicName, err)
+		log.Fatalf("Failed to run container for %s:%s with error: %s", requestorId, ipfsCid, err)
 	}
 }
 

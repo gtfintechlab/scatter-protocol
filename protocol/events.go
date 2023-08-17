@@ -56,7 +56,7 @@ func TrainingEventListener(node *utils.PeerNode) {
 			trainersForTopic := GetAllTrainersByAddressAndTopic(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName)
 
 			if slices.Contains(trainersForTopic, strings.ToLower(*node.BlockchainAddress)) {
-				RunTrainingProcedure(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName)
+				go RunTrainingProcedure(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName)
 			}
 		}
 	}
@@ -68,5 +68,5 @@ func RunTrainingProcedure(node *utils.PeerNode, requestorId string, topicName st
 	dataPath := peerDatabase.GetDatapathFromAddressAndIpfs(node, requestorId, ipfsCid)
 	downloadTrainingJob(ipfsCid, requestorId)
 	buildImage(requestorId, ipfsCid, dataPath)
-	// runContainer(requestorId, topicName)
+	runContainer(requestorId, ipfsCid)
 }
