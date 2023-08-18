@@ -97,6 +97,37 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 
 			go createdNode.Start(createdNode, *node.UseMdns)
 			simulationNode = utils.SimulationNode{PeerNode: createdNode}
+		case utils.PEER_VALIDATOR:
+			createdNode := peers.InitPeerNode(
+				node.Type,
+				*node.ExtAddress,
+				*node.DatastoreUsername,
+				*node.DatastorePassword,
+				*node.DatastorePort,
+				*node.BlockchainAddress,
+				*node.PrivateKey,
+			)
+			transferToken(
+				*environment.ProtocolOwnerPrivateKey,
+				int64(*node.InitialScatterTokenSupply),
+				*node.BlockchainAddress,
+				*environment.EthereumNode,
+				utils.SCATTER_TOKEN_CONTRACT,
+			)
+
+			protocol.AddScatterTokenStake(createdNode, utils.VALIDATOR_STAKE)
+			protocol.InitValidatorNode(createdNode)
+
+			clearDatabase(createdNode.DataStore)
+			peerDatabase.MigratePeerDB("up",
+				node.Type,
+				*node.DatastoreUsername,
+				*node.DatastorePassword,
+				*node.DatastorePort,
+			)
+
+			go createdNode.Start(createdNode, *node.UseMdns)
+			simulationNode = utils.SimulationNode{PeerNode: createdNode}
 		}
 
 		nodeConfig[node.Id] = utils.SimulationNodeConfig{

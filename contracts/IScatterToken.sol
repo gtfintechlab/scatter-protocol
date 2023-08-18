@@ -3,7 +3,7 @@
 pragma solidity 0.8.17;
 
 interface IScatterToken {
-    function canBecomeValidator() external returns (bool);
+    function canBecomeValidator(address account) external returns (bool);
 
     function requestorLockToken(
         address requestorAddress,

@@ -117,8 +117,8 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
         return addressToStake[account];
     }
 
-    function canBecomeValidator() external view returns (bool) {
-        return addressToStake[msg.sender] >= requiredModelValidatorStake;
+    function canBecomeValidator(address account) external view returns (bool) {
+        return addressToStake[account] >= requiredModelValidatorStake;
     }
 
     modifier onlyScatterProtocolContract() {

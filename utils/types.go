@@ -78,6 +78,8 @@ const (
 	SEPOLIA = 11155111
 )
 
+const VALIDATOR_STAKE = 10000
+
 const (
 	Reset  = "\033[0m"
 	Red    = "\033[31m"

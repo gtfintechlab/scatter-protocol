@@ -35,6 +35,18 @@
             "blockchainAddress": "0xE4505606D2DD1B47A782bF4149f073EB91E0A6Bb",
             "privateKey": "f898575dc21b5a4fc16ee69d8482b63b22ed23326c08efb495bf9417c60c4f0c",
             "initialScatterTokenSupply": 100000
+        },
+        {
+            "id": "validator_node",
+            "type": "validator",
+            "extAddress": ":7002",
+            "datastorePort": 8703,
+            "datastoreUsername": "postgres",
+            "datastorePassword": "postgres",
+            "useMdns": true,
+            "blockchainAddress": "0xAD9B1bF0Ae303fEDAe8860633a4DeDEE2823e8b3",
+            "privateKey": "e631f0aa29a19762bb389149428e7066600f2c3fe0dbf7cd20681dd208ef0dde",
+            "initialScatterTokenSupply": 100000
         }
     ],
 

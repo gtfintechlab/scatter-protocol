@@ -29,13 +29,10 @@
     "deploy-model:no-push": "npm run contract:install && npm run contract:compile-model && npm run contract:generate-model",
     "deploy-all": "npm run deploy-evaluation:no-push && npm run deploy-training:no-push && npm run deploy-model:no-push && npm run deploy-token:no-push && npm run deploy-protocol:no-push && go run scripts/deploy.go --contract all",
     "format": "prettier --write \"**/*.{sol,}\"",
-    "network": "concurrently \"npm run peer:requestor\" \"npm run peer:trainer\" \"npm run celestial\"",
     "debug": "go run main.go --utils debug",
     "keygen": "go run main.go --utils keygen",
     "simulation": "go run simulation/setup/environment.go && go run main.go --utils simulation",
     "ipfs": "go run main.go --utils ipfs",
-    "migrate:celestial": "go run main.go --utils migrate:celestial --direction up",
-    "migrate:celestial:down": "go run main.go --utils migrate:celestial --direction down",
     "migrate:peer-requestor": "go run main.go --utils migrate:peer --direction up --peerType requestor",
     "migrate:peer-requestor:down": "go run main.go --utils migrate:peer --direction down --peerType requestor",
     "migrate:peer-trainer": "go run main.go --utils migrate:peer --direction up --peerType trainer",
@@ -44,7 +41,6 @@
     "bootstrap": "go run main.go --type bootstrap",
     "peer:requestor": "npm run migrate:peer-requestor && go run main.go --type peer --peerType requestor --extAddress :5002",
     "peer:trainer": "npm run migrate:peer-trainer && go run main.go --type peer --peerType trainer --extAddress :6001",
-    "celestial": "npm run migrate:celestial && go run main.go --type celestial",
     "merge-contracts": "sol-merger \"./contracts/*.sol\" ./build"
   },
   "dependencies": {

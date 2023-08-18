@@ -47,6 +47,46 @@ func InitTrainerNode(node *utils.PeerNode) {
 	scatterProtocolContract.InitTrainerNode(auth)
 }
 
+func InitValidatorNode(node *utils.PeerNode) {
+	auth := getTransactor(node)
+	_, err := scatterProtocolContract.InitValidatorNode(auth)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func AddScatterTokenStake(node *utils.PeerNode, amount int64) {
+	auth := getTransactor(node)
+	_, err := scatterTokenContract.StakeToken(auth, big.NewInt(amount))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func GetScatterTokenStake(node *utils.PeerNode, account string) big.Int {
+	auth := getTransactor(node)
+	stake, err := scatterTokenContract.GetAccountStake(&bind.CallOpts{From: auth.From}, common.HexToAddress(account))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return *stake
+}
+
+func CanBecomeValidator(node *utils.PeerNode, account string) bool {
+	auth := getTransactor(node)
+	isValid, err := scatterTokenContract.CanBecomeValidator(&bind.CallOpts{From: auth.From}, common.HexToAddress(account))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return isValid
+}
+
 func GetProtocolRequestors(node *utils.PeerNode, skipAmount uint64) []string {
 	auth := getTransactor(node)
 	skip := big.NewInt(int64(skipAmount))

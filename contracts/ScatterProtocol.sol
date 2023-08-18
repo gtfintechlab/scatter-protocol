@@ -223,9 +223,10 @@ contract ScatterProtocol {
     /**
      *  @dev Set the current user role to be a trainer
      */
-    function initModelValidator() public {
+    function initValidatorNode() public {
         bool canBePromoted = IScatterToken(scatterTokenContract)
-            .canBecomeValidator();
+            .canBecomeValidator(msg.sender);
+
         require(
             canBePromoted,
             "Your node is not eligible to become a model validator"
