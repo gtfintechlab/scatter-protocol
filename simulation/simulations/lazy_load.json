@@ -77,7 +77,8 @@
             "body": {
                 "requestorAddress": "{PUBLISHED_TOPICS.topics[0].NodeAddress}",
                 "topic": "{PUBLISHED_TOPICS.topics[0].TopicName}",
-                "path": "/home/samrat/Documents/scatterchain/training/data/example"
+                "path": "/home/samrat/Documents/scatterchain/training/data/example",
+                "stake": 500
             }
         },
         {

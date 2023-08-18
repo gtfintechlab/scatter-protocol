@@ -208,10 +208,10 @@ func AddTopicForRequestor(node *utils.PeerNode, trainingJobPath string, topicNam
 	return ipfsCid, transaction.Hash().Hex()
 }
 
-func AddTopicForTrainer(node *utils.PeerNode, address string, topicName string) {
+func AddTopicForTrainer(node *utils.PeerNode, address string, topicName string, stakeAmount int64) {
 	auth := getTransactor(node)
 	_, err := scatterProtocolContract.TrainerAddTopic(
-		auth, common.HexToAddress(address), topicName)
+		auth, common.HexToAddress(address), topicName, big.NewInt(stakeAmount))
 
 	if err != nil {
 		log.Fatal(err)
@@ -252,10 +252,10 @@ func IsValidatorForRequestorAndTopic(node *utils.PeerNode, requestorAddress stri
 
 	return isValidator
 }
-func PublishEvaluationJob(node *utils.PeerNode, evaluationJobPath string, topicName string) string {
+func PublishEvaluationJob(node *utils.PeerNode, evaluationJobPath string, topicName string, metrics []string) string {
 	auth := getTransactor(node)
 	ipfsCid := utils.UploadFileToIpfs(evaluationJobPath)
-	_, err := scatterProtocolContract.SubmitEvaluationSet(auth, topicName, ipfsCid)
+	_, err := scatterProtocolContract.SubmitEvaluationSet(auth, topicName, ipfsCid, metrics)
 
 	if err != nil {
 		log.Fatal(err)

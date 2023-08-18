@@ -97,7 +97,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 					"Trainer nodes must specify a path to the data of the topic they want to subscribe to")
 				return
 			}
-			protocol.AddTopicForTrainer(node, *requestBody.RequestorAddress, requestBody.Topic)
+			protocol.AddTopicForTrainer(node, *requestBody.RequestorAddress, requestBody.Topic, *requestBody.Stake)
 			peerDatabase.AddTopicFromInfo(
 				node,
 				*requestBody.RequestorAddress,

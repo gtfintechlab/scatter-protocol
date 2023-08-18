@@ -1,7 +1,7 @@
 {
   "scripts": {
     "contract:install": "npm i @openzeppelin/contracts",
-    "contract:compile-protocol": "solc contracts/ScatterProtocol.sol --overwrite --bin --abi -o build --base-path '/' --include-path 'node_modules/'",
+    "contract:compile-protocol": "solc contracts/ScatterProtocol.sol --overwrite --bin --abi -o build --base-path '/' --include-path 'node_modules/' --optimize --optimize-runs 200",
     "contract:generate-protocol": "abigen --bin=./build/ScatterProtocol.bin --abi=./build/ScatterProtocol.abi --pkg=scatterprotocol --out=protocol/scatter-protocol/ScatterProtocol.go",
     "contract:push-protocol": "go run scripts/deploy.go --contract protocol",
     "deploy-protocol": "npm run contract:install && npm run contract:compile-protocol && npm run contract:generate-protocol && npm run contract:push-protocol",

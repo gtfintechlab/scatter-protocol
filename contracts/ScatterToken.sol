@@ -12,10 +12,23 @@ import "./IScatterProtocol.sol";
 contract ScatterToken is ERC20Capped, ERC20Burnable {
     uint256 public requiredModelValidatorStake;
     address payable public owner;
+
+    // Long Term Stake
     mapping(address => uint256) public addressToStake;
     mapping(address => uint256) internal addressToStakeTime;
 
+    // Short Term Stakes for trainers
+    mapping(address => mapping(string => mapping(address => uint256))) trainerLockedTokenForTrainingJob;
+
+    // Reward pool for requestors
     mapping(address => mapping(string => uint256)) requestorLockedTokenForTrainingJob;
+
+    // Lottery for challenges who prove a validator wrong
+    uint256 lotteryPool = 0;
+    uint256 lotteryPercentage = 10;
+
+    // Punishment constants
+    uint256 validatorPunishmentPercentage = 0;
 
     address public scatterProtocolAddress;
 
@@ -70,6 +83,22 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
         ] = amount;
     }
 
+    function trainerLockToken(
+        address trainerAddress,
+        address requestorAddress,
+        string memory topicName,
+        uint256 amount
+    ) external onlyScatterProtocolContract {
+        require(
+            amount <= this.balanceOf(trainerAddress),
+            "Cannot lock more tokens than you own"
+        );
+        _burn(trainerAddress, amount);
+        trainerLockedTokenForTrainingJob[requestorAddress][topicName][
+            trainerAddress
+        ] = amount;
+    }
+
     function stakeToken(uint256 amount) public noReentrant {
         require(
             amount <= this.balanceOf(msg.sender),
@@ -120,6 +149,60 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
     function canBecomeValidator(address account) external view returns (bool) {
         return addressToStake[account] >= requiredModelValidatorStake;
     }
+
+    function donateToLottery(
+        address requestorAddress,
+        string memory topicName
+    ) external onlyScatterProtocolContract {
+        uint256 requestorPooledReward = requestorLockedTokenForTrainingJob[
+            requestorAddress
+        ][topicName];
+
+        uint256 toLottery = (requestorPooledReward * lotteryPercentage) / 100;
+        lotteryPool += toLottery;
+        requestorLockedTokenForTrainingJob[requestorAddress][
+            topicName
+        ] -= toLottery;
+    }
+
+    function punishRogueTrainers(
+        address requestorAddress,
+        string memory topicName,
+        address[] memory trainers
+    ) external onlyScatterProtocolContract {
+        for (uint i = 0; i < trainers.length; i++) {
+            lotteryPool += trainerLockedTokenForTrainingJob[requestorAddress][
+                topicName
+            ][trainers[i]];
+            trainerLockedTokenForTrainingJob[requestorAddress][topicName][
+                trainers[i]
+            ] = 0;
+        }
+    }
+
+    function punishRogueValidators(
+        address[] memory validators
+    ) external onlyScatterProtocolContract {
+        for (uint i = 0; i < validators.length; i++) {
+            uint256 punishmentAmount = (addressToStake[validators[i]] *
+                validatorPunishmentPercentage) / 100;
+            lotteryPool += punishmentAmount;
+
+            addressToStake[validators[i]] -= punishmentAmount;
+        }
+    }
+
+    function rewardBenevolentTrainers(
+        address requestorAddress,
+        string memory topicName,
+        address[] memory trainers
+    ) external onlyScatterProtocolContract {}
+
+    function rewardBenevolentValidators(
+        address requestorAddress,
+        string memory topicName,
+        address[] memory validators
+    ) external onlyScatterProtocolContract {}
 
     modifier onlyScatterProtocolContract() {
         require(

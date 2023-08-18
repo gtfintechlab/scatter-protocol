@@ -2,15 +2,11 @@
 
 pragma solidity ^0.8.17;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./ITrainingJobToken.sol";
 import "./IEvaluationJobToken.sol";
 import "./IScatterToken.sol";
 import "./IModelToken.sol";
-
 import "./Shared.sol";
 
 // Model Validator: 10,000 Scatter Token Staked
@@ -18,8 +14,11 @@ contract ScatterProtocol {
     struct TrainingJobInfo {
         string trainingJobCid;
         address[] trainers;
+        uint256 publishedTrainerCount;
         uint256 pooledReward;
         string evaluationJobCid;
+        uint256 jobTerminationDate;
+        uint256 metricLogCount;
     }
 
     address payable public owner;
@@ -82,20 +81,20 @@ contract ScatterProtocol {
     // Used to check if a trainer is already subscribed to a topic
     mapping(address => mapping(string => mapping(address => bool)))
         public trainerTrainingMap;
+    mapping(address => mapping(string => address[])) trainerTrainingMapKeys;
 
     // Mapping of validators for each topic
     mapping(address => mapping(string => mapping(address => bool)))
         public validatorTrainingMap;
+    mapping(address => mapping(string => address[])) validatorTrainingMapKeys;
 
     /*
         Example modelLogger Mapping:
         {
             requestor address: {
                 topic name: {
-                    trainer address: {
-                        validator address: true,
-                        validator 2 address: false
-                    }
+                    trainer 1 address: CID 1,
+                    trainer 2 address: CID 1,
                 }
             }
         }
@@ -103,6 +102,52 @@ contract ScatterProtocol {
     // Allows the protocol to keep track of model URIs for trainers
     mapping(address => mapping(string => mapping(address => string)))
         public modelLogger;
+
+    // Mappings used to keep track of evaluaation metrics
+    /*
+        Example evaluationMetrics Mapping:
+        {
+            requestor address: {
+                topic name: {
+                    metric 1: true,
+                    metric 2: true
+                    }
+                }
+            }
+        }
+    */
+    mapping(address => mapping(string => mapping(string => bool))) evaluationMetrics;
+    mapping(address => mapping(string => string[])) evaluationMetricsList;
+
+    /*
+        Example evaluationMetricScore Mapping:
+        {
+            requestor address: {
+                topic name: {
+                    validator address: {
+                        trainer address: {
+                            metric 1: score 1, 
+                            metric 2: score 2
+                        },
+                        trainer 2 address: {...}
+                    }
+                }
+            }
+        }
+    */
+    mapping(address => mapping(string => mapping(address => mapping(address => mapping(string => uint256))))) evaluationMetricScores;
+
+    // Rogue + Benevolent trainers used for reward mechanism
+    mapping(address => mapping(string => address[])) rogueTrainers;
+    mapping(address => mapping(string => mapping(address => bool))) rogueTrainerMapping;
+    mapping(address => mapping(string => address[])) benevolentTrainers;
+    mapping(address => mapping(string => mapping(address => bool))) benevolentTrainerMapping;
+
+    // Rogue + Benevolent validators used for reward mechanism
+    mapping(address => mapping(string => address[])) rogueValidators;
+    mapping(address => mapping(string => mapping(address => bool))) rogueValidatorMapping;
+    mapping(address => mapping(string => address[])) benevolentValidators;
+    mapping(address => mapping(string => mapping(address => bool))) benevolentValidatorMapping;
 
     // Random nonce to generate pseudorandom number
     uint randomNonce = 1;
@@ -119,6 +164,7 @@ contract ScatterProtocol {
     // An event that is fired when all of the trainers have submitted their models and are ready to be evaluated
     event RequestForEvaluationSet(address requestor, string topicName);
 
+    // An event used for debugging purposes
     event DebugEvent(string message);
 
     /**
@@ -249,6 +295,90 @@ contract ScatterProtocol {
         );
     }
 
+    function rewardDistributor(
+        address requestorAddress,
+        string memory topicName
+    ) public {
+        bool distributeRewards = false;
+        // First we must check if the job's time limit is up
+        uint256 terminationTime = addressToTrainingJobInfo[requestorAddress][
+            topicName
+        ].jobTerminationDate;
+
+        if (block.timestamp >= terminationTime && terminationTime != 0) {
+            distributeRewards = true;
+        }
+
+        // Next we must check if all of the trainers have submitted their models
+        bool allModelsSubmitted = _checkTrainerModelSubmissions(
+            requestorAddress,
+            topicName
+        );
+
+        // Next we must check that all of the validators have validated the models
+        bool allModelsValidated = _checkValidatorModelValidations(
+            requestorAddress,
+            topicName
+        );
+
+        // We distribute rewards when all models are validated and submitted or the job is over time
+        distributeRewards =
+            distributeRewards ||
+            (allModelsSubmitted && allModelsValidated);
+
+        // 10% towards lottery for challengers
+        // Get Rogue Trainers - Slash 100% of what they staked --> lottery
+        // Get Rogue Validators - Slash 10% of their stake --> lottery
+        // Reward benevolent validators - reward should be proportional to their stake
+        // Return trainer staked token to benevolent trainers
+        // Reward benevolent trainers - reward should be proportional to their short-term stake & model score
+        if (distributeRewards) {
+            _populateTrainerStatus(requestorAddress, topicName);
+            _populateValidatorStatus(requestorAddress, topicName);
+
+            address[] memory rogueTrainerList = rogueTrainers[requestorAddress][
+                topicName
+            ];
+            address[] memory rogueValidatorList = rogueValidators[
+                requestorAddress
+            ][topicName];
+
+            address[] memory benevolentTrainerList = benevolentTrainers[
+                requestorAddress
+            ][topicName];
+            address[] memory benevolentValidatorList = benevolentValidators[
+                requestorAddress
+            ][topicName];
+
+            IScatterToken(scatterTokenContract).donateToLottery(
+                requestorAddress,
+                topicName
+            );
+
+            IScatterToken(scatterTokenContract).punishRogueTrainers(
+                requestorAddress,
+                topicName,
+                rogueTrainerList
+            );
+
+            IScatterToken(scatterTokenContract).punishRogueValidators(
+                rogueValidatorList
+            );
+
+            IScatterToken(scatterTokenContract).rewardBenevolentTrainers(
+                requestorAddress,
+                topicName,
+                benevolentTrainerList
+            );
+
+            IScatterToken(scatterTokenContract).rewardBenevolentValidators(
+                requestorAddress,
+                topicName,
+                benevolentValidatorList
+            );
+        }
+    }
+
     /**
      *  @dev Start the training procedure for a specific topic - chooses random validators
      *  @param topicName The topic we want to train the model for
@@ -272,6 +402,9 @@ contract ScatterProtocol {
             validatorTrainingMap[msg.sender][topicName][
                 chosenValidators[i]
             ] = true;
+            validatorTrainingMapKeys[msg.sender][topicName].push(
+                chosenValidators[i]
+            );
         }
 
         emit TrainingInitialized(msg.sender, topicName);
@@ -343,8 +476,11 @@ contract ScatterProtocol {
         TrainingJobInfo memory trainingInfo = TrainingJobInfo(
             tokenURI,
             emptyAddressArray,
+            0,
             pooledReward,
-            "" // evaluation job is empty at the beginning but will be set later
+            "", // evaluation job is empty at the beginning but will be set later
+            block.timestamp + 30 days, // All jobs must be completed within 30 days of submission
+            0
         );
         addressToTrainingJobInfo[msg.sender][topicName] = trainingInfo;
         // Enables trainers to view all topics by a specific network participant
@@ -363,7 +499,8 @@ contract ScatterProtocol {
      */
     function trainerAddTopic(
         address requestorAddress,
-        string memory requestorTopic
+        string memory requestorTopic,
+        uint256 stakeAmount
     ) external isTrainer {
         bool alreadyInTraining = trainerTrainingMap[requestorAddress][
             requestorTopic
@@ -373,11 +510,20 @@ contract ScatterProtocol {
             return;
         }
 
+        IScatterToken(scatterTokenContract).trainerLockToken(
+            msg.sender,
+            requestorAddress,
+            requestorTopic,
+            stakeAmount
+        );
         addressToTrainingJobInfo[requestorAddress][requestorTopic]
             .trainers
             .push(msg.sender);
 
         trainerTrainingMap[requestorAddress][requestorTopic][msg.sender] = true;
+        trainerTrainingMapKeys[requestorAddress][requestorTopic].push(
+            msg.sender
+        );
     }
 
     /**
@@ -492,25 +638,37 @@ contract ScatterProtocol {
         address requestorAddress,
         string memory topicName
     ) external isTrainer {
+        require(
+            Strings.equal(
+                modelLogger[requestorAddress][topicName][msg.sender],
+                ""
+            ),
+            "You have already published a model - cannot publish again!"
+        );
+
+        bool isSubscribed = trainerTrainingMap[requestorAddress][topicName][
+            msg.sender
+        ];
+        require(
+            isSubscribed,
+            "You cannot submit a model to this topic when you are not subscribed to it"
+        );
+
         IModelToken(modelTokenContract).publishModel(modelURI, msg.sender);
         modelLogger[requestorAddress][topicName][msg.sender] = modelURI;
 
-        address[] memory trainers = addressToTrainingJobInfo[requestorAddress][
-            topicName
-        ].trainers;
+        TrainingJobInfo storage info = addressToTrainingJobInfo[
+            requestorAddress
+        ][topicName];
+        info.publishedTrainerCount += 1;
 
-        if (trainers.length == 0) {
-            return;
-        }
         // Check if we are ready to validate all the models from all of the trainers
-        for (uint i = 0; i < trainers.length; i++) {
-            if (
-                keccak256(
-                    bytes(modelLogger[requestorAddress][topicName][trainers[i]])
-                ) == keccak256(bytes(""))
-            ) {
-                return;
-            }
+        address[] memory trainers = info.trainers;
+        if (
+            trainers.length == 0 ||
+            trainers.length != info.publishedTrainerCount
+        ) {
+            return;
         }
 
         // Only emit a request for the evaluation data once we know all the trainers have trained their model
@@ -520,16 +678,56 @@ contract ScatterProtocol {
 
     function submitEvaluationSet(
         string memory topicName,
-        string memory evaluationSetURI
+        string memory evaluationSetURI,
+        string[] memory metrics
     ) public isRequestor {
         IEvaluationJobToken(evaluationJobContract).publishEvaluationJob(
             msg.sender,
             evaluationSetURI
         );
 
+        for (uint i = 0; i < metrics.length; i++) {
+            evaluationMetrics[msg.sender][topicName][metrics[i]] = true;
+        }
+        evaluationMetricsList[msg.sender][topicName] = metrics;
+
         addressToTrainingJobInfo[msg.sender][topicName]
             .evaluationJobCid = evaluationSetURI;
         emit ModelReadyToValidate(msg.sender, topicName);
+    }
+
+    function submitEvaluationMetric(
+        address requestorAddress,
+        string memory topicName,
+        address trainerAddress,
+        string memory evaluationMetricName,
+        uint256 score
+    ) public isValidator {
+        require(
+            evaluationMetrics[requestorAddress][topicName][
+                evaluationMetricName
+            ],
+            "Invalid evaluation metric submitted"
+        );
+
+        require(
+            evaluationMetricScores[requestorAddress][topicName][msg.sender][
+                trainerAddress
+            ][evaluationMetricName] == 0,
+            "Cannot resubmit a metric that has previously been submitted"
+        );
+
+        require(
+            validatorTrainingMap[requestorAddress][topicName][msg.sender],
+            "You are not an assigned validator for this training job"
+        );
+
+        addressToTrainingJobInfo[requestorAddress][topicName]
+            .metricLogCount += 1;
+        // We do the +1 in the case that a metric is 0 because we use 0 to check if a metric has been logged
+        evaluationMetricScores[requestorAddress][topicName][msg.sender][
+            trainerAddress
+        ][evaluationMetricName] = score + 1;
     }
 
     /**
@@ -600,6 +798,122 @@ contract ScatterProtocol {
      */
     function destroy() public onlyOwner {
         selfdestruct(owner);
+    }
+
+    function _checkTrainerModelSubmissions(
+        address requestorAddress,
+        string memory topicName
+    ) private view returns (bool) {
+        address[] memory trainerList = addressToTrainingJobInfo[
+            requestorAddress
+        ][topicName].trainers;
+        uint256 trainersPublishedCount = addressToTrainingJobInfo[
+            requestorAddress
+        ][topicName].publishedTrainerCount;
+        return trainerList.length == trainersPublishedCount;
+    }
+
+    function _checkValidatorModelValidations(
+        address requestorAddress,
+        string memory topicName
+    ) private view returns (bool) {
+        address[] memory validatorList = validatorTrainingMapKeys[
+            requestorAddress
+        ][topicName];
+        string[] memory metrics = evaluationMetricsList[requestorAddress][
+            topicName
+        ];
+        address[] memory trainerList = trainerTrainingMapKeys[requestorAddress][
+            topicName
+        ];
+
+        uint256 metricLogCount = addressToTrainingJobInfo[requestorAddress][
+            topicName
+        ].metricLogCount;
+
+        return
+            metricLogCount ==
+            (validatorList.length * metrics.length * trainerList.length);
+    }
+
+    function _populateTrainerStatus(
+        address requestorAddress,
+        string memory topicName
+    ) private {
+        address[] memory trainers = addressToTrainingJobInfo[requestorAddress][
+            topicName
+        ].trainers;
+        mapping(address => string) storage trainerModelMap = modelLogger[
+            requestorAddress
+        ][topicName];
+
+        for (uint i = 0; i < trainers.length; i++) {
+            if (Strings.equal(trainerModelMap[trainers[i]], "")) {
+                rogueTrainers[requestorAddress][topicName].push(trainers[i]);
+                rogueTrainerMapping[requestorAddress][topicName][
+                    trainers[i]
+                ] = true;
+            } else {
+                benevolentTrainers[requestorAddress][topicName].push(
+                    trainers[i]
+                );
+                benevolentTrainerMapping[requestorAddress][topicName][
+                    trainers[i]
+                ] = true;
+            }
+        }
+    }
+
+    function _populateValidatorStatus(
+        address requestorAddress,
+        string memory topicName
+    ) private {
+        address[] memory validatorList = validatorTrainingMapKeys[
+            requestorAddress
+        ][topicName];
+        string[] memory metrics = evaluationMetricsList[requestorAddress][
+            topicName
+        ];
+        address[] memory trainerList = trainerTrainingMapKeys[requestorAddress][
+            topicName
+        ];
+
+        for (uint i = 0; i < validatorList.length; i++) {
+            for (uint j = 0; j < trainerList.length; j++) {
+                // We do not care about rogue trainers - skip them entirely
+                if (
+                    rogueTrainerMapping[requestorAddress][topicName][
+                        trainerList[j]
+                    ]
+                ) {
+                    continue;
+                }
+
+                for (uint k = 0; k < metrics.length; k++) {
+                    // For a non-rogue trainer, check if their evaluation scores have been set
+                    // Mark them as rogue if not
+                    if (
+                        evaluationMetricScores[requestorAddress][topicName][
+                            validatorList[i]
+                        ][trainerList[j]][metrics[k]] == 0
+                    ) {
+                        rogueValidators[requestorAddress][topicName].push(
+                            validatorList[i]
+                        );
+                        rogueValidatorMapping[requestorAddress][topicName][
+                            validatorList[i]
+                        ] = true;
+                    } else {
+                        benevolentValidators[requestorAddress][topicName].push(
+                            validatorList[i]
+                        );
+                        benevolentValidatorMapping[requestorAddress][topicName][
+                            validatorList[i]
+                        ] = true;
+                    }
+                }
+            }
+        }
     }
 
     /**

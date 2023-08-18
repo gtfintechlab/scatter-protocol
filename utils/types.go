@@ -131,6 +131,7 @@ type AddTopicRequestBody struct {
 	RequestorAddress *string `json:"requestorAddress,omitempty"`
 	Path             *string `json:"path,omitempty"`
 	Reward           *int64  `json:"reward,omitempty"`
+	Stake            *int64  `json:"stake,omitempty"`
 	EvaluationJob    *string `json:"evaluationJob,omitempty"`
 }
 

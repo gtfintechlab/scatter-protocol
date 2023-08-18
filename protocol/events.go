@@ -177,10 +177,15 @@ func EvaluationRequestHandler(node *utils.PeerNode, topicName string) {
 		zippedPath,
 		zippedJobBytes.Bytes(),
 	)
-	PublishEvaluationJob(node, zippedPath, topicName)
+
+	// TODO: Change hardcoded metrics later
+	PublishEvaluationJob(node, zippedPath, topicName, []string{"accuracy", "precision", "recall"})
 }
 
 func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topicName string) {
-	evaluationJobAddress := GetEvaluationJobFromAddressAndTopic(node, requestorAddress, topicName)
-	fmt.Print(evaluationJobAddress)
+	evaluationJobCid := GetEvaluationJobFromAddressAndTopic(node, requestorAddress, topicName)
+	downloadEvaluationJob(requestorAddress, evaluationJobCid)
+	// buildEvaluationImage()
+	// runContainer(requestorId, ipfsCid)
+	// submitModel(node, requestorId, ipfsCid, topicName)
 }
