@@ -37,6 +37,8 @@ var CHAIN_ID, _ = strconv.Atoi(os.Getenv("CHAIN_ID"))
 var CHAIN = big.NewInt(int64(CHAIN_ID))
 var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_NODE"))
 
+var DEPLOY_PAUSE time.Duration = 3
+
 func main() {
 	var contractName string
 	var privateKey string
@@ -73,25 +75,25 @@ func deployAllContracts(privateKey string) {
 	if err != nil {
 		log.Fatal("Failed to deploy training token", err.Error())
 	}
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * DEPLOY_PAUSE)
 
 	evaluationAddress, evaluationTransaction, evaluationInstance, err := evaluationtoken.DeployEvaluationtoken(auth, client)
 	if err != nil {
 		log.Fatal("Failed to deploy evaluation token", err.Error())
 	}
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * DEPLOY_PAUSE)
 
 	modelAddress, modelTransaction, modelInstance, err := modelToken.DeployModeltoken(auth, client)
 	if err != nil {
 		log.Fatal("Failed to deploy model token", err.Error())
 	}
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * DEPLOY_PAUSE)
 
 	scatterTokenAddress, scatterTokenTransaction, scatterTokenInstance, err := scattertoken.DeployScattertoken(auth, client, big.NewInt(int64(100000000000)))
 	if err != nil {
-		log.Fatal("Failed to scatter token", err.Error())
+		log.Fatal("Failed to deploy scatter token", err.Error())
 	}
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * DEPLOY_PAUSE)
 
 	scatterProtocolAddress, scatterProtocolTransaction, scatterInstance, err := scatterprotocol.DeployScatterprotocol(
 		auth, client,

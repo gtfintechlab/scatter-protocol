@@ -61,10 +61,10 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
         uint256 amount
     ) external onlyScatterProtocolContract {
         require(
-            amount <= this.balanceOf(msg.sender),
+            amount <= this.balanceOf(requestorAddress),
             "Cannot lock more tokens than you own"
         );
-        _burn(msg.sender, amount);
+        _burn(requestorAddress, amount);
         requestorLockedTokenForTrainingJob[requestorAddress][
             topicName
         ] = amount;

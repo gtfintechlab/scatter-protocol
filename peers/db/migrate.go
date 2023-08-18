@@ -33,7 +33,7 @@ func MigratePeerDB(direction string, peerType string, databaseUsername string, d
 	}
 
 	for _, migration := range migrations {
-		fmt.Printf("Running %s migration: %s\n", direction, migration.Name)
+		log.Printf("Running %s migration: %s\n", direction, migration.Name)
 		if err := runMigration(db, migration.Path, direction); err != nil {
 			log.Fatal("Error executing migration:", err)
 			os.Exit(1)

@@ -27,7 +27,7 @@
     "deploy-protocol:no-push": "npm run contract:install && npm run contract:compile-protocol && npm run contract:generate-protocol",
     "deploy-token:no-push": "npm run contract:install && npm run contract:compile-token && npm run contract:generate-token",
     "deploy-model:no-push": "npm run contract:install && npm run contract:compile-model && npm run contract:generate-model",
-    "deploy-all": "npm run deploy-evaluation:no-push && npm run deploy-training:no-push && npm run deploy-protocol:no-push && npm run deploy-model:no-push && go run scripts/deploy.go --contract all",
+    "deploy-all": "npm run deploy-evaluation:no-push && npm run deploy-training:no-push && npm run deploy-model:no-push && npm run deploy-token:no-push && npm run deploy-protocol:no-push && go run scripts/deploy.go --contract all",
     "format": "prettier --write \"**/*.{sol,}\"",
     "network": "concurrently \"npm run peer:requestor\" \"npm run peer:trainer\" \"npm run celestial\"",
     "debug": "go run main.go --utils debug",

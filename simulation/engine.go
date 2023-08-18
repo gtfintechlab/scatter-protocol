@@ -95,13 +95,6 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				*node.DatastorePort,
 			)
 
-			switch nodeType {
-			case utils.PEER_REQUESTOR:
-				protocol.InitRequestorNode(createdNode)
-			case utils.PEER_TRAINER:
-				protocol.InitTrainerNode(createdNode)
-			}
-
 			go createdNode.Start(createdNode, *node.UseMdns)
 			simulationNode = utils.SimulationNode{PeerNode: createdNode}
 		}
@@ -116,16 +109,9 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 	return nodeConfig
 }
 
-const (
-	Reset  = "\033[0m"
-	Red    = "\033[31m"
-	Green  = "\033[32m"
-	Yellow = "\033[33m"
-)
-
 func executeSteps(nodeConfig map[string]utils.SimulationNodeConfig, stepList []utils.StepConfig) {
 	for _, step := range stepList {
-		log.Println(Green + step.Description + Reset)
+		log.Println(utils.Green + step.Description + utils.Reset)
 		method := strings.Split((*step.Action), " ")[0]
 		endpoint := strings.Split((*step.Action), " ")[1]
 		var url string

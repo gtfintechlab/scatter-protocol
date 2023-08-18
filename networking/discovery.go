@@ -2,7 +2,7 @@ package networking
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -45,9 +45,9 @@ func NewDHT(ctx context.Context, host host.Host) (*dht.IpfsDHT, error) {
 		go func() {
 			defer wg.Done()
 			if err := host.Connect(ctx, *peerInfo); err != nil {
-				fmt.Printf("Error while connecting to node %q: %-v\n", peerInfo, err)
+				log.Printf("Error while connecting to node %q: %-v\n", peerInfo, err)
 			} else {
-				fmt.Printf("Connected to bootstrap node: %q\n", peerInfo.ID.String())
+				log.Printf("Connected to bootstrap node: %q\n", peerInfo.ID.String())
 				stream, _ := host.NewStream(context.Background(),
 					peerInfo.ID, utils.PROTOCOL_IDENTIFIER)
 				SendMessage(&stream, MESSAGE_JOIN_NETWORK)
@@ -81,7 +81,7 @@ func InitializePeerDiscoveryDHT(ctx context.Context, host *host.Host, dht *dht.I
 
 				if (*host).Network().Connectedness(peerNode.ID) != network.Connected {
 					(*host).Connect(ctx, peerNode)
-					fmt.Printf("Connected to peer node %s\n", peerNode.ID.Pretty())
+					log.Printf("Connected to peer node %s\n", peerNode.ID.Pretty())
 				}
 			}
 		}

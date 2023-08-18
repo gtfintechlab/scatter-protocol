@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func ReadFileBytes(filename string) []byte {
@@ -133,4 +134,27 @@ func UnzipFolder(zipBytes []byte, destPath string) error {
 	}
 
 	return nil
+}
+
+func FindFilePathWithExtension(rootDir string, extension string) (string, error) {
+	var pthFilePath string
+
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() && strings.HasSuffix(info.Name(), extension) {
+			pthFilePath = path
+			return filepath.SkipDir // To skip subdirectories once the file is found
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return pthFilePath, nil
 }

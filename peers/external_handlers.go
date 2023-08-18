@@ -61,10 +61,27 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				return
 			}
 
+			if requestBody.EvaluationJob == nil {
+				networking.SendJson(response, map[string]interface{}{
+					"success": false,
+					"Error":   "requestors must include an evaluation job",
+				})
+				return
+			}
+
 			zippedFileBytes, _ := networking.ZipFolder(*requestBody.Path)
 			zippedJobPath := fmt.Sprintf("%s/%s_%s.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
 			networking.WriteBytesToFile(zippedJobPath, zippedFileBytes.Bytes())
 			topicCid, _ := protocol.AddTopicForRequestor(node, zippedJobPath, requestBody.Topic, *requestBody.Reward)
+			peerDatabase.AddTopicFromInfo(
+				node,
+				*node.BlockchainAddress,
+				topicCid,
+				requestBody.Topic,
+				nil,
+				requestBody.EvaluationJob,
+			)
+
 			os.RemoveAll(zippedJobPath)
 			networking.SendJson(response, map[string]interface{}{
 				"success":  true,
@@ -87,6 +104,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				protocol.GetCidFromAddressAndTopic(node, *requestBody.RequestorAddress, requestBody.Topic),
 				requestBody.Topic,
 				requestBody.Path,
+				nil,
 			)
 
 			networking.SendJson(response, map[string]interface{}{
@@ -170,7 +188,6 @@ func initializeTraining(node *utils.PeerNode) http.HandlerFunc {
 		networking.PostValidator(request, response)
 		var requestBody utils.InitializeTrainingRequestBody
 		json.NewDecoder(request.Body).Decode(&requestBody)
-
 		protocol.StartTraining(node, requestBody.Topic)
 
 	}

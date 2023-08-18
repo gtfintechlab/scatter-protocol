@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 
 interface IEvaluationJobToken {
     function publishEvaluationJob(
-        string memory tokenURI,
-        address recipient
+        address recipient,
+        string memory tokenURI
     ) external;
 }

@@ -2,7 +2,6 @@ package utils
 
 import (
 	"context"
-	"fmt"
 	"log"
 
 	"github.com/libp2p/go-libp2p/core/host"
@@ -11,7 +10,7 @@ import (
 )
 
 func (node *DiscoveryNotifee) HandlePeerFound(pi peer.AddrInfo) {
-	fmt.Printf("Discovered new peer %s\n", pi.ID.Pretty())
+	log.Printf("Discovered new peer %s\n", pi.ID.Pretty())
 	err := node.Host.Connect(context.Background(), pi)
 	if err != nil {
 		log.Fatal("Error Connecting to", pi.ID.Pretty(), err)

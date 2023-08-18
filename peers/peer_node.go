@@ -50,7 +50,19 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 		TrainingLock:         &map[string]map[string]bool{},
 	}
 	protocol.SetNodeId(&peerNode, node.ID().String())
+	if protocol.GetRoleByAddress(&peerNode, *peerNode.BlockchainAddress) == utils.PEER_NO_ROLE {
+		switch peerType {
+		case utils.PEER_REQUESTOR:
+			protocol.InitRequestorNode(&peerNode)
+		case utils.PEER_TRAINER:
+			protocol.InitTrainerNode(&peerNode)
+		}
+	}
 	go protocol.TrainingEventListener(&peerNode)
+	go protocol.EvaluationRequestListener(&peerNode)
+	go protocol.ModelValidationListener(&peerNode)
+	go protocol.DebugEventListener(&peerNode)
+
 	node.SetStreamHandler(utils.PROTOCOL_IDENTIFIER, peerStreamHandler(&peerNode))
 
 	return &peerNode

@@ -41,6 +41,12 @@ func main() {
 	}
 
 	if *simulationConfiguration.Environment.DeployProtocol {
+		exec.Command("npm", "run", "deploy-evaluation:no-push").Run()
+		exec.Command("npm", "run", "deploy-training:no-push").Run()
+		exec.Command("npm", "run", "deploy-model:no-push").Run()
+		exec.Command("npm", "run", "deploy-token:no-push").Run()
+		exec.Command("npm", "run", "deploy-protocol:no-push").Run()
+
 		exec.Command(
 			"go", "run",
 			"scripts/deploy.go",

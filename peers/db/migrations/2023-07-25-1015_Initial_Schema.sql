@@ -10,7 +10,8 @@ CREATE TABLE
         node_address TEXT,
         ipfs_id TEXT,
         topic_name TEXT,
-        data_path TEXT
+        data_path TEXT,
+        evaluation_job TEXT
     );
 
 -- Down

@@ -128,7 +128,10 @@ func GetAllTopicsByAddress(node *utils.PeerNode, address string) []string {
 
 func StartTraining(node *utils.PeerNode, topicName string) {
 	auth := getTransactor(node)
-	scatterProtocolContract.StartTraining(auth, topicName)
+	_, err := scatterProtocolContract.StartTraining(auth, topicName)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func GetRoleByAddress(node *utils.PeerNode, address string) string {
@@ -209,15 +212,39 @@ func IsValidatorForRequestorAndTopic(node *utils.PeerNode, requestorAddress stri
 
 	return isValidator
 }
-func PublishEvaluationJob(node *utils.PeerNode, evaluationJobPath string) string {
+func PublishEvaluationJob(node *utils.PeerNode, evaluationJobPath string, topicName string) string {
 	auth := getTransactor(node)
 	ipfsCid := utils.UploadFileToIpfs(evaluationJobPath)
-	transaction, err := evaluationTokenContract.PublishEvaluationJob(auth, auth.From, ipfsCid)
+	_, err := scatterProtocolContract.SubmitEvaluationSet(auth, topicName, ipfsCid)
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	return transaction.Hash().String()
+	return ipfsCid
+}
+
+func GetEvaluationJobFromAddressAndTopic(node *utils.PeerNode, requestorAddress string, topicName string) string {
+	auth := getTransactor(node)
+	trainingInfo, err := scatterProtocolContract.AddressToTrainingJobInfo(&bind.CallOpts{From: auth.From},
+		common.HexToAddress(requestorAddress), topicName)
+
+	ipfsCid := trainingInfo.EvaluationJobCid
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	return ipfsCid
+
+}
+
+func PublishModel(node *utils.PeerNode, modelPath string, requestorAddress string, topicName string) {
+	auth := getTransactor(node)
+	modelIpfsCid := utils.UploadFileToIpfs(modelPath)
+	scatterProtocolContract.PublishModelToProtocol(auth,
+		modelIpfsCid,
+		common.HexToAddress(requestorAddress),
+		topicName,
+	)
 }
 
 func GetScatterTokenBalance(node *utils.PeerNode) *big.Int {

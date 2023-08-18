@@ -1,6 +1,6 @@
 {
     "environment": {
-        "deployProtocol": true,
+        "deployProtocol": false,
         "protocolOwnerAddress": "0x89D9cf4Cc89A8058c5bDcBA525FFb14Fe15f614B",
         "protocolOwnerPrivateKey": "58a83c4aead5717f1c43567d82e504609345eb75b11312a057f9e600a7788ff7",
         "ethereumNode": "ws://172.22.80.1:7545"
@@ -45,8 +45,9 @@
             "action": "POST /node/topic/add",
             "body": {
                 "topic": "requestor topic 1",
-                "path": "training/requestor",
-                "reward": 100
+                "path": "training/requestor/train",
+                "reward": 100,
+                "evaluationJob": "training/requestor/validate" 
             }
         },
         {

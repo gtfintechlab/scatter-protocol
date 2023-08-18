@@ -65,19 +65,12 @@ const (
 	MESSAGE_CODE_JOIN_NETWORK = "join network"
 )
 
-// Peer Node Message Codes
 const (
-	PEER_SWITCH_ROLE            = "peer switch role"
-	PEER_TRAINER_JOIN           = "trainer join"
-	PEER_REQUESTOR_ADD_TOPIC    = "requestor add topic"
-	PEER_REQUESTOR_REMOVE_TOPIC = "requestor remove topic"
-	PEER_GET_TOPICS             = "trainer get topics"
-	PEER_START_TRAINING         = "start training"
-)
-
-const (
-	PEER_REQUESTOR = "requestor"
-	PEER_TRAINER   = "trainer"
+	PEER_REQUESTOR  = "requestor"
+	PEER_TRAINER    = "trainer"
+	PEER_VALIDATOR  = "validator"
+	PEER_CHALLENGER = "challenger"
+	PEER_NO_ROLE    = "no role"
 )
 
 const (
@@ -85,9 +78,12 @@ const (
 	SEPOLIA = 11155111
 )
 
-var IDENTITY_VERIFICATION_DATA map[string]interface{} = map[string]interface{}{
-	"Verify": "Identity",
-}
+const (
+	Reset  = "\033[0m"
+	Red    = "\033[31m"
+	Green  = "\033[32m"
+	Yellow = "\033[33m"
+)
 
 type Message struct {
 	MessageType string
@@ -133,6 +129,7 @@ type AddTopicRequestBody struct {
 	RequestorAddress *string `json:"requestorAddress,omitempty"`
 	Path             *string `json:"path,omitempty"`
 	Reward           *int64  `json:"reward,omitempty"`
+	EvaluationJob    *string `json:"evaluationJob,omitempty"`
 }
 
 type PublishTopicRequestBody struct {
@@ -215,4 +212,13 @@ type ModelReadyToValidateEvent struct {
 	Trainer   common.Address
 	Requestor common.Address
 	TopicName string
+}
+
+type EvaluationRequestEvent struct {
+	Requestor common.Address
+	TopicName string
+}
+
+type DebugEvent struct {
+	Message string
 }

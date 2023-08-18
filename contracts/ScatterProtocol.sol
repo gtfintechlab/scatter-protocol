@@ -19,6 +19,7 @@ contract ScatterProtocol {
         string trainingJobCid;
         address[] trainers;
         uint256 pooledReward;
+        string evaluationJobCid;
     }
 
     address payable public owner;
@@ -117,6 +118,8 @@ contract ScatterProtocol {
 
     // An event that is fired when all of the trainers have submitted their models and are ready to be evaluated
     event RequestForEvaluationSet(address requestor, string topicName);
+
+    event DebugEvent(string message);
 
     /**
      *  @dev Deploys the Protocol with associated contracts
@@ -249,25 +252,28 @@ contract ScatterProtocol {
      *  @dev Start the training procedure for a specific topic - chooses random validators
      *  @param topicName The topic we want to train the model for
      */
-    function startTraining(string memory topicName) public isRequestor {
-        if (checkIfTopicExistsForRequestor(msg.sender, topicName)) {
-            uint256 validatorCount = uint256(
-                (networkValidators.length * modelValidationPercentage) / 100
-            );
+    function startTraining(string memory topicName) external isRequestor {
+        require(
+            checkIfTopicExistsForRequestor(msg.sender, topicName),
+            "This topic has not been added and therefore cannot start a training job"
+        );
 
-            address[] memory chosenValidators = _getRandomAddressSubset(
-                networkValidators,
-                validatorCount
-            );
+        uint256 validatorCount = uint256(
+            (networkValidators.length * modelValidationPercentage) / 100
+        );
 
-            for (uint i = 0; i < chosenValidators.length; i++) {
-                validatorTrainingMap[msg.sender][topicName][
-                    chosenValidators[i]
-                ] = true;
-            }
+        address[] memory chosenValidators = _getRandomAddressSubset(
+            networkValidators,
+            int256(validatorCount)
+        );
 
-            emit TrainingInitialized(msg.sender, topicName);
+        for (uint i = 0; i < chosenValidators.length; i++) {
+            validatorTrainingMap[msg.sender][topicName][
+                chosenValidators[i]
+            ] = true;
         }
+
+        emit TrainingInitialized(msg.sender, topicName);
     }
 
     /**
@@ -332,19 +338,16 @@ contract ScatterProtocol {
             tokenURI,
             msg.sender
         );
-
         address[] memory emptyAddressArray = new address[](0);
-
         TrainingJobInfo memory trainingInfo = TrainingJobInfo(
             tokenURI,
             emptyAddressArray,
-            pooledReward
+            pooledReward,
+            "" // evaluation job is empty at the beginning but will be set later
         );
         addressToTrainingJobInfo[msg.sender][topicName] = trainingInfo;
-
         // Enables trainers to view all topics by a specific network participant
         addressToTopics[msg.sender].push(topicName);
-
         IScatterToken(scatterTokenContract).requestorLockToken(
             msg.sender,
             topicName,
@@ -495,6 +498,9 @@ contract ScatterProtocol {
             topicName
         ].trainers;
 
+        if (trainers.length == 0) {
+            return;
+        }
         // Check if we are ready to validate all the models from all of the trainers
         for (uint i = 0; i < trainers.length; i++) {
             if (
@@ -516,10 +522,12 @@ contract ScatterProtocol {
         string memory evaluationSetURI
     ) public isRequestor {
         IEvaluationJobToken(evaluationJobContract).publishEvaluationJob(
-            evaluationSetURI,
-            msg.sender
+            msg.sender,
+            evaluationSetURI
         );
 
+        addressToTrainingJobInfo[msg.sender][topicName]
+            .evaluationJobCid = evaluationSetURI;
         emit ModelReadyToValidate(msg.sender, topicName);
     }
 
@@ -551,14 +559,6 @@ contract ScatterProtocol {
             payable(msg.sender) == owner,
             "Only the owner can call this function"
         );
-        _;
-    }
-
-    modifier hasPeerNodeConfigured() {
-        // require(
-        //     bytes(addressToNodeId[msg.sender]).length > 0,
-        //     "You must have a node id set for other nodes to be able to communicate with you"
-        // );
         _;
     }
 
@@ -663,23 +663,28 @@ contract ScatterProtocol {
 
     function _getRandomAddressSubset(
         address[] memory arr,
-        uint256 count
+        int256 count
     ) private returns (address[] memory) {
+        if (count <= 0) {
+            return new address[](0);
+        }
+
         require(
-            count <= arr.length,
+            uint256(count) <= arr.length,
             "Count should be less than or equal to array length"
         );
 
         address[] memory shuffled = _shuffle(arr);
-        address[] memory result = new address[](count);
+        address[] memory result = new address[](uint256(count));
 
-        for (uint256 i = 0; i < count; i++) {
+        for (uint256 i = 0; i < uint256(count); i++) {
             result[i] = shuffled[i];
         }
 
         return result;
     }
 
+    // Fisher-Yates shuffle algorithm
     function _shuffle(address[] memory arr) private returns (address[] memory) {
         address[] memory shuffled = arr;
         uint256 n = shuffled.length;

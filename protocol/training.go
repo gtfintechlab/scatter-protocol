@@ -64,7 +64,6 @@ func buildImage(requestorId string, ipfsCid string, dataPath string) {
 		fmt.Sprintf("%s/training/trainer/jobs/%s/%s/", basePath, requestorIdLower, ipfsCidLower),
 	)
 
-	fmt.Println(cmd.String())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -89,11 +88,22 @@ func runContainer(requestorId string, ipfsCid string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	fmt.Println(cmd)
 	err := cmd.Run()
 	if err != nil {
 		log.Fatalf("Failed to run container for %s:%s with error: %s", requestorIdLower, ipfsCidLower, err)
 	}
+}
+
+func submitModel(node *utils.PeerNode, requestorAddress string, ipfsCid string, topicName string) {
+	requestorIdLower := strings.ToLower(requestorAddress)
+	ipfsCidLower := strings.ToLower(ipfsCid)
+	basePath, _ := os.Getwd()
+
+	modelPath, _ := networking.FindFilePathWithExtension(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/output",
+		basePath,
+		requestorIdLower, ipfsCidLower), ".pth")
+
+	PublishModel(node, modelPath, requestorAddress, topicName)
 }
 
 func downloadTrainingJob(ipfsCid string, requestorId string) {

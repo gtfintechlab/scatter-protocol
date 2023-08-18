@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	var _ = godotenv.Load(".env")
 
 	var util string
