@@ -93,8 +93,8 @@ precision = precision_score(true_labels, predicted_labels)
 recall = recall_score(true_labels, predicted_labels)
 
 # Create a dictionary to store the metrics
-metrics_dict = {"accuracy": accuracy, "precision": precision, "recall": recall}
+score_dict = {"score": ((accuracy * 100) + (precision * 100) + (recall * 100)) / 3}
 
 # Write metrics to a JSON file
-with open("output/evaluation_metrics.json", "w+") as json_file:
-    json.dump(metrics_dict, json_file)
+with open("output/evaluation_score.json", "w+") as json_file:
+    json.dump(score_dict, json_file)

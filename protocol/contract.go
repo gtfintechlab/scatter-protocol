@@ -252,10 +252,10 @@ func IsValidatorForRequestorAndTopic(node *utils.PeerNode, requestorAddress stri
 
 	return isValidator
 }
-func PublishEvaluationJob(node *utils.PeerNode, evaluationJobPath string, topicName string, metrics []string) string {
+func PublishEvaluationJob(node *utils.PeerNode, evaluationJobPath string, topicName string) string {
 	auth := getTransactor(node)
 	ipfsCid := utils.UploadFileToIpfs(evaluationJobPath)
-	_, err := scatterProtocolContract.SubmitEvaluationSet(auth, topicName, ipfsCid, metrics)
+	_, err := scatterProtocolContract.SubmitEvaluationSet(auth, topicName, ipfsCid)
 
 	if err != nil {
 		log.Fatal(err)
@@ -277,6 +277,11 @@ func GetEvaluationJobFromAddressAndTopic(node *utils.PeerNode, requestorAddress 
 
 }
 
+func SubmitEvaluationScore(node *utils.PeerNode, requestorAddress string, topicName string, trainerAddress string, score *big.Int) {
+	auth := getTransactor(node)
+	scatterProtocolContract.SubmitEvaluationScore(auth, common.HexToAddress(requestorAddress), topicName, common.HexToAddress(trainerAddress), score)
+}
+
 func PublishModel(node *utils.PeerNode, modelPath string, requestorAddress string, topicName string) {
 	auth := getTransactor(node)
 	modelIpfsCid := utils.UploadFileToIpfs(modelPath)
@@ -285,6 +290,16 @@ func PublishModel(node *utils.PeerNode, modelPath string, requestorAddress strin
 		common.HexToAddress(requestorAddress),
 		topicName,
 	)
+}
+
+func GetModelCidByTrainer(node *utils.PeerNode, requestorAddress string, topicName string, trainerAddress string) string {
+	auth := getTransactor(node)
+
+	modelCid, _ := scatterProtocolContract.ModelLogger(&bind.CallOpts{
+		From: auth.From,
+	}, common.HexToAddress(requestorAddress), topicName, common.HexToAddress(trainerAddress))
+
+	return modelCid
 }
 
 func GetScatterTokenBalance(node *utils.PeerNode) *big.Int {

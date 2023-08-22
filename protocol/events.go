@@ -163,8 +163,8 @@ func TrainingHandler(node *utils.PeerNode, requestorId string, topicName string)
 	ipfsCid := GetCidFromAddressAndTopic(node, requestorId, topicName)
 	dataPath := peerDatabase.GetDatapathFromAddressAndIpfs(node, requestorId, ipfsCid)
 	downloadTrainingJob(ipfsCid, requestorId)
-	buildImage(requestorId, ipfsCid, dataPath)
-	runContainer(requestorId, ipfsCid)
+	buildTrainingImage(requestorId, ipfsCid, dataPath)
+	runTrainingContainer(requestorId, ipfsCid)
 	submitModel(node, requestorId, ipfsCid, topicName)
 
 }
@@ -179,13 +179,19 @@ func EvaluationRequestHandler(node *utils.PeerNode, topicName string) {
 	)
 
 	// TODO: Change hardcoded metrics later
-	PublishEvaluationJob(node, zippedPath, topicName, []string{"accuracy", "precision", "recall"})
+	PublishEvaluationJob(node, zippedPath, topicName)
 }
 
 func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topicName string) {
 	evaluationJobCid := GetEvaluationJobFromAddressAndTopic(node, requestorAddress, topicName)
 	downloadEvaluationJob(requestorAddress, evaluationJobCid)
-	// buildEvaluationImage()
-	// runContainer(requestorId, ipfsCid)
-	// submitModel(node, requestorId, ipfsCid, topicName)
+
+	trainers := GetAllTrainersByAddressAndTopic(node, requestorAddress, topicName)
+	ipfsCid := GetCidFromAddressAndTopic(node, requestorAddress, topicName)
+	for _, trainer := range trainers {
+		downloadTrainerModel(node, requestorAddress, topicName, ipfsCid, trainer)
+		buildEvaluationImage(requestorAddress, evaluationJobCid)
+		score := runEvaluationContainer(requestorAddress, evaluationJobCid)
+		SubmitEvaluationScore(node, requestorAddress, topicName, trainer, score)
+	}
 }

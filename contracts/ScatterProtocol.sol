@@ -18,7 +18,7 @@ contract ScatterProtocol {
         uint256 pooledReward;
         string evaluationJobCid;
         uint256 jobTerminationDate;
-        uint256 metricLogCount;
+        uint256 validatorValidationCount;
     }
 
     address payable public owner;
@@ -105,37 +105,22 @@ contract ScatterProtocol {
 
     // Mappings used to keep track of evaluaation metrics
     /*
-        Example evaluationMetrics Mapping:
+        Example evaluationScore Mapping:
         {
             requestor address: {
                 topic name: {
-                    metric 1: true,
-                    metric 2: true
+                    validator 1 address: {
+                        trainer 1 address: score 1,
+                        trainer 2 address: score 2
+                    },
+                    validator 2 address: {...}
                     }
                 }
             }
         }
     */
-    mapping(address => mapping(string => mapping(string => bool))) evaluationMetrics;
-    mapping(address => mapping(string => string[])) evaluationMetricsList;
-
-    /*
-        Example evaluationMetricScore Mapping:
-        {
-            requestor address: {
-                topic name: {
-                    validator address: {
-                        trainer address: {
-                            metric 1: score 1, 
-                            metric 2: score 2
-                        },
-                        trainer 2 address: {...}
-                    }
-                }
-            }
-        }
-    */
-    mapping(address => mapping(string => mapping(address => mapping(address => mapping(string => uint256))))) evaluationMetricScores;
+    mapping(address => mapping(string => mapping(address => mapping(address => uint256)))) evaluationScore;
+    mapping(address => mapping(string => mapping(address => mapping(address => bool)))) evaluationScoreSet;
 
     // Rogue + Benevolent trainers used for reward mechanism
     mapping(address => mapping(string => address[])) rogueTrainers;
@@ -678,43 +663,29 @@ contract ScatterProtocol {
 
     function submitEvaluationSet(
         string memory topicName,
-        string memory evaluationSetURI,
-        string[] memory metrics
+        string memory evaluationSetURI
     ) public isRequestor {
         IEvaluationJobToken(evaluationJobContract).publishEvaluationJob(
             msg.sender,
             evaluationSetURI
         );
 
-        for (uint i = 0; i < metrics.length; i++) {
-            evaluationMetrics[msg.sender][topicName][metrics[i]] = true;
-        }
-        evaluationMetricsList[msg.sender][topicName] = metrics;
-
         addressToTrainingJobInfo[msg.sender][topicName]
             .evaluationJobCid = evaluationSetURI;
         emit ModelReadyToValidate(msg.sender, topicName);
     }
 
-    function submitEvaluationMetric(
+    function submitEvaluationScore(
         address requestorAddress,
         string memory topicName,
         address trainerAddress,
-        string memory evaluationMetricName,
         uint256 score
     ) public isValidator {
         require(
-            evaluationMetrics[requestorAddress][topicName][
-                evaluationMetricName
-            ],
-            "Invalid evaluation metric submitted"
-        );
-
-        require(
-            evaluationMetricScores[requestorAddress][topicName][msg.sender][
+            !evaluationScoreSet[requestorAddress][topicName][msg.sender][
                 trainerAddress
-            ][evaluationMetricName] == 0,
-            "Cannot resubmit a metric that has previously been submitted"
+            ],
+            "Cannot resubmit a score for a trainer that has previously been submitted"
         );
 
         require(
@@ -723,11 +694,15 @@ contract ScatterProtocol {
         );
 
         addressToTrainingJobInfo[requestorAddress][topicName]
-            .metricLogCount += 1;
-        // We do the +1 in the case that a metric is 0 because we use 0 to check if a metric has been logged
-        evaluationMetricScores[requestorAddress][topicName][msg.sender][
+            .validatorValidationCount += 1;
+
+        evaluationScore[requestorAddress][topicName][msg.sender][
             trainerAddress
-        ][evaluationMetricName] = score + 1;
+        ] = score;
+
+        evaluationScoreSet[requestorAddress][topicName][msg.sender][
+            trainerAddress
+        ] = true;
     }
 
     /**
@@ -820,20 +795,17 @@ contract ScatterProtocol {
         address[] memory validatorList = validatorTrainingMapKeys[
             requestorAddress
         ][topicName];
-        string[] memory metrics = evaluationMetricsList[requestorAddress][
-            topicName
-        ];
         address[] memory trainerList = trainerTrainingMapKeys[requestorAddress][
             topicName
         ];
 
-        uint256 metricLogCount = addressToTrainingJobInfo[requestorAddress][
-            topicName
-        ].metricLogCount;
+        uint256 validatorValidationCount = addressToTrainingJobInfo[
+            requestorAddress
+        ][topicName].validatorValidationCount;
 
         return
-            metricLogCount ==
-            (validatorList.length * metrics.length * trainerList.length);
+            validatorValidationCount ==
+            (validatorList.length * trainerList.length);
     }
 
     function _populateTrainerStatus(
@@ -871,9 +843,6 @@ contract ScatterProtocol {
         address[] memory validatorList = validatorTrainingMapKeys[
             requestorAddress
         ][topicName];
-        string[] memory metrics = evaluationMetricsList[requestorAddress][
-            topicName
-        ];
         address[] memory trainerList = trainerTrainingMapKeys[requestorAddress][
             topicName
         ];
@@ -889,28 +858,26 @@ contract ScatterProtocol {
                     continue;
                 }
 
-                for (uint k = 0; k < metrics.length; k++) {
-                    // For a non-rogue trainer, check if their evaluation scores have been set
-                    // Mark them as rogue if not
-                    if (
-                        evaluationMetricScores[requestorAddress][topicName][
-                            validatorList[i]
-                        ][trainerList[j]][metrics[k]] == 0
-                    ) {
-                        rogueValidators[requestorAddress][topicName].push(
-                            validatorList[i]
-                        );
-                        rogueValidatorMapping[requestorAddress][topicName][
-                            validatorList[i]
-                        ] = true;
-                    } else {
-                        benevolentValidators[requestorAddress][topicName].push(
-                            validatorList[i]
-                        );
-                        benevolentValidatorMapping[requestorAddress][topicName][
-                            validatorList[i]
-                        ] = true;
-                    }
+                // For a non-rogue trainer, check if their evaluation scores have been set
+                // Mark them as rogue if not
+                if (
+                    !evaluationScoreSet[requestorAddress][topicName][
+                        validatorList[i]
+                    ][trainerList[j]]
+                ) {
+                    rogueValidators[requestorAddress][topicName].push(
+                        validatorList[i]
+                    );
+                    rogueValidatorMapping[requestorAddress][topicName][
+                        validatorList[i]
+                    ] = true;
+                } else {
+                    benevolentValidators[requestorAddress][topicName].push(
+                        validatorList[i]
+                    );
+                    benevolentValidatorMapping[requestorAddress][topicName][
+                        validatorList[i]
+                    ] = true;
                 }
             }
         }

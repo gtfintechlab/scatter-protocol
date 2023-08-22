@@ -70,7 +70,7 @@ func UploadFileToIpfs(filePath string) string {
 	return cid
 }
 
-func GetFileBytesFromIPFS(hash string, path string) ([]byte, error) {
+func GetFileBytesFromIPFS(hash string) ([]byte, error) {
 	shell := ipfs.NewShell(os.Getenv("IPFS_NODE_URL"))
 	file, err := shell.Cat(hash)
 	if err != nil {

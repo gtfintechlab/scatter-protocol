@@ -29,7 +29,7 @@ func dockerSetup() {
 	}
 }
 
-func buildImage(requestorId string, ipfsCid string, dataPath string) {
+func buildTrainingImage(requestorId string, ipfsCid string, dataPath string) {
 	basePath, _ := os.Getwd()
 	requestorIdLower := strings.ToLower(requestorId)
 	ipfsCidLower := strings.ToLower(ipfsCid)
@@ -74,7 +74,7 @@ func buildImage(requestorId string, ipfsCid string, dataPath string) {
 
 }
 
-func runContainer(requestorId string, ipfsCid string) {
+func runTrainingContainer(requestorId string, ipfsCid string) {
 	requestorIdLower := strings.ToLower(requestorId)
 	ipfsCidLower := strings.ToLower(ipfsCid)
 	basePath, _ := os.Getwd()
@@ -108,6 +108,6 @@ func submitModel(node *utils.PeerNode, requestorAddress string, ipfsCid string, 
 
 func downloadTrainingJob(ipfsCid string, requestorId string) {
 	filePath := fmt.Sprintf("training/trainer/jobs/%s/%s/", strings.ToLower(requestorId), strings.ToLower(ipfsCid))
-	fileBytes, _ := utils.GetFileBytesFromIPFS(ipfsCid, filePath)
+	fileBytes, _ := utils.GetFileBytesFromIPFS(ipfsCid)
 	networking.UnzipFolder(fileBytes, filePath)
 }
