@@ -69,23 +69,32 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				return
 			}
 
-			zippedFileBytes, _ := networking.ZipFolder(*requestBody.Path)
-			zippedJobPath := fmt.Sprintf("%s/%s_%s.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
-			networking.WriteBytesToFile(zippedJobPath, zippedFileBytes.Bytes())
-			topicCid, _ := protocol.AddTopicForRequestor(node, zippedJobPath, requestBody.Topic, *requestBody.Reward)
+			zippedTrainingFileBytes, _ := networking.ZipFolder(*requestBody.Path)
+			zippedTrainingJobPath := fmt.Sprintf("%s/%s_%s_training.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
+			networking.WriteBytesToFile(zippedTrainingJobPath, zippedTrainingFileBytes.Bytes())
+
+			zippedEvaluationFileBytes, _ := networking.ZipFolder(*requestBody.EvaluationJobData)
+			zippedEvaluationJobPath := fmt.Sprintf("%s/%s_%s_evaluation.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
+			networking.WriteBytesToFile(zippedEvaluationJobPath, zippedEvaluationFileBytes.Bytes())
+
+			trainingTopicCid, evaluationTopicCid, _ := protocol.AddTopicForRequestor(node, zippedTrainingJobPath, zippedEvaluationJobPath, requestBody.Topic, *requestBody.Reward)
 			peerDatabase.AddTopicFromInfo(
 				node,
 				*node.BlockchainAddress,
-				topicCid,
+				trainingTopicCid,
 				requestBody.Topic,
 				nil,
-				requestBody.EvaluationJob,
+				&evaluationTopicCid,
+				requestBody.EvaluationJobData,
 			)
 
-			os.RemoveAll(zippedJobPath)
+			os.RemoveAll(zippedTrainingJobPath)
+			os.RemoveAll(zippedEvaluationJobPath)
+
 			networking.SendJson(response, map[string]interface{}{
-				"success":  true,
-				"topicCid": topicCid,
+				"success":       true,
+				"trainingCid":   trainingTopicCid,
+				"evaluationCid": evaluationTopicCid,
 			})
 		case utils.PEER_TRAINER:
 			var requestBody utils.AddTopicRequestBody
@@ -104,6 +113,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				protocol.GetCidFromAddressAndTopic(node, *requestBody.RequestorAddress, requestBody.Topic),
 				requestBody.Topic,
 				requestBody.Path,
+				nil,
 				nil,
 			)
 

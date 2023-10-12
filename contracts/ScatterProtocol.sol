@@ -11,14 +11,16 @@ import "./Shared.sol";
 
 // Model Validator: 10,000 Scatter Token Staked
 contract ScatterProtocol {
-    struct TrainingJobInfo {
+    struct FederatedJob {
         string trainingJobCid;
         address[] trainers;
         uint256 publishedTrainerCount;
         uint256 pooledReward;
         string evaluationJobCid;
+        string evaluationJobDataCid;
         uint256 jobTerminationDate;
         uint256 validatorValidationCount;
+        uint256 jobStartDate;
     }
 
     address payable public owner;
@@ -32,7 +34,7 @@ contract ScatterProtocol {
     mapping(address => roles) public addressToRoles;
 
     /*
-        Example addressToTrainingJobInfo Mapping:
+        Example addressToFederatedJob Mapping:
         {
             requestor 1 address: {
                 topic 1: {
@@ -43,8 +45,8 @@ contract ScatterProtocol {
             requestor 2 address: {...}
         }
      */
-    mapping(address => mapping(string => TrainingJobInfo))
-        public addressToTrainingJobInfo;
+    mapping(address => mapping(string => FederatedJob))
+        public addressToFederatedJob;
 
     mapping(address => string[]) public addressToTopics;
 
@@ -286,7 +288,7 @@ contract ScatterProtocol {
     ) public {
         bool distributeRewards = false;
         // First we must check if the job's time limit is up
-        uint256 terminationTime = addressToTrainingJobInfo[requestorAddress][
+        uint256 terminationTime = addressToFederatedJob[requestorAddress][
             topicName
         ].jobTerminationDate;
 
@@ -445,29 +447,41 @@ contract ScatterProtocol {
 
     /**
      *  @dev Create a training job NFT for a specific topic + locks up the respective amount of token
-     *  @param tokenURI The Content ID Hash for the training job zip file
+     *  @param trainingTokenURI The Content ID Hash for the training job zip file
+     *  @param evaluationTokenURI The Content ID Hash for the evaluation job zip file
      *  @param topicName The name of the topic
+     *  @param pooledReward The reward given across all validators, trainers, etc.
      */
     function requestorAddTopic(
-        string memory tokenURI,
+        string memory trainingTokenURI,
+        string memory evaluationTokenURI,
         string memory topicName,
         uint256 pooledReward
     ) external isRequestor {
         ITrainingJobToken(trainingJobContract).publishTrainingJob(
-            tokenURI,
+            trainingTokenURI,
             msg.sender
         );
+
+        IEvaluationJobToken(evaluationJobContract).publishEvaluationJob(
+            msg.sender,
+            evaluationTokenURI
+        );
+
         address[] memory emptyAddressArray = new address[](0);
-        TrainingJobInfo memory trainingInfo = TrainingJobInfo(
-            tokenURI,
+        FederatedJob memory trainingInfo = FederatedJob(
+            trainingTokenURI,
             emptyAddressArray,
             0,
             pooledReward,
-            "", // evaluation job is empty at the beginning but will be set later
-            block.timestamp + 30 days, // All jobs must be completed within 30 days of submission
-            0
+            evaluationTokenURI, // evaluation job does not include the evaluation data --> just the job itself
+            "",
+            block.timestamp +
+                getTimeFromCheckpoint(Checkpoints.FederatedJobEnd), // All jobs must be completed within 30 days of submission
+            0,
+            block.timestamp
         );
-        addressToTrainingJobInfo[msg.sender][topicName] = trainingInfo;
+        addressToFederatedJob[msg.sender][topicName] = trainingInfo;
         // Enables trainers to view all topics by a specific network participant
         addressToTopics[msg.sender].push(topicName);
         IScatterToken(scatterTokenContract).requestorLockToken(
@@ -501,9 +515,9 @@ contract ScatterProtocol {
             requestorTopic,
             stakeAmount
         );
-        addressToTrainingJobInfo[requestorAddress][requestorTopic]
-            .trainers
-            .push(msg.sender);
+        addressToFederatedJob[requestorAddress][requestorTopic].trainers.push(
+            msg.sender
+        );
 
         trainerTrainingMap[requestorAddress][requestorTopic][msg.sender] = true;
         trainerTrainingMapKeys[requestorAddress][requestorTopic].push(
@@ -521,9 +535,8 @@ contract ScatterProtocol {
         string memory topicName
     ) public view returns (bool) {
         return
-            bytes(
-                addressToTrainingJobInfo[nodeAddress][topicName].trainingJobCid
-            ).length > 0;
+            bytes(addressToFederatedJob[nodeAddress][topicName].trainingJobCid)
+                .length > 0;
     }
 
     /**
@@ -538,7 +551,7 @@ contract ScatterProtocol {
         int256 skip
     ) external view returns (string memory) {
         string memory trainerList = "";
-        TrainingJobInfo storage trainingInfo = addressToTrainingJobInfo[
+        FederatedJob storage trainingInfo = addressToFederatedJob[
             requestorAddress
         ][topicName];
         int256 minIndex = int256(trainingInfo.trainers.length) < skip + 10
@@ -642,17 +655,22 @@ contract ScatterProtocol {
         IModelToken(modelTokenContract).publishModel(modelURI, msg.sender);
         modelLogger[requestorAddress][topicName][msg.sender] = modelURI;
 
-        TrainingJobInfo storage info = addressToTrainingJobInfo[
-            requestorAddress
-        ][topicName];
+        FederatedJob storage info = addressToFederatedJob[requestorAddress][
+            topicName
+        ];
         info.publishedTrainerCount += 1;
 
         // Check if we are ready to validate all the models from all of the trainers
+        // If the current block timestamp is after the model submission threshold
+        // we will emit the event.
         address[] memory trainers = info.trainers;
-        if (
-            trainers.length == 0 ||
-            trainers.length != info.publishedTrainerCount
-        ) {
+        bool trainersNotReady = (trainers.length == 0 ||
+            trainers.length != info.publishedTrainerCount);
+        bool withinTimeThreshold = block.timestamp <=
+            info.jobStartDate +
+                getTimeFromCheckpoint(Checkpoints.ModelSubmission);
+
+        if (trainersNotReady && withinTimeThreshold) {
             return;
         }
 
@@ -661,17 +679,31 @@ contract ScatterProtocol {
         emit RequestForEvaluationSet(requestorAddress, topicName);
     }
 
+    function getTimeFromCheckpoint(
+        Checkpoints checkpoint
+    ) internal pure returns (uint256) {
+        if (checkpoint == Checkpoints.ModelSubmission) {
+            return 15 days;
+        }
+
+        if (checkpoint == Checkpoints.FederatedJobEnd) {
+            return 30 days;
+        }
+
+        return 0 days;
+    }
+
     function submitEvaluationSet(
         string memory topicName,
-        string memory evaluationSetURI
+        string memory evaluationDataURI
     ) public isRequestor {
-        IEvaluationJobToken(evaluationJobContract).publishEvaluationJob(
+        IEvaluationJobToken(evaluationJobContract).publishEvaluationData(
             msg.sender,
-            evaluationSetURI
+            addressToFederatedJob[msg.sender][topicName].evaluationJobCid,
+            evaluationDataURI
         );
-
-        addressToTrainingJobInfo[msg.sender][topicName]
-            .evaluationJobCid = evaluationSetURI;
+        addressToFederatedJob[msg.sender][topicName]
+            .evaluationJobDataCid = evaluationDataURI;
         emit ModelReadyToValidate(msg.sender, topicName);
     }
 
@@ -693,7 +725,7 @@ contract ScatterProtocol {
             "You are not an assigned validator for this training job"
         );
 
-        addressToTrainingJobInfo[requestorAddress][topicName]
+        addressToFederatedJob[requestorAddress][topicName]
             .validatorValidationCount += 1;
 
         evaluationScore[requestorAddress][topicName][msg.sender][
@@ -779,10 +811,10 @@ contract ScatterProtocol {
         address requestorAddress,
         string memory topicName
     ) private view returns (bool) {
-        address[] memory trainerList = addressToTrainingJobInfo[
-            requestorAddress
-        ][topicName].trainers;
-        uint256 trainersPublishedCount = addressToTrainingJobInfo[
+        address[] memory trainerList = addressToFederatedJob[requestorAddress][
+            topicName
+        ].trainers;
+        uint256 trainersPublishedCount = addressToFederatedJob[
             requestorAddress
         ][topicName].publishedTrainerCount;
         return trainerList.length == trainersPublishedCount;
@@ -799,7 +831,7 @@ contract ScatterProtocol {
             topicName
         ];
 
-        uint256 validatorValidationCount = addressToTrainingJobInfo[
+        uint256 validatorValidationCount = addressToFederatedJob[
             requestorAddress
         ][topicName].validatorValidationCount;
 
@@ -812,7 +844,7 @@ contract ScatterProtocol {
         address requestorAddress,
         string memory topicName
     ) private {
-        address[] memory trainers = addressToTrainingJobInfo[requestorAddress][
+        address[] memory trainers = addressToFederatedJob[requestorAddress][
             topicName
         ].trainers;
         mapping(address => string) storage trainerModelMap = modelLogger[

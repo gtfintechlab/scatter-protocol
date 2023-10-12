@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/ethereum/go-ethereum"
@@ -170,7 +171,7 @@ func TrainingHandler(node *utils.PeerNode, requestorId string, topicName string)
 }
 
 func EvaluationRequestHandler(node *utils.PeerNode, topicName string) {
-	evaluationJobPath := peerDatabase.GetEvaluationJobFromAddressAndTopic(node, *node.BlockchainAddress, topicName)
+	evaluationJobPath := peerDatabase.GetEvaluationJobDataFromAddressAndTopic(node, *node.BlockchainAddress, topicName)
 	zippedJobBytes, _ := networking.ZipFolder(evaluationJobPath)
 	zippedPath := fmt.Sprintf("%s/evaluation.zip", evaluationJobPath)
 	networking.WriteBytesToFile(
@@ -178,13 +179,16 @@ func EvaluationRequestHandler(node *utils.PeerNode, topicName string) {
 		zippedJobBytes.Bytes(),
 	)
 
-	// TODO: Change hardcoded metrics later
-	PublishEvaluationJob(node, zippedPath, topicName)
+	PublishEvaluationData(node, zippedPath, topicName)
+	os.RemoveAll(zippedPath)
 }
 
 func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topicName string) {
 	evaluationJobCid := GetEvaluationJobFromAddressAndTopic(node, requestorAddress, topicName)
+	evaluationDataCid := GetEvaluationDataFromAddressAndTopic(node, requestorAddress, topicName)
+
 	downloadEvaluationJob(requestorAddress, evaluationJobCid)
+	downloadEvaluationJobData(requestorAddress, evaluationJobCid, evaluationDataCid)
 
 	trainers := GetAllTrainersByAddressAndTopic(node, requestorAddress, topicName)
 	ipfsCid := GetCidFromAddressAndTopic(node, requestorAddress, topicName)

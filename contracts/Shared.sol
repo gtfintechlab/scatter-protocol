@@ -9,3 +9,8 @@ enum roles {
     Validator,
     Challenger
 }
+
+enum Checkpoints {
+    ModelSubmission,
+    FederatedJobEnd
+}

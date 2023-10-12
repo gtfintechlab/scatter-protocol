@@ -1,9 +1,9 @@
 {
     "environment": {
-        "deployProtocol": false,
-        "protocolOwnerAddress": "0x89D9cf4Cc89A8058c5bDcBA525FFb14Fe15f614B",
-        "protocolOwnerPrivateKey": "58a83c4aead5717f1c43567d82e504609345eb75b11312a057f9e600a7788ff7",
-        "ethereumNode": "ws://172.22.80.1:7545"
+        "deployProtocol": true,
+        "protocolOwnerAddress": "0x0a4813055e2dE4d61B9Ba2f31AB528aD607A1De0",
+        "protocolOwnerPrivateKey": "14789b11ec1b93e4054e868bdb8915592f7c80c4233c5a5f5428baac740fd438",
+        "ethereumNode": "127.0.0.1:8545"
     },
     "nodes": [
         {
@@ -20,8 +20,8 @@
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
             "useMdns": true,
-            "blockchainAddress": "0xB5219B818d2870D08fFbFC0aA93742Db2df721b4",
-            "privateKey": "da2c5e2ee5b3204e3253e2ea04ad4fd1f53ec7d3a9302c1c92ebfa1135de6124",
+            "blockchainAddress": "0xe92F5Aee5E24f6F28818C7ff97c2c15F58919174",
+            "privateKey": "b0e3ca84143821e3cd2cc599d236c8ef6b840ce2fc9533b349cf8a6870943af7",
             "initialScatterTokenSupply": 100000
         },
         {
@@ -32,8 +32,8 @@
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
             "useMdns": true,
-            "blockchainAddress": "0xE4505606D2DD1B47A782bF4149f073EB91E0A6Bb",
-            "privateKey": "f898575dc21b5a4fc16ee69d8482b63b22ed23326c08efb495bf9417c60c4f0c",
+            "blockchainAddress": "0xf316281B649Dc57b3cE7e0e407012076ffF7302D",
+            "privateKey": "d87eaea4b3ddf8ac5260903bf4873c3c4680f326a69b0dfca7f8a4dbf19ea581",
             "initialScatterTokenSupply": 100000
         },
         {
@@ -44,8 +44,8 @@
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
             "useMdns": true,
-            "blockchainAddress": "0xAD9B1bF0Ae303fEDAe8860633a4DeDEE2823e8b3",
-            "privateKey": "e631f0aa29a19762bb389149428e7066600f2c3fe0dbf7cd20681dd208ef0dde",
+            "blockchainAddress": "0x326c08F1aA13975dFe0ea73f9964166b9Eb06364",
+            "privateKey": "b881915133227c2e51c5b848d33851dbf839c7c717afc665605a422b51ef46e6",
             "initialScatterTokenSupply": 100000
         }
     ],
@@ -59,7 +59,8 @@
                 "topic": "requestor topic 1",
                 "path": "training/requestor/train",
                 "reward": 100,
-                "evaluationJob": "training/requestor/validate" 
+                "evaluationJob": "training/requestor/validate",
+                "evaluationJobData": "training/data/requestor/validate"
             }
         },
         {

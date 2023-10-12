@@ -11,8 +11,10 @@ CREATE TABLE
         ipfs_id TEXT,
         topic_name TEXT,
         data_path TEXT,
-        evaluation_job TEXT
-    );
+        evaluation_job TEXT,
+        evaluation_job_data TEXT
+
+);
 
 -- Down
 

@@ -10,6 +10,8 @@ import "./IScatterProtocol.sol";
 contract EvaluationJobToken is ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     mapping(uint256 => string) private _tokenURIs;
+    mapping(string => address) private jobToAddress;
+    mapping(string => string) evaluationJobToDataMapping;
     string baseURI;
     address payable public protocolDeployer;
     address public scatterContractAddress;
@@ -35,8 +37,27 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable {
         uint256 newItemId = _tokenIds.current();
         _safeMint(recipient, newItemId);
         setTokenURI(newItemId, tokenURI);
-
+        jobToAddress[tokenURI] = recipient;
         return newItemId;
+    }
+
+    function publishEvaluationData(
+        address dataPublisher,
+        string memory jobURI,
+        string memory evaluationDataURI
+    ) external onlyScatterProtocolContract {
+        require(
+            jobToAddress[jobURI] == dataPublisher,
+            "This evaluation job does not belong to the data publisher"
+        );
+
+        require(
+            keccak256(bytes(evaluationJobToDataMapping[jobURI])) ==
+                keccak256(bytes("")),
+            "This job already has a mapping to it"
+        );
+
+        evaluationJobToDataMapping[jobURI] = evaluationDataURI;
     }
 
     function setTokenURI(uint256 tokenId, string memory tokenURI) internal {

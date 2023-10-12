@@ -7,4 +7,10 @@ interface IEvaluationJobToken {
         address recipient,
         string memory tokenURI
     ) external;
+
+    function publishEvaluationData(
+        address dataPublisher,
+        string memory jobURI,
+        string memory evaluationDataURI
+    ) external;
 }

@@ -18,6 +18,12 @@ func downloadEvaluationJob(requestorAddress string, ipfsCid string) {
 	networking.UnzipFolder(fileBytes, filePath)
 }
 
+func downloadEvaluationJobData(requestorAddress string, evaluationJobCid string, evaluationDataCid string) {
+	filePath := fmt.Sprintf("training/validator/jobs/%s/%s/data/", strings.ToLower(requestorAddress), strings.ToLower(evaluationJobCid))
+	fileBytes, _ := utils.GetFileBytesFromIPFS(evaluationDataCid)
+	networking.UnzipFolder(fileBytes, filePath)
+}
+
 func buildEvaluationImage(requestorId string, ipfsCid string) {
 	basePath, _ := os.Getwd()
 	requestorIdLower := strings.ToLower(requestorId)
@@ -54,7 +60,7 @@ func runEvaluationContainer(requestorId string, ipfsCid string) *big.Int {
 		log.Fatalf("Failed to run container for %s:%s with error: %s", requestorIdLower, ipfsCidLower, err)
 	}
 
-	return big.NewInt(0)
+	return big.NewInt(1)
 }
 
 func downloadTrainerModel(node *utils.PeerNode, requestorAddress string, topicName string, ipfsCid string, trainerAddress string) {

@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	evaluationtoken "github.com/gtfintechlab/scatter-protocol/protocol/evaluation"
+	modeltoken "github.com/gtfintechlab/scatter-protocol/protocol/model"
 	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter-protocol"
 	scattertoken "github.com/gtfintechlab/scatter-protocol/protocol/scatter-token"
 	trainingtoken "github.com/gtfintechlab/scatter-protocol/protocol/training"
@@ -26,13 +27,15 @@ var ethereumClient, _ = ethclient.Dial(os.Getenv("ETHEREUM_NODE"))
 
 var scatterProtocolContractAddress common.Address = common.HexToAddress(utils.SCATTER_PROTOCOL_CONTRACT)
 var scatterTokenContractAddress common.Address = common.HexToAddress(utils.SCATTER_TOKEN_CONTRACT)
-var trainingContractAddress common.Address = common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT)
-var evaluationContractAddress common.Address = common.HexToAddress(utils.EVALUATION_TOKEN_CONTRACT)
+var trainingTokenContractAddress common.Address = common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT)
+var evaluationTokenContractAddress common.Address = common.HexToAddress(utils.EVALUATION_TOKEN_CONTRACT)
+var modelTokenContractAddress common.Address = common.HexToAddress(utils.MODEL_TOKEN_CONTRACT)
 
 var scatterProtocolContract, _ = scatterprotocol.NewScatterprotocol(scatterProtocolContractAddress, ethereumClient)
 var scatterTokenContract, _ = scattertoken.NewScattertoken(scatterTokenContractAddress, ethereumClient)
-var trainingTokenContract, _ = trainingtoken.NewTrainingtoken(trainingContractAddress, ethereumClient)
-var evaluationTokenContract, _ = evaluationtoken.NewEvaluationtoken(evaluationContractAddress, ethereumClient)
+var trainingTokenContract, _ = trainingtoken.NewTrainingtoken(trainingTokenContractAddress, ethereumClient)
+var evaluationTokenContract, _ = evaluationtoken.NewEvaluationtoken(evaluationTokenContractAddress, ethereumClient)
+var modelTokenContract, _ = modeltoken.NewModeltoken(modelTokenContractAddress, ethereumClient)
 
 var CHAIN_ID, _ = strconv.Atoi(os.Getenv("CHAIN_ID"))
 var CHAIN = big.NewInt(int64(CHAIN_ID))
@@ -185,7 +188,7 @@ func GetRoleByAddress(node *utils.PeerNode, address string) string {
 
 func GetCidFromAddressAndTopic(node *utils.PeerNode, address string, topicName string) string {
 	auth := getTransactor(node)
-	trainingInfo, err := scatterProtocolContract.AddressToTrainingJobInfo(&bind.CallOpts{
+	trainingInfo, err := scatterProtocolContract.AddressToFederatedJob(&bind.CallOpts{
 		From: auth.From,
 	}, common.HexToAddress(address), topicName)
 
@@ -196,16 +199,17 @@ func GetCidFromAddressAndTopic(node *utils.PeerNode, address string, topicName s
 	return trainingInfo.TrainingJobCid
 }
 
-func AddTopicForRequestor(node *utils.PeerNode, trainingJobPath string, topicName string, reward int64) (string, string) {
+func AddTopicForRequestor(node *utils.PeerNode, trainingJobPath string, evaluationJobPath string, topicName string, reward int64) (string, string, string) {
 	auth := getTransactor(node)
-	ipfsCid := utils.UploadFileToIpfs(trainingJobPath)
+	trainingIpfsCid := utils.UploadFileToIpfs(trainingJobPath)
+	evaluationIpfsCid := utils.UploadFileToIpfs(evaluationJobPath)
 	transaction, err := scatterProtocolContract.RequestorAddTopic(
-		auth, ipfsCid, topicName, big.NewInt(reward))
+		auth, trainingIpfsCid, evaluationIpfsCid, topicName, big.NewInt(reward))
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	return ipfsCid, transaction.Hash().Hex()
+	return trainingIpfsCid, evaluationIpfsCid, transaction.Hash().Hex()
 }
 
 func AddTopicForTrainer(node *utils.PeerNode, address string, topicName string, stakeAmount int64) {
@@ -252,9 +256,9 @@ func IsValidatorForRequestorAndTopic(node *utils.PeerNode, requestorAddress stri
 
 	return isValidator
 }
-func PublishEvaluationJob(node *utils.PeerNode, evaluationJobPath string, topicName string) string {
+func PublishEvaluationData(node *utils.PeerNode, evaluationDataPath string, topicName string) string {
 	auth := getTransactor(node)
-	ipfsCid := utils.UploadFileToIpfs(evaluationJobPath)
+	ipfsCid := utils.UploadFileToIpfs(evaluationDataPath)
 	_, err := scatterProtocolContract.SubmitEvaluationSet(auth, topicName, ipfsCid)
 
 	if err != nil {
@@ -265,16 +269,28 @@ func PublishEvaluationJob(node *utils.PeerNode, evaluationJobPath string, topicN
 
 func GetEvaluationJobFromAddressAndTopic(node *utils.PeerNode, requestorAddress string, topicName string) string {
 	auth := getTransactor(node)
-	trainingInfo, err := scatterProtocolContract.AddressToTrainingJobInfo(&bind.CallOpts{From: auth.From},
+	federatedJobInfo, err := scatterProtocolContract.AddressToFederatedJob(&bind.CallOpts{From: auth.From},
 		common.HexToAddress(requestorAddress), topicName)
 
-	ipfsCid := trainingInfo.EvaluationJobCid
+	ipfsCid := federatedJobInfo.EvaluationJobCid
 
 	if err != nil {
 		log.Fatal(err)
 	}
 	return ipfsCid
 
+}
+
+func GetEvaluationDataFromAddressAndTopic(node *utils.PeerNode, requestorAddress string, topicName string) string {
+	auth := getTransactor(node)
+	federatedJobInfo, err := scatterProtocolContract.AddressToFederatedJob(&bind.CallOpts{From: auth.From},
+		common.HexToAddress(requestorAddress), topicName)
+
+	ipfsCid := federatedJobInfo.EvaluationJobDataCid
+	if err != nil {
+		log.Fatal(err)
+	}
+	return ipfsCid
 }
 
 func SubmitEvaluationScore(node *utils.PeerNode, requestorAddress string, topicName string, trainerAddress string, score *big.Int) {
@@ -310,7 +326,7 @@ func GetScatterTokenBalance(node *utils.PeerNode) *big.Int {
 
 func GetPooledRewardByAddressAndTopic(node *utils.PeerNode, address string, topicName string) big.Int {
 	auth := getTransactor(node)
-	trainingJobInfo, err := scatterProtocolContract.AddressToTrainingJobInfo(&bind.CallOpts{From: auth.From}, common.HexToAddress(address), topicName)
+	trainingJobInfo, err := scatterProtocolContract.AddressToFederatedJob(&bind.CallOpts{From: auth.From}, common.HexToAddress(address), topicName)
 	if err != nil {
 		log.Fatal(err)
 	}
