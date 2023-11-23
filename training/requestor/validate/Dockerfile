@@ -1,14 +1,18 @@
-# Use an official Python runtime as a parent image
-FROM python:3.8-slim
+# Specify Evaluation Procedure for Docker Environment Here
 
-# Set the working directory to /app
-WORKDIR /app
+# Run Python 3.8
+FROM python:3.8
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Copy this entire folder into the training directory
+COPY . /tmp
 
-# Install any needed packages specified in requirements.txt
-RUN pip install -r requirements.txt
+WORKDIR /tmp
+RUN echo $(ls)
 
-# Run the evaluation script when the container launches
-ENTRYPOINT ["python", "evaluate_model.py"]
+RUN pip3 install --upgrade pip
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
+ENTRYPOINT ["python3", "evaluate_model.py"]
+
+# Testing Purposes
+# ENTRYPOINT ["tail", "-f", "/dev/null"]

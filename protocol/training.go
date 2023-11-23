@@ -102,7 +102,6 @@ func submitModel(node *utils.PeerNode, requestorAddress string, ipfsCid string, 
 	modelPath, _ := networking.FindFilePathWithExtension(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/output",
 		basePath,
 		requestorIdLower, ipfsCidLower), ".pth")
-
 	PublishModel(node, modelPath, requestorAddress, topicName)
 }
 

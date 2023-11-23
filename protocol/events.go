@@ -161,7 +161,7 @@ func DebugEventListener(node *utils.PeerNode) {
 }
 func TrainingHandler(node *utils.PeerNode, requestorId string, topicName string) {
 	dockerSetup()
-	ipfsCid := GetCidFromAddressAndTopic(node, requestorId, topicName)
+	ipfsCid := GetTrainingJobFromAddressAndTopic(node, requestorId, topicName)
 	dataPath := peerDatabase.GetDatapathFromAddressAndIpfs(node, requestorId, ipfsCid)
 	downloadTrainingJob(ipfsCid, requestorId)
 	buildTrainingImage(requestorId, ipfsCid, dataPath)
@@ -171,9 +171,10 @@ func TrainingHandler(node *utils.PeerNode, requestorId string, topicName string)
 }
 
 func EvaluationRequestHandler(node *utils.PeerNode, topicName string) {
-	evaluationJobPath := peerDatabase.GetEvaluationJobDataFromAddressAndTopic(node, *node.BlockchainAddress, topicName)
-	zippedJobBytes, _ := networking.ZipFolder(evaluationJobPath)
-	zippedPath := fmt.Sprintf("%s/evaluation.zip", evaluationJobPath)
+	evaluationJobDataPath := peerDatabase.GetEvaluationJobDataFromAddressAndTopic(node, *node.BlockchainAddress, topicName)
+	log.Println("DEBUG: EVAL DATA PATH", evaluationJobDataPath)
+	zippedJobBytes, _ := networking.ZipFolder(evaluationJobDataPath)
+	zippedPath := fmt.Sprintf("%s/evaluation.zip", evaluationJobDataPath)
 	networking.WriteBytesToFile(
 		zippedPath,
 		zippedJobBytes.Bytes(),
@@ -191,9 +192,8 @@ func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topic
 	downloadEvaluationJobData(requestorAddress, evaluationJobCid, evaluationDataCid)
 
 	trainers := GetAllTrainersByAddressAndTopic(node, requestorAddress, topicName)
-	ipfsCid := GetCidFromAddressAndTopic(node, requestorAddress, topicName)
 	for _, trainer := range trainers {
-		downloadTrainerModel(node, requestorAddress, topicName, ipfsCid, trainer)
+		downloadTrainerModel(node, requestorAddress, topicName, evaluationJobCid, trainer)
 		buildEvaluationImage(requestorAddress, evaluationJobCid)
 		score := runEvaluationContainer(requestorAddress, evaluationJobCid)
 		SubmitEvaluationScore(node, requestorAddress, topicName, trainer, score)

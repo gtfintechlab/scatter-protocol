@@ -643,7 +643,6 @@ contract ScatterProtocol {
             ),
             "You have already published a model - cannot publish again!"
         );
-
         bool isSubscribed = trainerTrainingMap[requestorAddress][topicName][
             msg.sender
         ];
@@ -651,7 +650,6 @@ contract ScatterProtocol {
             isSubscribed,
             "You cannot submit a model to this topic when you are not subscribed to it"
         );
-
         IModelToken(modelTokenContract).publishModel(modelURI, msg.sender);
         modelLogger[requestorAddress][topicName][msg.sender] = modelURI;
 

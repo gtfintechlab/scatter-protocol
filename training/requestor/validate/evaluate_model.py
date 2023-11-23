@@ -1,100 +1,62 @@
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
 import os
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torchvision
-import torchvision.transforms as transforms
-from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader
-from sklearn.metrics import accuracy_score, precision_score, recall_score
-import json
+import sys
+from contextlib import contextmanager
 
 
-class CustomModel(nn.Module):
-    def __init__(
-        self,
-        root_path,
-        num_classes=2,
-        batch_size=32,
-        num_epochs=10,
-        learning_rate=0.001,
-    ):
-        super(CustomModel, self).__init__()
-        self.root_path = root_path
-        self.num_classes = num_classes
-        self.batch_size = batch_size
-        self.num_epochs = num_epochs
-        self.learning_rate = learning_rate
-
-        self.transform = transforms.Compose(
-            [
-                transforms.Resize((224, 224)),
-                transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
-            ]
-        )
-
-        self.dataset = ImageFolder(root=self.root_path, transform=self.transform)
-        self.dataloader = DataLoader(
-            self.dataset, batch_size=self.batch_size, shuffle=True
-        )
-
-        self.model = torchvision.models.resnet18(pretrained=True)
-        in_features = self.model.fc.in_features
-        self.model.fc = nn.Linear(in_features, self.num_classes)
-
-        self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
-
-    def trainModel(self):
-        for epoch in range(self.num_epochs):
-            for images, labels in self.dataloader:
-                self.optimizer.zero_grad()
-                outputs = self.model(images)
-                loss = self.criterion(outputs, labels)
-                loss.backward()
-                self.optimizer.step()
-            print(f"Epoch [{epoch+1}/{self.num_epochs}], Loss: {loss.item():.4f}")
-
-    def saveModel(self, save_path):
-        torch.save(self.model.state_dict(), save_path)
+@contextmanager
+def suppress_stdout():
+    with open(os.devnull, "w") as devnull:
+        old_stdout = sys.stdout
+        sys.stdout = devnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
 
 
-# Load the trained model
-root_path = "./data/"  # Adjust the root path to your dataset location
-model = CustomModel(root_path=root_path)
-model.load_state_dict(torch.load("model.pth"))
-model.eval()
+accuracy = 0
+with suppress_stdout():
+    import torch
+    import torchvision.transforms as transforms
+    import torchvision
+    from torch.utils.data import DataLoader
+    from torchvision.datasets import ImageFolder
 
-# Initialize lists to store true labels and predicted labels
-true_labels = []
-predicted_labels = []
+    transform = transforms.Compose(
+        [
+            transforms.Resize((224, 224)),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
 
-# Define a custom evaluation dataset (similar to training dataset)
-eval_dataset = ImageFolder(root=root_path, transform=model.transform)
-eval_dataloader = DataLoader(eval_dataset, batch_size=model.batch_size, shuffle=False)
+    num_classes = 2
+    eval_dataset = ImageFolder(root="./data/", transform=transform)
+    eval_dataloader = DataLoader(eval_dataset, batch_size=64, shuffle=False)
 
-# Iterate through the evaluation dataset and make predictions
-with torch.no_grad():
-    for images, labels in eval_dataloader:
-        outputs = model.model(images)  # Access the inner model for inference
-        predicted_labels.extend(outputs.argmax(dim=1).cpu().numpy())
-        true_labels.extend(labels.numpy())
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-# Calculate evaluation metrics
-accuracy = accuracy_score(true_labels, predicted_labels)
-precision = precision_score(true_labels, predicted_labels)
-recall = recall_score(true_labels, predicted_labels)
+    # Load the trained model
+    model = torchvision.models.resnet18(weights="ResNet18_Weights.DEFAULT")
+    in_features = model.fc.in_features
+    model.fc = torch.nn.Linear(in_features, num_classes)
+    model.load_state_dict(torch.load("./model.pth"))
+    model.to(device)
+    model.eval()
 
-# Create a dictionary to store the metrics
-score_dict = {"score": ((accuracy * 100) + (precision * 100) + (recall * 100)) / 3}
+    correct_predictions = 0
+    total_samples = 0
 
-# Write metrics to a JSON file
-with open("output/evaluation_score.json", "w+") as json_file:
-    json.dump(score_dict, json_file)
+    with torch.no_grad():
+        for images, labels in eval_dataloader:
+            images = images.to(device)
+            labels = labels.to(device)
+
+            outputs = model(images)
+            _, predicted = torch.max(outputs, 1)
+
+            correct_predictions += (predicted == labels).sum().item()
+            total_samples += labels.size(0)
+
+    accuracy = correct_predictions / total_samples
+print(int(accuracy * 100))

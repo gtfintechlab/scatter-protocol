@@ -1,11 +1,14 @@
 package protocol
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"math/big"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/gtfintechlab/scatter-protocol/networking"
@@ -28,6 +31,14 @@ func buildEvaluationImage(requestorId string, ipfsCid string) {
 	basePath, _ := os.Getwd()
 	requestorIdLower := strings.ToLower(requestorId)
 	ipfsCidLower := strings.ToLower(ipfsCid)
+
+	os.MkdirAll(fmt.Sprintf("%s/training/validator/jobs/%s/%s/output",
+		basePath,
+		requestorIdLower,
+		ipfsCidLower,
+	),
+		0700,
+	)
 
 	cmd := exec.Command(
 		"docker", "build",
@@ -53,24 +64,35 @@ func runEvaluationContainer(requestorId string, ipfsCid string) *big.Int {
 		"docker", "run",
 		fmt.Sprintf("%s:%s", requestorIdLower, ipfsCidLower),
 	)
+	var dataBuffer bytes.Buffer
+	cmd.Stdout = io.MultiWriter(os.Stdout, &dataBuffer)
 
 	err := cmd.Run()
-
 	if err != nil {
 		log.Fatalf("Failed to run container for %s:%s with error: %s", requestorIdLower, ipfsCidLower, err)
 	}
 
-	return big.NewInt(1)
+	scoreString := strings.ReplaceAll(dataBuffer.String(), "\n", "")
+	scoreString = strings.ReplaceAll(scoreString, " ", "")
+	score, err := strconv.Atoi(scoreString)
+	if err != nil {
+		log.Fatalf("Output failed to output a valid score %s", err)
+	}
+
+	return big.NewInt(int64(score))
 }
 
 func downloadTrainerModel(node *utils.PeerNode, requestorAddress string, topicName string, ipfsCid string, trainerAddress string) {
 	basePath, _ := os.Getwd()
 	requestorIdLower := strings.ToLower(requestorAddress)
 	ipfsCidLower := strings.ToLower(ipfsCid)
-	modelPath := fmt.Sprintf("%s/training/validator/%s/%s/model.pth", basePath, requestorIdLower, ipfsCidLower)
+	modelPath := fmt.Sprintf("%s/training/validator/jobs/%s/%s/model.pth", basePath, requestorIdLower, ipfsCidLower)
 	os.Remove(modelPath)
 
 	modelCid := GetModelCidByTrainer(node, requestorAddress, topicName, trainerAddress)
 	modelBytes, _ := utils.GetFileBytesFromIPFS(modelCid)
-	networking.WriteBytesToFile(modelPath, modelBytes)
+	err := networking.WriteBytesToFile(modelPath, modelBytes)
+	if err != nil {
+		log.Fatalf("Failed to download model from ipfs with error: %s", err)
+	}
 }

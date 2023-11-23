@@ -187,7 +187,7 @@ func GetRoleByAddress(node *utils.PeerNode, address string) string {
 	return role
 }
 
-func GetCidFromAddressAndTopic(node *utils.PeerNode, address string, topicName string) string {
+func GetTrainingJobFromAddressAndTopic(node *utils.PeerNode, address string, topicName string) string {
 	auth := getTransactor(node)
 	trainingInfo, err := scatterProtocolContract.AddressToFederatedJob(&bind.CallOpts{
 		From: auth.From,

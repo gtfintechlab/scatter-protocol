@@ -73,7 +73,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			zippedTrainingJobPath := fmt.Sprintf("%s/%s_%s_training.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
 			networking.WriteBytesToFile(zippedTrainingJobPath, zippedTrainingFileBytes.Bytes())
 
-			zippedEvaluationFileBytes, _ := networking.ZipFolder(*requestBody.EvaluationJobData)
+			zippedEvaluationFileBytes, _ := networking.ZipFolder(*requestBody.EvaluationJob)
 			zippedEvaluationJobPath := fmt.Sprintf("%s/%s_%s_evaluation.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
 			networking.WriteBytesToFile(zippedEvaluationJobPath, zippedEvaluationFileBytes.Bytes())
 
@@ -110,7 +110,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			peerDatabase.AddTopicFromInfo(
 				node,
 				*requestBody.RequestorAddress,
-				protocol.GetCidFromAddressAndTopic(node, *requestBody.RequestorAddress, requestBody.Topic),
+				protocol.GetTrainingJobFromAddressAndTopic(node, *requestBody.RequestorAddress, requestBody.Topic),
 				requestBody.Topic,
 				requestBody.Path,
 				nil,
@@ -162,7 +162,7 @@ func getPublishedTopics(node *utils.PeerNode) http.HandlerFunc {
 					NodeAddress:      participant,
 					NodeType:         protocol.GetRoleByAddress(node, participant),
 					TopicName:        topic,
-					TrainingTokenCID: protocol.GetCidFromAddressAndTopic(node, participant, topic),
+					TrainingTokenCID: protocol.GetTrainingJobFromAddressAndTopic(node, participant, topic),
 					PooledReward:     protocol.GetPooledRewardByAddressAndTopic(node, participant, topic),
 				})
 			}

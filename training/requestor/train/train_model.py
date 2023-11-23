@@ -16,7 +16,7 @@ num_classes = 2
 dataset = ImageFolder(root="./data/example", transform=transform)
 dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
 
-model = torchvision.models.resnet18(pretrained=True)
+model = torchvision.models.resnet18(weights="ResNet18_Weights.DEFAULT")
 in_features = model.fc.in_features
 model.fc = torch.nn.Linear(in_features, num_classes)
 criterion = torch.nn.CrossEntropyLoss()
@@ -40,4 +40,5 @@ def trainModel():
         print(f"Epoch [{epoch+1}/{numEpochs}], Loss: {loss.item():.4f}")
 
 
+trainModel()
 torch.save(model.state_dict(), "/tmp/output/model.pth")
