@@ -1,72 +1,43 @@
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
-import os
-import torch
-import torch.nn as nn
-import torch.optim as optim
-import torchvision
 import torchvision.transforms as transforms
-from torchvision.datasets import ImageFolder
+import torchvision
 from torch.utils.data import DataLoader
+from torchvision.datasets import ImageFolder
+
+transform = transforms.Compose(
+    [
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ]
+)
+
+num_classes = 2
+dataset = ImageFolder(root="./data/example", transform=transform)
+dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
+
+model = torchvision.models.resnet18(pretrained=True)
+in_features = model.fc.in_features
+model.fc = torch.nn.Linear(in_features, num_classes)
+criterion = torch.nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+numEpochs = 3
 
 
-class CustomModel(nn.Module):
-    def __init__(
-        self,
-        root_path,
-        num_classes=2,
-        batch_size=32,
-        num_epochs=10,
-        learning_rate=0.001,
-    ):
-        super(CustomModel, self).__init__()
-        self.root_path = root_path
-        self.num_classes = num_classes
-        self.batch_size = batch_size
-        self.num_epochs = num_epochs
-        self.learning_rate = learning_rate
+def trainModel():
+    i = 0
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    for epoch in range(numEpochs):
+        for images, labels in dataloader:
+            images.to(device)
+            optimizer.zero_grad()
+            i += 1
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
 
-        self.transform = transforms.Compose(
-            [
-                transforms.Resize((224, 224)),
-                transforms.ToTensor(),
-                transforms.Normalize(
-                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                ),
-            ]
-        )
-
-        self.dataset = ImageFolder(root=self.root_path, transform=self.transform)
-        self.dataloader = DataLoader(
-            self.dataset, batch_size=self.batch_size, shuffle=True
-        )
-
-        self.model = torchvision.models.resnet18(pretrained=True)
-        in_features = self.model.fc.in_features
-        self.model.fc = nn.Linear(in_features, self.num_classes)
-
-        self.criterion = nn.CrossEntropyLoss()
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.learning_rate)
-
-    def trainModel(self):
-        for epoch in range(self.num_epochs):
-            for images, labels in self.dataloader:
-                self.optimizer.zero_grad()
-                outputs = self.model(images)
-                loss = self.criterion(outputs, labels)
-                loss.backward()
-                self.optimizer.step()
-            print(f"Epoch [{epoch+1}/{self.num_epochs}], Loss: {loss.item():.4f}")
-
-    def saveModel(self, save_path):
-        torch.save(self.model.state_dict(), save_path)
+        print(f"Epoch [{epoch+1}/{numEpochs}], Loss: {loss.item():.4f}")
 
 
-if __name__ == "__main__":
-    model = CustomModel(
-        root_path="./data/example", num_classes=2, batch_size=32, num_epochs=5
-    )
-    model.trainModel()
-    model.saveModel("/tmp/output/model.pth")
+torch.save(model.state_dict(), "/tmp/output/model.pth")

@@ -2,6 +2,7 @@ package simulation
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -287,13 +288,13 @@ func simpleRequest(endpoint string, method string, url string, body *map[string]
 }
 
 func transferToken(privateKey string, amount int64, recipient string, ethereumNode string, contractAddress string) {
-	auth := getTransactor(privateKey)
+	auth := getTransactor(privateKey, ethereumNode)
 	var ethereumClient, _ = ethclient.Dial(ethereumNode)
 	contract, _ := scattertoken.NewScattertoken(common.HexToAddress(contractAddress), ethereumClient)
 	contract.Transfer(auth, common.HexToAddress(recipient), big.NewInt(amount))
 }
 
-func getTransactor(ownerPrivateKey string) *bind.TransactOpts {
+func getTransactor(ownerPrivateKey string, ethereumNode string) *bind.TransactOpts {
 
 	privateKey, err := crypto.HexToECDSA(ownerPrivateKey)
 	if err != nil {
@@ -302,6 +303,9 @@ func getTransactor(ownerPrivateKey string) *bind.TransactOpts {
 
 	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, protocol.CHAIN)
 	auth.Value = big.NewInt(0)
+	var ethereumClient, _ = ethclient.Dial(ethereumNode)
+	gas, _ := ethereumClient.SuggestGasPrice(context.Background())
+	auth.GasPrice = (*big.Int)(gas)
 
 	return auth
 }

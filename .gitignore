@@ -34,5 +34,8 @@ __pycache__
 
 .vscode
 
-training/trainer/jobs/
-training/validator/jobs/
+training/trainer/jobs/*
+!training/trainer/jobs/.gitkeep
+
+training/validator/jobs/*
+!training/validator/jobs/.gitkeep

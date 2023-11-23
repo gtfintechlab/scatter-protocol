@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os/exec"
 	"strings"
 
 	"github.com/gtfintechlab/scatter-protocol/utils"
@@ -95,7 +94,7 @@ func AddTopicFromInfo(node *utils.PeerNode, nodeAddress string, ipfsCid string, 
 	}
 	defer statement.Close()
 	if dataPath != nil {
-		statement.Exec(strings.ToLower(nodeAddress), strings.ToLower(ipfsCid), topicName, *dataPath, nil)
+		statement.Exec(strings.ToLower(nodeAddress), strings.ToLower(ipfsCid), topicName, *dataPath, nil, nil)
 	} else {
 		statement.Exec(strings.ToLower(nodeAddress), strings.ToLower(ipfsCid), topicName, nil, *evaluationJob, *evaluationJobData)
 	}
@@ -103,14 +102,14 @@ func AddTopicFromInfo(node *utils.PeerNode, nodeAddress string, ipfsCid string, 
 }
 
 func ConnectToPostgres(peerType string, username string, password string, port int) *sql.DB {
-	exec.Command(
-		"docker", "run",
-		"--name", fmt.Sprintf("%s-postgres", peerType),
-		"-e", fmt.Sprintf("POSTGRES_USER=%s", username),
-		"-e", fmt.Sprintf("POSTGRES_PASSWORD=%s", password),
-		"-p", fmt.Sprintf("%d:5432", port),
-		"-d", "postgres",
-	).Output()
+	// exec.Command(
+	// 	"docker", "run",
+	// 	"--name", fmt.Sprintf("%s-postgres", peerType),
+	// 	"-e", fmt.Sprintf("POSTGRES_USER=%s", username),
+	// 	"-e", fmt.Sprintf("POSTGRES_PASSWORD=%s", password),
+	// 	"-p", fmt.Sprintf("%d:5432", port),
+	// 	"-d", "postgres",
+	// ).Output()
 
 	connStr := fmt.Sprintf(
 		"user=%s password=%s host=localhost port=%d dbname=postgres sslmode=disable",

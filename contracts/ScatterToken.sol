@@ -25,10 +25,14 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
 
     // Lottery for challenges who prove a validator wrong
     uint256 lotteryPool = 0;
-    uint256 lotteryPercentage = 10;
+    uint256 lotteryPercentage = 2;
 
     // Punishment constants
-    uint256 validatorPunishmentPercentage = 0;
+    uint256 validatorPunishmentPercentage = 100;
+
+    // Reward constants
+    uint256 stakeFactor = 50;
+    uint256 performanceFactor = 50;
 
     address public scatterProtocolAddress;
 
@@ -96,7 +100,7 @@ contract ScatterToken is ERC20Capped, ERC20Burnable {
         _burn(trainerAddress, amount);
         trainerLockedTokenForTrainingJob[requestorAddress][topicName][
             trainerAddress
-        ] = amount;
+        ] += amount;
     }
 
     function stakeToken(uint256 amount) public noReentrant {

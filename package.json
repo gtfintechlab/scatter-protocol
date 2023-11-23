@@ -49,6 +49,7 @@
     "concurrently": "^7.6.0"
   },
   "devDependencies": {
+    "hardhat": "^2.19.1",
     "prettier": "^2.8.1",
     "prettier-plugin-solidity": "^1.0.0",
     "sol-merger": "^4.4.0"

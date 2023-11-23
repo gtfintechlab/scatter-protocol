@@ -1,0 +1,66 @@
+version: '3'
+
+services:
+  ipfs:
+    image: ipfs/kubo:latest
+    container_name: ipfs
+    volumes:
+      - /tmp/ipfs/staging:/export
+    ports:
+      - "4001:4001"
+      - "4001:4001/udp"
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:5001:5001"  
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://localhost:8080", "http://localhost:3000", "http://127.0.0.1:5001", "https://webui.ipfs.io"]' && \
+        ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "POST"]' && \
+        ipfs daemon
+  
+  requestor-postgres:
+    image: postgres
+    ports:
+      - "8701:5432"
+    environment:
+      POSTGRES_DB: requestor-postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - requestor-postgres-data:/var/lib/postgresql/data
+
+  trainer-postgres:
+    image: postgres
+    ports:
+      - "8702:5432"
+    environment:
+      POSTGRES_DB: trainer-postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - trainer-postgres-data:/var/lib/postgresql/data
+
+  validator-postgres:
+    image: postgres
+    ports:
+      - "8703:5432"
+    environment:
+      POSTGRES_DB: validator-postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - validator-postgres-data:/var/lib/postgresql/data
+  
+  hardhat-network:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.hardhat
+    image: hardhat-network:latest
+    ports:
+      - "8545:8545"
+
+volumes:
+  requestor-postgres-data:
+  trainer-postgres-data:
+  validator-postgres-data:

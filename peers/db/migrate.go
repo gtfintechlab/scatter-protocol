@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -42,15 +41,6 @@ func MigratePeerDB(direction string, peerType string, databaseUsername string, d
 }
 
 func connectToPostgres(peerType string, username string, password string, port int) *sql.DB {
-	exec.Command(
-		"docker", "run",
-		"--name", fmt.Sprintf("%s-postgres", peerType),
-		"-e", fmt.Sprintf("POSTGRES_USER=%s", username),
-		"-e", fmt.Sprintf("POSTGRES_PASSWORD=%s", password),
-		"-p", fmt.Sprintf("%d:5432", port),
-		"-d", "postgres",
-	).Output()
-
 	connStr := fmt.Sprintf(
 		"user=%s password=%s host=localhost port=%d dbname=postgres sslmode=disable",
 		username, password, port,

@@ -1,9 +1,9 @@
 {
     "environment": {
         "deployProtocol": true,
-        "protocolOwnerAddress": "0x0a4813055e2dE4d61B9Ba2f31AB528aD607A1De0",
-        "protocolOwnerPrivateKey": "14789b11ec1b93e4054e868bdb8915592f7c80c4233c5a5f5428baac740fd438",
-        "ethereumNode": "127.0.0.1:8545"
+        "protocolOwnerAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "protocolOwnerPrivateKey": "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
+        "ethereumNode": "ws://127.0.0.1:8545"
     },
     "nodes": [
         {
@@ -20,9 +20,9 @@
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
             "useMdns": true,
-            "blockchainAddress": "0xe92F5Aee5E24f6F28818C7ff97c2c15F58919174",
-            "privateKey": "b0e3ca84143821e3cd2cc599d236c8ef6b840ce2fc9533b349cf8a6870943af7",
-            "initialScatterTokenSupply": 100000
+            "blockchainAddress": "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
+            "privateKey": "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
+            "initialScatterTokenSupply": 1000000
         },
         {
             "id": "trainer_node",
@@ -32,9 +32,9 @@
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
             "useMdns": true,
-            "blockchainAddress": "0xf316281B649Dc57b3cE7e0e407012076ffF7302D",
-            "privateKey": "d87eaea4b3ddf8ac5260903bf4873c3c4680f326a69b0dfca7f8a4dbf19ea581",
-            "initialScatterTokenSupply": 100000
+            "blockchainAddress": "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC",
+            "privateKey": "5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
+            "initialScatterTokenSupply": 1000000
         },
         {
             "id": "validator_node",
@@ -44,9 +44,9 @@
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
             "useMdns": true,
-            "blockchainAddress": "0x326c08F1aA13975dFe0ea73f9964166b9Eb06364",
-            "privateKey": "b881915133227c2e51c5b848d33851dbf839c7c717afc665605a422b51ef46e6",
-            "initialScatterTokenSupply": 100000
+            "blockchainAddress": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
+            "privateKey": "7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6",
+            "initialScatterTokenSupply": 1000000
         }
     ],
 
@@ -78,7 +78,7 @@
             "body": {
                 "requestorAddress": "{PUBLISHED_TOPICS.topics[0].NodeAddress}",
                 "topic": "{PUBLISHED_TOPICS.topics[0].TopicName}",
-                "path": "/home/samrat/Documents/scatterchain/training/data/example",
+                "path": "/home/samrat/Documents/scatterchain/training/data/trainer/example",
                 "stake": 500
             }
         },

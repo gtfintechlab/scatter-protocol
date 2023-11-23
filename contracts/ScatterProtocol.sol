@@ -313,7 +313,7 @@ contract ScatterProtocol {
             distributeRewards ||
             (allModelsSubmitted && allModelsValidated);
 
-        // 10% towards lottery for challengers
+        // 2% towards lottery for challengers
         // Get Rogue Trainers - Slash 100% of what they staked --> lottery
         // Get Rogue Validators - Slash 10% of their stake --> lottery
         // Reward benevolent validators - reward should be proportional to their stake

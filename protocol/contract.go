@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -343,6 +344,8 @@ func getTransactor(node *utils.PeerNode) *bind.TransactOpts {
 
 	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
 	auth.Value = big.NewInt(0)
+	gas, _ := ethereumClient.SuggestGasPrice(context.Background())
+	auth.GasPrice = (*big.Int)(gas)
 
 	return auth
 }

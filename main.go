@@ -87,8 +87,5 @@ func main() {
 		peerDatabase.MigratePeerDB(migrationDirection, peerType, "postgres", "postgres", dbPort)
 	} else if util == utils.UTIL_RUN_SIMULATION {
 		simulation.RunSimulation(simulationName)
-	} else if util == utils.UTIL_RUN_IPFS_NODE {
-		utils.RunIpfsNode(4001, 5001, 8080)
 	}
-
 }

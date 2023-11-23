@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"log"
@@ -218,6 +219,8 @@ func GetTransactor(privateKey string) *bind.TransactOpts {
 
 	auth, _ := bind.NewKeyedTransactorWithChainID(privateKeyObject, CHAIN)
 	auth.Value = big.NewInt(0)
+	gas, _ := client.SuggestGasPrice(context.Background())
+	auth.GasPrice = (*big.Int)(gas)
 
 	return auth
 }
