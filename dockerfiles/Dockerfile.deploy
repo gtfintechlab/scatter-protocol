@@ -1,0 +1,14 @@
+# Multi-stage build for a smaller final image
+FROM golang:latest
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Fetch dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the source code into the container
+COPY . ./
+
+CMD ["go", "run", "scripts/deploy.go", "--contract", "all"]

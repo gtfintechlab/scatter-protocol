@@ -1,0 +1,31 @@
+# Multi-stage build for a smaller final image
+FROM node:latest
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Copy the source code into the container
+COPY ./protocol/ /app/protocol
+COPY ./build/ /app/build
+COPY ./contracts/ /app/contracts
+COPY ./contract-deploy.json /app/contract-deploy.json
+
+# Install jq
+RUN apt-get install -y jq
+
+RUN npm install -g solc
+# Run abigen for each contract specified in the JSON file
+RUN cat contract-deploy.json | jq -c '.contracts[]' | \
+    while read i; do \
+        name=$(echo $i | jq -r '.name'); \
+        solc contracts/$name.sol --overwrite --bin --abi -o build --base-path '/' --include-path 'node_modules/' --optimize --optimize-runs 200; \
+    done
+
+# Run abigen for each contract specified in the JSON file
+RUN cat contract-deploy.json | jq -c '.contracts[]' | \
+    while read i; do \
+        name=$(echo $i | jq -r '.name'); \
+        package=$(echo $i | jq -r '.package-name'); \
+        directory=$(echo $i | jq -r '.project-directory'); \
+        abigen --bin=./build/$name.bin --abi=./build/$name.abi --pkg=$package --out=$directory/$name.go; \
+    done

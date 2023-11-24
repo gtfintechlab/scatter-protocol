@@ -14,9 +14,28 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable {
     mapping(string => string) evaluationJobToDataMapping;
     string baseURI;
     address payable public protocolDeployer;
-    address public scatterContractAddress;
+    IScatterProtocol public scatterProtocolContract;
 
     Counters.Counter private _tokenIds;
+
+    // Mappings used to keep track of evaluaation metrics
+    /*
+        Example evaluationScore Mapping:
+        {
+            requestor address: {
+                topic name: {
+                    validator 1 address: {
+                        trainer 1 address: score 1,
+                        trainer 2 address: score 2
+                    },
+                    validator 2 address: {...}
+                    }
+                }
+            }
+        }
+    */
+    mapping(address => mapping(string => mapping(address => mapping(address => uint256)))) evaluationScore;
+    mapping(address => mapping(string => mapping(address => mapping(address => bool)))) evaluationScoreSet;
 
     constructor() ERC721("Scatter Protocol Evaluation Jobs", "SPEJ") {
         protocolDeployer = payable(msg.sender);
@@ -25,7 +44,7 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable {
     function setScatterContractAddress(
         address contractAddress
     ) public onlyOwner {
-        scatterContractAddress = contractAddress;
+        scatterProtocolContract = IScatterProtocol(contractAddress);
     }
 
     function publishEvaluationJob(
@@ -83,9 +102,53 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable {
         return baseURI;
     }
 
+    function submitEvaluationScore(
+        address requestorAddress,
+        string memory topicName,
+        address trainerAddress,
+        address validatorAddress,
+        uint256 score
+    ) external onlyScatterProtocolContract {
+        require(
+            !evaluationScoreSet[requestorAddress][topicName][validatorAddress][
+                trainerAddress
+            ],
+            "Cannot resubmit a score for a trainer that has previously been submitted"
+        );
+
+        require(
+            scatterProtocolContract.isValidatorForTrainingJob(
+                requestorAddress,
+                topicName,
+                validatorAddress
+            ),
+            "You are not an assigned validator for this training job"
+        );
+
+        evaluationScore[requestorAddress][topicName][validatorAddress][
+            trainerAddress
+        ] = score;
+
+        evaluationScoreSet[requestorAddress][topicName][validatorAddress][
+            trainerAddress
+        ] = true;
+    }
+
+    function isEvaluationScoreSet(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress,
+        address trainerAddress
+    ) external view returns (bool) {
+        return
+            evaluationScoreSet[requestorAddress][topicName][validatorAddress][
+                trainerAddress
+            ];
+    }
+
     modifier onlyScatterProtocolContract() {
         require(
-            msg.sender == scatterContractAddress,
+            msg.sender == address(scatterProtocolContract),
             "This method can only be called by the scatter protocol contract"
         );
         _;

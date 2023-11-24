@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	evaluationtoken "github.com/gtfintechlab/scatter-protocol/protocol/evaluation"
 	modelToken "github.com/gtfintechlab/scatter-protocol/protocol/model"
+	reputationmanager "github.com/gtfintechlab/scatter-protocol/protocol/reputation"
 	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter-protocol"
 	scattertoken "github.com/gtfintechlab/scatter-protocol/protocol/scatter-token"
 	trainingtoken "github.com/gtfintechlab/scatter-protocol/protocol/training"
@@ -30,6 +31,7 @@ const (
 	TOKEN      = "token"
 	EVALUATION = "evaluation"
 	TRAINING   = "training"
+	REPUTATION = "reputation"
 	ALL        = "all"
 )
 
@@ -64,6 +66,8 @@ func DeployContracts(contract string, privateKey string) {
 		deployScatterToken(privateKey)
 	case MODEL:
 		deployModelToken(privateKey)
+	case REPUTATION:
+		deployReputationManagerContract(privateKey)
 	case ALL:
 		deployAllContracts(privateKey)
 	}
@@ -96,6 +100,12 @@ func deployAllContracts(privateKey string) {
 	}
 	time.Sleep(time.Second * DEPLOY_PAUSE)
 
+	reputationManagerAddress, reputationManagerTransaction, reputationManagerInstance, err := reputationmanager.DeployReputationmanager(auth, client)
+	if err != nil {
+		log.Fatal("Failed to deploy reptuation manager", err.Error())
+	}
+	time.Sleep(time.Second * DEPLOY_PAUSE)
+
 	scatterProtocolAddress, scatterProtocolTransaction, scatterInstance, err := scatterprotocol.DeployScatterprotocol(
 		auth, client,
 		common.HexToAddress(trainingAddress.Hash().Hex()),
@@ -112,6 +122,11 @@ func deployAllContracts(privateKey string) {
 	evaluationInstance.SetScatterContractAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
 	scatterTokenInstance.SetScatterProtocolAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
 	modelInstance.SetScatterContractAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+
+	reputationManagerInstance.SetEvaluationJobContract(auth, common.HexToAddress(evaluationAddress.Hash().Hex()))
+	reputationManagerInstance.SetModelTokenContract(auth, common.HexToAddress(modelAddress.Hash().Hex()))
+	reputationManagerInstance.SetScatterProtocolContract(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+
 	scatterInstance.InitRequestorNode(auth)
 
 	log.Println("Transaction Info:")
@@ -119,6 +134,7 @@ func deployAllContracts(privateKey string) {
 	log.Printf("Model Token: %s\n", modelTransaction.Hash())
 	log.Printf("Evaluation Token: %s\n", evaluationTransaction.Hash())
 	log.Printf("Scatter Token: %s\n", scatterTokenTransaction.Hash())
+	log.Printf("Reputation Manager: %s\n", reputationManagerTransaction.Hash())
 	log.Printf("Scatter Protocol: %s\n", scatterProtocolTransaction.Hash())
 	log.Println("===============")
 
@@ -127,14 +143,16 @@ func deployAllContracts(privateKey string) {
 	log.Printf("Model Token: %s\n", modelAddress.Hex())
 	log.Printf("Evaluation Token: %s\n", evaluationAddress.Hex())
 	log.Printf("Scatter Token: %s\n", scatterTokenAddress.Hex())
+	log.Printf("Reputation Manager: %s\n", reputationManagerAddress.Hex())
 	log.Printf("Scatter Protocol: %s\n", scatterProtocolAddress.Hex())
 
 	contractInfo := map[string]string{
-		"SCATTER_PROTOCOL_CONTRACT": scatterProtocolAddress.Hex(),
-		"SCATTER_TOKEN_CONTRACT":    scatterTokenAddress.Hex(),
-		"TRAINING_TOKEN_CONTRACT":   trainingAddress.Hex(),
-		"EVALUATION_TOKEN_CONTRACT": evaluationAddress.Hex(),
-		"MODEL_TOKEN_CONTRACT":      modelAddress.Hex(),
+		"SCATTER_PROTOCOL_CONTRACT":   scatterProtocolAddress.Hex(),
+		"SCATTER_TOKEN_CONTRACT":      scatterTokenAddress.Hex(),
+		"TRAINING_TOKEN_CONTRACT":     trainingAddress.Hex(),
+		"EVALUATION_TOKEN_CONTRACT":   evaluationAddress.Hex(),
+		"MODEL_TOKEN_CONTRACT":        modelAddress.Hex(),
+		"REPUTATION_MANAGER_CONTRACT": reputationManagerAddress.Hex(),
 	}
 
 	jsonData, _ := json.MarshalIndent(contractInfo, "", "  ")
@@ -202,6 +220,19 @@ func deployModelToken(privateKey string) {
 func deployTrainingJobToken(privateKey string) {
 	auth := GetTransactor(privateKey)
 	address, transaction, _, err := trainingtoken.DeployTrainingtoken(auth, client)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("Contract Address: " + address.Hex())
+	log.Println("Transaction Hash: " + transaction.Hash().Hex())
+
+}
+
+func deployReputationManagerContract(privateKey string) {
+	auth := GetTransactor(privateKey)
+
+	address, transaction, _, err := reputationmanager.DeployReputationmanager(auth, client)
 	if err != nil {
 		log.Fatal(err)
 	}

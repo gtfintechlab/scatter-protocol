@@ -1,0 +1,34 @@
+{
+    "contracts": [
+        {
+            "name": "ScatterProtocol",
+            "package-name": "scatterprotocol",
+            "project-directory": "scatter-protocol"
+        },
+        {
+            "name": "TrainingJobToken",
+            "package-name": "trainingtoken",
+            "project-directory": "training"
+        },
+        {
+            "name": "ModelToken",
+            "package-name": "modeltoken",
+            "project-directory": "model"
+        },
+        {
+            "name": "EvaluationJobToken",
+            "package-name": "evaluationtoken",
+            "project-directory": "evaluation"
+        },
+        {
+            "name": "ScatterToken",
+            "package-name": "scattertoken",
+            "project-directory": "scatter-token"
+        },
+        {
+            "name": "ReputationManager",
+            "package-name": "reputationmanager",
+            "project-directory": "reputation"
+        }
+    ]
+}

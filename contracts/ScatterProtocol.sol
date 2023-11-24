@@ -7,6 +7,7 @@ import "./ITrainingJobToken.sol";
 import "./IEvaluationJobToken.sol";
 import "./IScatterToken.sol";
 import "./IModelToken.sol";
+import "./IReputationManager.sol";
 import "./Shared.sol";
 
 // Model Validator: 10,000 Scatter Token Staked
@@ -24,10 +25,11 @@ contract ScatterProtocol {
     }
 
     address payable public owner;
-    address public trainingJobContract;
-    address public evaluationJobContract;
-    address public scatterTokenContract;
-    address public modelTokenContract;
+    ITrainingJobToken public trainingJobContract;
+    IEvaluationJobToken public evaluationJobContract;
+    IScatterToken public scatterTokenContract;
+    IModelToken public modelTokenContract;
+    IReputationManager public reputationManagerContract;
 
     mapping(address => uint256) internal addressToStake;
     mapping(address => uint256) internal addressToStakeTime;
@@ -90,52 +92,6 @@ contract ScatterProtocol {
         public validatorTrainingMap;
     mapping(address => mapping(string => address[])) validatorTrainingMapKeys;
 
-    /*
-        Example modelLogger Mapping:
-        {
-            requestor address: {
-                topic name: {
-                    trainer 1 address: CID 1,
-                    trainer 2 address: CID 1,
-                }
-            }
-        }
-    */
-    // Allows the protocol to keep track of model URIs for trainers
-    mapping(address => mapping(string => mapping(address => string)))
-        public modelLogger;
-
-    // Mappings used to keep track of evaluaation metrics
-    /*
-        Example evaluationScore Mapping:
-        {
-            requestor address: {
-                topic name: {
-                    validator 1 address: {
-                        trainer 1 address: score 1,
-                        trainer 2 address: score 2
-                    },
-                    validator 2 address: {...}
-                    }
-                }
-            }
-        }
-    */
-    mapping(address => mapping(string => mapping(address => mapping(address => uint256)))) evaluationScore;
-    mapping(address => mapping(string => mapping(address => mapping(address => bool)))) evaluationScoreSet;
-
-    // Rogue + Benevolent trainers used for reward mechanism
-    mapping(address => mapping(string => address[])) rogueTrainers;
-    mapping(address => mapping(string => mapping(address => bool))) rogueTrainerMapping;
-    mapping(address => mapping(string => address[])) benevolentTrainers;
-    mapping(address => mapping(string => mapping(address => bool))) benevolentTrainerMapping;
-
-    // Rogue + Benevolent validators used for reward mechanism
-    mapping(address => mapping(string => address[])) rogueValidators;
-    mapping(address => mapping(string => mapping(address => bool))) rogueValidatorMapping;
-    mapping(address => mapping(string => address[])) benevolentValidators;
-    mapping(address => mapping(string => mapping(address => bool))) benevolentValidatorMapping;
-
     // Random nonce to generate pseudorandom number
     uint randomNonce = 1;
 
@@ -164,13 +120,19 @@ contract ScatterProtocol {
         address trainingTokenContractAddress,
         address evaluationTokenContractAddress,
         address scatterTokenContractAddress,
-        address modelTokenContractAddress
+        address modelTokenContractAddress,
+        address reputationManagerAddress
     ) {
         owner = payable(msg.sender);
-        trainingJobContract = trainingTokenContractAddress;
-        evaluationJobContract = evaluationTokenContractAddress;
-        scatterTokenContract = scatterTokenContractAddress;
-        modelTokenContract = modelTokenContractAddress;
+        trainingJobContract = ITrainingJobToken(trainingTokenContractAddress);
+        evaluationJobContract = IEvaluationJobToken(
+            evaluationTokenContractAddress
+        );
+        scatterTokenContract = IScatterToken(scatterTokenContractAddress);
+        modelTokenContract = IModelToken(modelTokenContractAddress);
+        reputationManagerContract = IReputationManager(
+            reputationManagerAddress
+        );
     }
 
     /**
@@ -188,7 +150,7 @@ contract ScatterProtocol {
     function setTrainingJobContractAddress(
         address newAddress
     ) external onlyOwner {
-        trainingJobContract = newAddress;
+        trainingJobContract = ITrainingJobToken(newAddress);
     }
 
     /**
@@ -198,7 +160,7 @@ contract ScatterProtocol {
     function setEvaluationJobContractAddress(
         address newAddress
     ) external onlyOwner {
-        evaluationJobContract = newAddress;
+        evaluationJobContract = IEvaluationJobToken(newAddress);
     }
 
     /**
@@ -208,7 +170,7 @@ contract ScatterProtocol {
     function setScatterTokenContractAddress(
         address newAddress
     ) external onlyOwner {
-        scatterTokenContract = newAddress;
+        scatterTokenContract = IScatterToken(newAddress);
     }
 
     /**
@@ -257,8 +219,9 @@ contract ScatterProtocol {
      *  @dev Set the current user role to be a trainer
      */
     function initValidatorNode() public {
-        bool canBePromoted = IScatterToken(scatterTokenContract)
-            .canBecomeValidator(msg.sender);
+        bool canBePromoted = scatterTokenContract.canBecomeValidator(
+            msg.sender
+        );
 
         require(
             canBePromoted,
@@ -320,45 +283,33 @@ contract ScatterProtocol {
         // Return trainer staked token to benevolent trainers
         // Reward benevolent trainers - reward should be proportional to their short-term stake & model score
         if (distributeRewards) {
-            _populateTrainerStatus(requestorAddress, topicName);
-            _populateValidatorStatus(requestorAddress, topicName);
+            address[] memory rogueTrainerList = reputationManagerContract
+                .getMalevolentTrainers(requestorAddress, topicName);
+            address[] memory rogueValidatorList = reputationManagerContract
+                .getMalevolentValidators(requestorAddress, topicName);
 
-            address[] memory rogueTrainerList = rogueTrainers[requestorAddress][
-                topicName
-            ];
-            address[] memory rogueValidatorList = rogueValidators[
-                requestorAddress
-            ][topicName];
+            address[] memory benevolentTrainerList = reputationManagerContract
+                .getBenevolentTrainers(requestorAddress, topicName);
+            address[] memory benevolentValidatorList = reputationManagerContract
+                .getBenevolentValidators(requestorAddress, topicName);
 
-            address[] memory benevolentTrainerList = benevolentTrainers[
-                requestorAddress
-            ][topicName];
-            address[] memory benevolentValidatorList = benevolentValidators[
-                requestorAddress
-            ][topicName];
+            scatterTokenContract.donateToLottery(requestorAddress, topicName);
 
-            IScatterToken(scatterTokenContract).donateToLottery(
-                requestorAddress,
-                topicName
-            );
-
-            IScatterToken(scatterTokenContract).punishRogueTrainers(
+            scatterTokenContract.punishRogueTrainers(
                 requestorAddress,
                 topicName,
                 rogueTrainerList
             );
 
-            IScatterToken(scatterTokenContract).punishRogueValidators(
-                rogueValidatorList
-            );
+            scatterTokenContract.punishRogueValidators(rogueValidatorList);
 
-            IScatterToken(scatterTokenContract).rewardBenevolentTrainers(
+            scatterTokenContract.rewardBenevolentTrainers(
                 requestorAddress,
                 topicName,
                 benevolentTrainerList
             );
 
-            IScatterToken(scatterTokenContract).rewardBenevolentValidators(
+            scatterTokenContract.rewardBenevolentValidators(
                 requestorAddress,
                 topicName,
                 benevolentValidatorList
@@ -458,12 +409,9 @@ contract ScatterProtocol {
         string memory topicName,
         uint256 pooledReward
     ) external isRequestor {
-        ITrainingJobToken(trainingJobContract).publishTrainingJob(
-            trainingTokenURI,
-            msg.sender
-        );
+        trainingJobContract.publishTrainingJob(trainingTokenURI, msg.sender);
 
-        IEvaluationJobToken(evaluationJobContract).publishEvaluationJob(
+        evaluationJobContract.publishEvaluationJob(
             msg.sender,
             evaluationTokenURI
         );
@@ -484,7 +432,7 @@ contract ScatterProtocol {
         addressToFederatedJob[msg.sender][topicName] = trainingInfo;
         // Enables trainers to view all topics by a specific network participant
         addressToTopics[msg.sender].push(topicName);
-        IScatterToken(scatterTokenContract).requestorLockToken(
+        scatterTokenContract.requestorLockToken(
             msg.sender,
             topicName,
             pooledReward
@@ -638,7 +586,11 @@ contract ScatterProtocol {
     ) external isTrainer {
         require(
             Strings.equal(
-                modelLogger[requestorAddress][topicName][msg.sender],
+                modelTokenContract.getModelCidForTrainer(
+                    requestorAddress,
+                    topicName,
+                    msg.sender
+                ),
                 ""
             ),
             "You have already published a model - cannot publish again!"
@@ -650,8 +602,12 @@ contract ScatterProtocol {
             isSubscribed,
             "You cannot submit a model to this topic when you are not subscribed to it"
         );
-        IModelToken(modelTokenContract).publishModel(modelURI, msg.sender);
-        modelLogger[requestorAddress][topicName][msg.sender] = modelURI;
+        modelTokenContract.publishModel(
+            modelURI,
+            msg.sender,
+            requestorAddress,
+            topicName
+        );
 
         FederatedJob storage info = addressToFederatedJob[requestorAddress][
             topicName
@@ -695,7 +651,7 @@ contract ScatterProtocol {
         string memory topicName,
         string memory evaluationDataURI
     ) public isRequestor {
-        IEvaluationJobToken(evaluationJobContract).publishEvaluationData(
+        evaluationJobContract.publishEvaluationData(
             msg.sender,
             addressToFederatedJob[msg.sender][topicName].evaluationJobCid,
             evaluationDataURI
@@ -705,34 +661,30 @@ contract ScatterProtocol {
         emit ModelReadyToValidate(msg.sender, topicName);
     }
 
+    function isValidatorForTrainingJob(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress
+    ) external view returns (bool) {
+        return
+            validatorTrainingMap[requestorAddress][topicName][validatorAddress];
+    }
+
     function submitEvaluationScore(
         address requestorAddress,
         string memory topicName,
         address trainerAddress,
         uint256 score
     ) public isValidator {
-        require(
-            !evaluationScoreSet[requestorAddress][topicName][msg.sender][
-                trainerAddress
-            ],
-            "Cannot resubmit a score for a trainer that has previously been submitted"
+        evaluationJobContract.submitEvaluationScore(
+            requestorAddress,
+            topicName,
+            trainerAddress,
+            msg.sender,
+            score
         );
-
-        require(
-            validatorTrainingMap[requestorAddress][topicName][msg.sender],
-            "You are not an assigned validator for this training job"
-        );
-
         addressToFederatedJob[requestorAddress][topicName]
             .validatorValidationCount += 1;
-
-        evaluationScore[requestorAddress][topicName][msg.sender][
-            trainerAddress
-        ] = score;
-
-        evaluationScoreSet[requestorAddress][topicName][msg.sender][
-            trainerAddress
-        ] = true;
     }
 
     /**
@@ -740,7 +692,7 @@ contract ScatterProtocol {
      */
     modifier onlyTrainingJobTokenContract() {
         require(
-            msg.sender == trainingJobContract,
+            msg.sender == address(trainingJobContract),
             "This method can only be called by the training job token contract"
         );
         _;
@@ -750,7 +702,7 @@ contract ScatterProtocol {
      */
     modifier onlyScatterTokenContract() {
         require(
-            msg.sender == scatterTokenContract,
+            msg.sender == address(scatterTokenContract),
             "This method can only be called by the scatter token contract"
         );
         _;
@@ -818,16 +770,32 @@ contract ScatterProtocol {
         return trainerList.length == trainersPublishedCount;
     }
 
+    function getTrainersForFederatedJob(
+        address requestorAddress,
+        string memory topicName
+    ) external view returns (address[] memory) {
+        return addressToFederatedJob[requestorAddress][topicName].trainers;
+    }
+
+    function getValidatorsForFederatedJob(
+        address requestorAddress,
+        string memory topicName
+    ) external view returns (address[] memory) {
+        return validatorTrainingMapKeys[requestorAddress][topicName];
+    }
+
     function _checkValidatorModelValidations(
         address requestorAddress,
         string memory topicName
     ) private view returns (bool) {
-        address[] memory validatorList = validatorTrainingMapKeys[
-            requestorAddress
-        ][topicName];
-        address[] memory trainerList = trainerTrainingMapKeys[requestorAddress][
+        address[] memory validatorList = this.getValidatorsForFederatedJob(
+            requestorAddress,
             topicName
-        ];
+        );
+        address[] memory trainerList = this.getTrainersForFederatedJob(
+            requestorAddress,
+            topicName
+        );
 
         uint256 validatorValidationCount = addressToFederatedJob[
             requestorAddress
@@ -836,81 +804,6 @@ contract ScatterProtocol {
         return
             validatorValidationCount ==
             (validatorList.length * trainerList.length);
-    }
-
-    function _populateTrainerStatus(
-        address requestorAddress,
-        string memory topicName
-    ) private {
-        address[] memory trainers = addressToFederatedJob[requestorAddress][
-            topicName
-        ].trainers;
-        mapping(address => string) storage trainerModelMap = modelLogger[
-            requestorAddress
-        ][topicName];
-
-        for (uint i = 0; i < trainers.length; i++) {
-            if (Strings.equal(trainerModelMap[trainers[i]], "")) {
-                rogueTrainers[requestorAddress][topicName].push(trainers[i]);
-                rogueTrainerMapping[requestorAddress][topicName][
-                    trainers[i]
-                ] = true;
-            } else {
-                benevolentTrainers[requestorAddress][topicName].push(
-                    trainers[i]
-                );
-                benevolentTrainerMapping[requestorAddress][topicName][
-                    trainers[i]
-                ] = true;
-            }
-        }
-    }
-
-    function _populateValidatorStatus(
-        address requestorAddress,
-        string memory topicName
-    ) private {
-        address[] memory validatorList = validatorTrainingMapKeys[
-            requestorAddress
-        ][topicName];
-        address[] memory trainerList = trainerTrainingMapKeys[requestorAddress][
-            topicName
-        ];
-
-        for (uint i = 0; i < validatorList.length; i++) {
-            for (uint j = 0; j < trainerList.length; j++) {
-                // We do not care about rogue trainers - skip them entirely
-                if (
-                    rogueTrainerMapping[requestorAddress][topicName][
-                        trainerList[j]
-                    ]
-                ) {
-                    continue;
-                }
-
-                // For a non-rogue trainer, check if their evaluation scores have been set
-                // Mark them as rogue if not
-                if (
-                    !evaluationScoreSet[requestorAddress][topicName][
-                        validatorList[i]
-                    ][trainerList[j]]
-                ) {
-                    rogueValidators[requestorAddress][topicName].push(
-                        validatorList[i]
-                    );
-                    rogueValidatorMapping[requestorAddress][topicName][
-                        validatorList[i]
-                    ] = true;
-                } else {
-                    benevolentValidators[requestorAddress][topicName].push(
-                        validatorList[i]
-                    );
-                    benevolentValidatorMapping[requestorAddress][topicName][
-                        validatorList[i]
-                    ] = true;
-                }
-            }
-        }
     }
 
     /**

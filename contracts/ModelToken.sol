@@ -15,6 +15,20 @@ contract ModelToken is ERC721URIStorage, Ownable {
     address public scatterContractAddress;
 
     Counters.Counter private _tokenIds;
+    /*
+        Example modelLogger Mapping:
+        {
+            requestor address: {
+                topic name: {
+                    trainer 1 address: CID 1,
+                    trainer 2 address: CID 1,
+                }
+            }
+        }
+    */
+    // Allows the protocol to keep track of model URIs for trainers
+    mapping(address => mapping(string => mapping(address => string)))
+        public modelLogger;
 
     constructor() ERC721("Scatter Protocol Models", "SPM") {
         protocolDeployer = payable(msg.sender);
@@ -28,13 +42,17 @@ contract ModelToken is ERC721URIStorage, Ownable {
 
     function publishModel(
         string memory tokenURI,
-        address recipient
+        address recipient,
+        address requestorAddress,
+        string memory topicName
     ) external onlyScatterProtocolContract returns (uint256) {
         _tokenIds.increment();
 
         uint256 newItemId = _tokenIds.current();
         _safeMint(recipient, newItemId);
         setTokenURI(newItemId, tokenURI);
+
+        modelLogger[requestorAddress][topicName][recipient] = tokenURI;
         return newItemId;
     }
 
@@ -54,6 +72,14 @@ contract ModelToken is ERC721URIStorage, Ownable {
 
     function _baseURI() internal view override returns (string memory) {
         return baseURI;
+    }
+
+    function getModelCidForTrainer(
+        address requestorAddress,
+        string memory topicName,
+        address trainer
+    ) external view returns (string memory) {
+        return modelLogger[requestorAddress][topicName][trainer];
     }
 
     modifier onlyScatterProtocolContract() {

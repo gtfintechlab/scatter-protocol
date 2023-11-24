@@ -33,11 +33,12 @@ var UTIL_RUN_IPFS_NODE = "ipfs"
 var UTIL_DEPLOY_CONTRACTS = "deploy-contracts"
 
 type Contracts struct {
-	ScatterProtocolContract string `json:"SCATTER_PROTOCOL_CONTRACT"`
-	ScatterTokenContract    string `json:"SCATTER_TOKEN_CONTRACT"`
-	TrainingTokenContract   string `json:"TRAINING_TOKEN_CONTRACT"`
-	EvaluationTokenContract string `json:"EVALUATION_TOKEN_CONTRACT"`
-	ModelTokenContract      string `json:"MODEL_TOKEN_CONTRACT"`
+	ScatterProtocolContract   string `json:"SCATTER_PROTOCOL_CONTRACT"`
+	ScatterTokenContract      string `json:"SCATTER_TOKEN_CONTRACT"`
+	TrainingTokenContract     string `json:"TRAINING_TOKEN_CONTRACT"`
+	EvaluationTokenContract   string `json:"EVALUATION_TOKEN_CONTRACT"`
+	ModelTokenContract        string `json:"MODEL_TOKEN_CONTRACT"`
+	ReputationManagerContract string `json:"REPUTATION_MANAGER_CONTRACT"`
 }
 
 func ReadContractInfo() Contracts {
@@ -50,11 +51,12 @@ func ReadContractInfo() Contracts {
 var CONTRACTS = ReadContractInfo()
 
 var (
-	SCATTER_PROTOCOL_CONTRACT = CONTRACTS.ScatterProtocolContract
-	TRAINING_TOKEN_CONTRACT   = CONTRACTS.TrainingTokenContract
-	EVALUATION_TOKEN_CONTRACT = CONTRACTS.EvaluationTokenContract
-	SCATTER_TOKEN_CONTRACT    = CONTRACTS.ScatterTokenContract
-	MODEL_TOKEN_CONTRACT      = CONTRACTS.ModelTokenContract
+	SCATTER_PROTOCOL_CONTRACT   = CONTRACTS.ScatterProtocolContract
+	TRAINING_TOKEN_CONTRACT     = CONTRACTS.TrainingTokenContract
+	EVALUATION_TOKEN_CONTRACT   = CONTRACTS.EvaluationTokenContract
+	SCATTER_TOKEN_CONTRACT      = CONTRACTS.ScatterTokenContract
+	MODEL_TOKEN_CONTRACT        = CONTRACTS.ModelTokenContract
+	REPUTATION_MANAGER_CONTRACT = CONTRACTS.ReputationManagerContract
 )
 
 var PROTOCOL_IDENTIFIER protocol.ID = "/scatter-protocol/1.0.0"

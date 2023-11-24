@@ -1,0 +1,21 @@
+version: '3'
+services:
+  compiler:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.compile
+    volumes:
+      - ./contracts:/app/contracts
+      - ./build:/app/build
+      - ./protocol:/app/protocol
+
+  deployer:
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.deploy
+    volumes:
+      - ./scripts:/app/scripts
+      - ./contracts:/app/contracts
+    working_dir: /app
+    depends_on:
+      - compiler
