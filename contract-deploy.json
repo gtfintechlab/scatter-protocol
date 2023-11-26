@@ -2,33 +2,33 @@
     "contracts": [
         {
             "name": "ScatterProtocol",
-            "package-name": "scatterprotocol",
-            "project-directory": "scatter-protocol"
+            "packageName": "scatterprotocol",
+            "projectDirectory": "scatter-protocol"
         },
         {
             "name": "TrainingJobToken",
-            "package-name": "trainingtoken",
-            "project-directory": "training"
+            "packageName": "trainingtoken",
+            "projectDirectory": "training"
         },
         {
             "name": "ModelToken",
-            "package-name": "modeltoken",
-            "project-directory": "model"
+            "packageName": "modeltoken",
+            "projectDirectory": "model"
         },
         {
             "name": "EvaluationJobToken",
-            "package-name": "evaluationtoken",
-            "project-directory": "evaluation"
+            "packageName": "evaluationtoken",
+            "projectDirectory": "evaluation"
         },
         {
             "name": "ScatterToken",
-            "package-name": "scattertoken",
-            "project-directory": "scatter-token"
+            "packageName": "scattertoken",
+            "projectDirectory": "scatter-token"
         },
         {
             "name": "ReputationManager",
-            "package-name": "reputationmanager",
-            "project-directory": "reputation"
+            "packageName": "reputationmanager",
+            "projectDirectory": "reputation"
         }
     ]
 }

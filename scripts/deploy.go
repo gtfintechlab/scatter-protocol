@@ -51,6 +51,10 @@ func main() {
 		"Private key to deploy protocol with")
 	flag.Parse()
 
+	if len(privateKey) == 0 {
+		privateKey = os.Getenv("PRIVATE_KEY")
+	}
+
 	DeployContracts(contractName, privateKey)
 }
 
@@ -250,7 +254,12 @@ func GetTransactor(privateKey string) *bind.TransactOpts {
 
 	auth, _ := bind.NewKeyedTransactorWithChainID(privateKeyObject, CHAIN)
 	auth.Value = big.NewInt(0)
-	gas, _ := client.SuggestGasPrice(context.Background())
+	gas, err := client.SuggestGasPrice(context.Background())
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	auth.GasPrice = (*big.Int)(gas)
 
 	return auth

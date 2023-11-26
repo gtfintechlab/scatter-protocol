@@ -1,0 +1,3 @@
+FROM ipfs/kubo:latest
+
+RUN ipfs init

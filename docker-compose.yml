@@ -1,11 +1,13 @@
 version: '3'
-
+name: scatter-protocol-resources
 services:
   ipfs:
-    image: ipfs/kubo:latest
-    container_name: ipfs
+    container_name: protocol-ipfs
     volumes:
       - /tmp/ipfs/staging:/export
+    build:
+      context: .
+      dockerfile: dockerfiles/Dockerfile.ipfs
     ports:
       - "4001:4001"
       - "4001:4001/udp"

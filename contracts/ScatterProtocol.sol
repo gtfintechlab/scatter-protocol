@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.17;
+pragma solidity >=0.8.17;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./ITrainingJobToken.sol";
@@ -748,13 +748,6 @@ contract ScatterProtocol {
             "You must change your node's role to challenger before calling this method"
         );
         _;
-    }
-
-    /**
-     *  @dev destroy the smart contract
-     */
-    function destroy() public onlyOwner {
-        selfdestruct(owner);
     }
 
     function _checkTrainerModelSubmissions(

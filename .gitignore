@@ -39,3 +39,4 @@ training/trainer/jobs/*
 
 training/validator/jobs/*
 !training/validator/jobs/.gitkeep
+*.zip

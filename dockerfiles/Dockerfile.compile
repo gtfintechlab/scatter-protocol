@@ -1,31 +1,29 @@
 # Multi-stage build for a smaller final image
-FROM node:latest
+FROM ubuntu:latest
 
 # Set the working directory to /app
 WORKDIR /app
 
-# Copy the source code into the container
-COPY ./protocol/ /app/protocol
-COPY ./build/ /app/build
-COPY ./contracts/ /app/contracts
-COPY ./contract-deploy.json /app/contract-deploy.json
-
+RUN apt-get update && apt-get install -y software-properties-common
 # Install jq
-RUN apt-get install -y jq
+RUN add-apt-repository universe && apt-get update && apt-get install -y jq
+# RUN apt-get install -y nodejs && apt-get install -y npm
 
-RUN npm install -g solc
-# Run abigen for each contract specified in the JSON file
-RUN cat contract-deploy.json | jq -c '.contracts[]' | \
-    while read i; do \
-        name=$(echo $i | jq -r '.name'); \
-        solc contracts/$name.sol --overwrite --bin --abi -o build --base-path '/' --include-path 'node_modules/' --optimize --optimize-runs 200; \
-    done
+# RUN npm install -g solc
+RUN add-apt-repository ppa:ethereum/ethereum && apt-get update && apt-get install -y solc
+RUN apt-get install -y curl
+# Install GVM + Golang
+RUN apt-get install -y bison
+RUN apt-get install -y git
+RUN ["/bin/bash", "-c", "bash < <(curl -s -S -L https://raw.githubusercontent.com/moovweb/gvm/master/binscripts/gvm-installer)"]
+RUN . /root/.gvm/scripts/gvm
+RUN gvm install go1.4 -B && gvm use go1.4 && export GOROOT_BOOTSTRAP=$GOROOT 
+RUN gvm install go1.17.13 && gvm use go1.17.13 && export GOROOT_BOOTSTRAP=$GOROOT
+RUN gvm install go1.20 && gvm use go1.20
 
-# Run abigen for each contract specified in the JSON file
-RUN cat contract-deploy.json | jq -c '.contracts[]' | \
-    while read i; do \
-        name=$(echo $i | jq -r '.name'); \
-        package=$(echo $i | jq -r '.package-name'); \
-        directory=$(echo $i | jq -r '.project-directory'); \
-        abigen --bin=./build/$name.bin --abi=./build/$name.abi --pkg=$package --out=$directory/$name.go; \
-    done
+# Install dependencies and tools
+RUN go get -u github.com/ethereum/go-ethereum
+RUN cd $GOPATH/src/github.com/ethereum/go-ethereum/ && make && make devtools
+
+# Set the working directory to /app
+WORKDIR /app
