@@ -116,6 +116,7 @@ func deployAllContracts(privateKey string) {
 		common.HexToAddress(evaluationAddress.Hash().Hex()),
 		common.HexToAddress(scatterTokenAddress.Hash().Hex()),
 		common.HexToAddress(modelAddress.Hash().Hex()),
+		common.HexToAddress(reputationManagerAddress.Hash().Hex()),
 	)
 	if err != nil {
 		log.Fatal("Failed to deploy scatter protocol", err.Error())
@@ -171,7 +172,9 @@ func deployScatterProtocol(privateKey string) {
 		common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT),
 		common.HexToAddress(utils.EVALUATION_TOKEN_CONTRACT),
 		common.HexToAddress(utils.SCATTER_TOKEN_CONTRACT),
-		common.HexToAddress(utils.MODEL_TOKEN_CONTRACT))
+		common.HexToAddress(utils.MODEL_TOKEN_CONTRACT),
+		common.HexToAddress(utils.REPUTATION_MANAGER_CONTRACT),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}

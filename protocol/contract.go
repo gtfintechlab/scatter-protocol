@@ -312,7 +312,7 @@ func PublishModel(node *utils.PeerNode, modelPath string, requestorAddress strin
 func GetModelCidByTrainer(node *utils.PeerNode, requestorAddress string, topicName string, trainerAddress string) string {
 	auth := getTransactor(node)
 
-	modelCid, _ := scatterProtocolContract.ModelLogger(&bind.CallOpts{
+	modelCid, _ := modelTokenContract.ModelLogger(&bind.CallOpts{
 		From: auth.From,
 	}, common.HexToAddress(requestorAddress), topicName, common.HexToAddress(trainerAddress))
 

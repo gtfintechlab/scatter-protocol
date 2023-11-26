@@ -22,9 +22,9 @@ services:
       - ./scripts:/app/scripts
       - ./contracts:/app/contracts
       - ./:/app
-      - ./dockerfiles/entrypoints/entrypoint-compile.sh:/app/entrypoint-deploy.sh
-    environment:
-      - PRIVATE_KEY=${PRIVATE_KEY}
+      - ./dockerfiles/entrypoints/entrypoint-deploy.sh:/app/entrypoint-deploy.sh
+    env_file:
+      - .env
     entrypoint: ./entrypoint-deploy.sh
     depends_on:
       - compiler
