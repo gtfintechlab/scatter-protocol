@@ -2,25 +2,27 @@ version: '3'
 name: scatter-protocol-resources
 services:
   ipfs:
-    container_name: protocol-ipfs
+    image: ipfs/kubo:latest
+    container_name: ipfs
     volumes:
       - /tmp/ipfs/staging:/export
-    build:
-      context: .
-      dockerfile: dockerfiles/Dockerfile.ipfs
+      - /tmp/ipfs/data:/data/ipfs
     ports:
       - "4001:4001"
       - "4001:4001/udp"
       - "127.0.0.1:8080:8080"
-      - "127.0.0.1:5001:5001"  
+      - "127.0.0.1:5001:5001"
     entrypoint:
       - /bin/sh
       - -c
       - |
+        rm -rf /export/* && \
+        rm -rf /data/ipfs/* && \
+        ipfs init && \
         ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["http://localhost:8080", "http://localhost:3000", "http://127.0.0.1:5001", "https://webui.ipfs.io"]' && \
         ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "POST"]' && \
         ipfs daemon
-  
+
   requestor-postgres:
     image: postgres
     ports:
