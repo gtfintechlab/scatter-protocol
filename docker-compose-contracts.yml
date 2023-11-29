@@ -18,6 +18,7 @@ services:
     build:
       context: .
       dockerfile: dockerfiles/Dockerfile.deploy
+    network_mode: host
     volumes:
       - ./scripts:/app/scripts
       - ./contracts:/app/contracts

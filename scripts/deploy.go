@@ -36,11 +36,36 @@ const (
 )
 
 var _ = godotenv.Load(".env")
-var CHAIN_ID, _ = strconv.Atoi(os.Getenv("CHAIN_ID"))
+var CHAIN_ID, _ = strconv.Atoi(getChainId())
 var CHAIN = big.NewInt(int64(CHAIN_ID))
-var client, _ = ethclient.Dial(os.Getenv("ETHEREUM_NODE"))
+var client = getClient()
 
 var DEPLOY_PAUSE time.Duration = 3
+
+func getChainId() string {
+	if os.Getenv("CHAIN_ID") == "" {
+		return "31337"
+	}
+
+	return os.Getenv("CHAIN_ID")
+}
+
+func getEthNode() string {
+	if os.Getenv("ETHEREUM_NODE") == "" {
+		return "ws://127.0.0.1:8545"
+	}
+
+	return os.Getenv("ETHEREUM_NODE")
+}
+
+func getClient() *ethclient.Client {
+	var client, err = ethclient.Dial(getEthNode())
+	if err != nil {
+		log.Fatal("An error occurred when connecting to client:", err)
+	}
+
+	return client
+}
 
 func main() {
 	var contractName string
