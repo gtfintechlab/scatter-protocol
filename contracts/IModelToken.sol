@@ -8,7 +8,7 @@ interface IModelToken {
         address recipient,
         address requestorAddress,
         string memory topicName
-    ) external;
+    ) external returns (uint256);
 
     function getModelCidForTrainer(
         address requestorAddress,

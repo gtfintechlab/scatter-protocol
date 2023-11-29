@@ -5,9 +5,10 @@ pragma solidity >=0.8.17;
 import "./IModelToken.sol";
 import "./IScatterProtocol.sol";
 import "./IEvaluationJobToken.sol";
+import "./IReputationManager.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract ReputationManager {
+contract ReputationManager is IReputationManager {
     IModelToken modelTokenContract;
     IEvaluationJobToken evaluationJobTokenContract;
     IScatterProtocol scatterProtocolContract;

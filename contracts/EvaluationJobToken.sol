@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IScatterProtocol.sol";
+import "./IEvaluationJobToken.sol";
 
-contract EvaluationJobToken is ERC721URIStorage, Ownable {
+contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
     using Counters for Counters.Counter;
     mapping(uint256 => string) private _tokenURIs;
     mapping(string => address) private jobToAddress;

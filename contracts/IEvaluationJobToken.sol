@@ -6,7 +6,7 @@ interface IEvaluationJobToken {
     function publishEvaluationJob(
         address recipient,
         string memory tokenURI
-    ) external;
+    ) external returns (uint256);
 
     function publishEvaluationData(
         address dataPublisher,

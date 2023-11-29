@@ -6,5 +6,5 @@ interface ITrainingJobToken {
     function publishTrainingJob(
         string memory tokenURI,
         address recipient
-    ) external;
+    ) external returns (uint256);
 }

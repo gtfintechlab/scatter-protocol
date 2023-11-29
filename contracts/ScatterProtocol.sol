@@ -8,10 +8,11 @@ import "./IEvaluationJobToken.sol";
 import "./IScatterToken.sol";
 import "./IModelToken.sol";
 import "./IReputationManager.sol";
+import "./IScatterProtocol.sol";
 import "./Shared.sol";
 
 // Model Validator: 10,000 Scatter Token Staked
-contract ScatterProtocol {
+contract ScatterProtocol is IScatterProtocol {
     struct FederatedJob {
         string trainingJobCid;
         address[] trainers;

@@ -8,8 +8,9 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 import "./Shared.sol";
 import "./IScatterProtocol.sol";
+import "./IScatterToken.sol";
 
-contract ScatterToken is ERC20Capped, ERC20Burnable {
+contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
     uint256 public requiredModelValidatorStake;
     address payable public owner;
 
