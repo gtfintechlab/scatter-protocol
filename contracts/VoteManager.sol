@@ -5,6 +5,7 @@ pragma solidity >=0.8.17;
 import "./IScatterProtocol.sol";
 import "./IScatterToken.sol";
 import "./IEvaluationJobToken.sol";
+import "./Shared.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -45,6 +46,8 @@ contract VoteManager is Ownable {
      */
     mapping(address => mapping(string => mapping(address => uint))) voteCounter;
     mapping(address => mapping(string => mapping(address => bool))) voteResult;
+    mapping(address => mapping(string => mapping(address => bool))) modelIsValidated;
+
     event ModelAccepted(
         address requestorAddress,
         string topicName,
@@ -109,6 +112,10 @@ contract VoteManager is Ownable {
                     trainerAddress
                 );
 
+            modelIsValidated[requestorAddress][topicName][
+                trainerAddress
+            ] = true;
+
             if (averageScore >= proposal.validationThreshold) {
                 emit ModelAccepted(requestorAddress, topicName, trainerAddress);
                 voteResult[requestorAddress][topicName][trainerAddress] = true;
@@ -116,6 +123,22 @@ contract VoteManager is Ownable {
                 emit ModelRejected(requestorAddress, topicName, trainerAddress);
                 voteResult[requestorAddress][topicName][trainerAddress] = false;
             }
+        }
+    }
+
+    function getModelValidationStatus(
+        address requestorAddress,
+        string memory topicName,
+        address trainerAddress
+    ) external view returns (ValidationStatus) {
+        if (!modelIsValidated[requestorAddress][topicName][trainerAddress]) {
+            return ValidationStatus.ModelNotValidated;
+        }
+
+        if (voteResult[requestorAddress][topicName][trainerAddress]) {
+            return ValidationStatus.ValidModel;
+        } else {
+            return ValidationStatus.InvalidModel;
         }
     }
 

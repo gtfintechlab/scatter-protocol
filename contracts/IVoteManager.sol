@@ -2,6 +2,8 @@
 
 pragma solidity >=0.8.17;
 
+import "./Shared.sol";
+
 interface IVoteManager {
     function createValidationProposal(
         address requestorAddress,
@@ -16,4 +18,10 @@ interface IVoteManager {
         address trainerAddress,
         uint256 score
     ) external;
+
+    function getModelValidationStatus(
+        address requestorAddress,
+        string memory topicName,
+        address trainerAddress
+    ) external view returns (ValidationStatus);
 }

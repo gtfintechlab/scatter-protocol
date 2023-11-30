@@ -6,6 +6,9 @@ import "./IModelToken.sol";
 import "./IScatterProtocol.sol";
 import "./IEvaluationJobToken.sol";
 import "./IReputationManager.sol";
+import "./IVoteManager.sol";
+import "./Shared.sol";
+
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -13,6 +16,7 @@ contract ReputationManager is IReputationManager, Ownable {
     IModelToken modelTokenContract;
     IEvaluationJobToken evaluationJobTokenContract;
     IScatterProtocol scatterProtocolContract;
+    IVoteManager voteManagerContract;
 
     function setModelTokenContract(address modelTokenContractAddress) external {
         modelTokenContract = IModelToken(modelTokenContractAddress);
@@ -34,7 +38,33 @@ contract ReputationManager is IReputationManager, Ownable {
         );
     }
 
+    function setVoteManagerContract(
+        address voteManagerAddress
+    ) external onlyOwner {
+        voteManagerContract = IVoteManager(voteManagerAddress);
+    }
+
     function trainerIsRogue(
+        address requestorAddress,
+        string memory topicName,
+        address trainerAddress
+    ) external view returns (bool) {
+        bool modelIsInvalid = voteManagerContract.getModelValidationStatus(
+            requestorAddress,
+            topicName,
+            trainerAddress
+        ) == ValidationStatus.InvalidModel;
+
+        bool modelNotSubmitted = this.trainerModelNotSubmitted(
+            requestorAddress,
+            topicName,
+            trainerAddress
+        );
+
+        return modelIsInvalid || modelNotSubmitted;
+    }
+
+    function trainerModelNotSubmitted(
         address requestorAddress,
         string memory topicName,
         address trainerAddress
@@ -105,10 +135,11 @@ contract ReputationManager is IReputationManager, Ownable {
         uint numBenevolent = 0;
 
         for (uint i = 0; i < validatorList.length; i++) {
+            bool allTrainersEvaluated = true;
             for (uint j = 0; j < trainerList.length; j++) {
-                // We do not care about rogue trainers - skip them entirely
+                // We do not care about trainers who did not submit a model - skip them entirely
                 if (
-                    this.trainerIsRogue(
+                    this.trainerModelNotSubmitted(
                         requestorAddress,
                         topicName,
                         trainerList[j]
@@ -119,17 +150,22 @@ contract ReputationManager is IReputationManager, Ownable {
 
                 // For a non-rogue trainer, check if their evaluation scores have been set
                 // Mark them as rogue if not
-                if (
-                    !evaluationJobTokenContract.isEvaluationScoreSet(
+                allTrainersEvaluated =
+                    allTrainersEvaluated &&
+                    evaluationJobTokenContract.isEvaluationScoreSet(
                         requestorAddress,
                         topicName,
                         validatorList[i],
                         trainerList[j]
-                    )
-                ) {
-                    benevolentValidators[numBenevolent] = validatorList[i];
-                    numBenevolent += 1;
+                    );
+
+                if (!allTrainersEvaluated) {
+                    break;
                 }
+            }
+            if (allTrainersEvaluated) {
+                benevolentValidators[numBenevolent] = validatorList[i];
+                numBenevolent += 1;
             }
         }
         return benevolentValidators;
@@ -150,9 +186,9 @@ contract ReputationManager is IReputationManager, Ownable {
 
         for (uint i = 0; i < validatorList.length; i++) {
             for (uint j = 0; j < trainerList.length; j++) {
-                // We do not care about rogue trainers - skip them entirely
+                // We do not care about trainers who did not submit a model - skip them entirely
                 if (
-                    this.trainerIsRogue(
+                    this.trainerModelNotSubmitted(
                         requestorAddress,
                         topicName,
                         trainerList[j]
@@ -164,7 +200,7 @@ contract ReputationManager is IReputationManager, Ownable {
                 // For a non-rogue trainer, check if their evaluation scores have been set
                 // Mark them as rogue if not
                 if (
-                    evaluationJobTokenContract.isEvaluationScoreSet(
+                    !evaluationJobTokenContract.isEvaluationScoreSet(
                         requestorAddress,
                         topicName,
                         validatorList[i],
@@ -173,6 +209,7 @@ contract ReputationManager is IReputationManager, Ownable {
                 ) {
                     malevolentValidators[numMalevolent] = validatorList[i];
                     numMalevolent += 1;
+                    break;
                 }
             }
         }

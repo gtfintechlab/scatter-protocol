@@ -157,6 +157,14 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
         evaluationScoreSet[requestorAddress][topicName][validatorAddress][
             trainerAddress
         ] = true;
+
+        voteManagerContract.submitScoreVote(
+            requestorAddress,
+            topicName,
+            validatorAddress,
+            trainerAddress,
+            score
+        );
     }
 
     function isEvaluationScoreSet(

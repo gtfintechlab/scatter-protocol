@@ -14,3 +14,9 @@ enum Checkpoints {
     ModelSubmission,
     FederatedJobEnd
 }
+
+enum ValidationStatus {
+    InvalidModel,
+    ValidModel,
+    ModelNotValidated
+}
