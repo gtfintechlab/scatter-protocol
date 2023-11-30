@@ -6,6 +6,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IScatterProtocol.sol";
+import "./IVoteManager.sol";
 import "./IEvaluationJobToken.sol";
 
 contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
@@ -16,6 +17,7 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
     string baseURI;
     address payable public protocolDeployer;
     IScatterProtocol public scatterProtocolContract;
+    IVoteManager public voteManagerContract;
 
     Counters.Counter private _tokenIds;
 
@@ -38,6 +40,18 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
     mapping(address => mapping(string => mapping(address => mapping(address => uint256)))) evaluationScore;
     mapping(address => mapping(string => mapping(address => mapping(address => bool)))) evaluationScoreSet;
 
+    /*
+        Example evaluationScore Mapping:
+        {
+            requestor address: {
+                topic name: {
+                    trainer address: [1, 2, 3]
+                }
+            }
+        }
+    */
+    mapping(address => mapping(string => mapping(address => uint[]))) trainerScoresForJob;
+
     constructor() ERC721("Scatter Protocol Evaluation Jobs", "SPEJ") {
         protocolDeployer = payable(msg.sender);
     }
@@ -46,6 +60,10 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
         address contractAddress
     ) public onlyOwner {
         scatterProtocolContract = IScatterProtocol(contractAddress);
+    }
+
+    function setVoteManagerContract(address contractAddress) public onlyOwner {
+        voteManagerContract = IVoteManager(contractAddress);
     }
 
     function publishEvaluationJob(
@@ -116,7 +134,7 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
             ],
             "Cannot resubmit a score for a trainer that has previously been submitted"
         );
-
+        require(score >= 0 && score <= 100, "Score must be between 0 and 100");
         require(
             scatterProtocolContract.isValidatorForTrainingJob(
                 requestorAddress,
@@ -129,6 +147,12 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
         evaluationScore[requestorAddress][topicName][validatorAddress][
             trainerAddress
         ] = score;
+
+        uint[] storage trainerScores = trainerScoresForJob[requestorAddress][
+            topicName
+        ][trainerAddress];
+
+        trainerScores.push(score);
 
         evaluationScoreSet[requestorAddress][topicName][validatorAddress][
             trainerAddress
@@ -145,6 +169,22 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
             evaluationScoreSet[requestorAddress][topicName][validatorAddress][
                 trainerAddress
             ];
+    }
+
+    function getAverageScoreForTrainerForJob(
+        address requestorAddress,
+        string memory topicName,
+        address trainerAddress
+    ) external view returns (uint) {
+        uint[] memory trainerScores = trainerScoresForJob[requestorAddress][
+            topicName
+        ][trainerAddress];
+        uint summedScore = 0;
+        for (uint i = 0; i < trainerScores.length; i++) {
+            summedScore += trainerScores[i];
+        }
+
+        return summedScore / trainerScores.length;
     }
 
     modifier onlyScatterProtocolContract() {

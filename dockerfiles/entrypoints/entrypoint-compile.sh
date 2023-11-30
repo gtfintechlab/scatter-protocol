@@ -14,3 +14,8 @@ jq -r '.contracts[] | "abigen --bin=./build/\(.name).bin --abi=./build/\(.name).
   echo "Running abigen: $abigen_command"
   eval "$abigen_command"
 done
+
+jq -r '.contracts[] | "chmod -R 777 protocol/\(.projectDirectory)/\(.name).go;"' $JSON_FILE | while read -r chmod_command; do
+  echo "Running chmod: $chmod_command"
+  eval "$chmod_command"
+done

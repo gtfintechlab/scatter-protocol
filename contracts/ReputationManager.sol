@@ -7,8 +7,9 @@ import "./IScatterProtocol.sol";
 import "./IEvaluationJobToken.sol";
 import "./IReputationManager.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ReputationManager is IReputationManager {
+contract ReputationManager is IReputationManager, Ownable {
     IModelToken modelTokenContract;
     IEvaluationJobToken evaluationJobTokenContract;
     IScatterProtocol scatterProtocolContract;
@@ -19,7 +20,7 @@ contract ReputationManager is IReputationManager {
 
     function setScatterProtocolContract(
         address scatterProtocolContractAddress
-    ) external {
+    ) external onlyOwner {
         scatterProtocolContract = IScatterProtocol(
             scatterProtocolContractAddress
         );
@@ -27,7 +28,7 @@ contract ReputationManager is IReputationManager {
 
     function setEvaluationJobContract(
         address evaluationJobTokenAddress
-    ) external {
+    ) external onlyOwner {
         evaluationJobTokenContract = IEvaluationJobToken(
             evaluationJobTokenAddress
         );
@@ -178,7 +179,11 @@ contract ReputationManager is IReputationManager {
         return malevolentValidators;
     }
 
-    function HelloWorld() public pure {
-        return;
+    modifier onlyScatterProtocolContract() {
+        require(
+            msg.sender == address(scatterProtocolContract),
+            "This method can only be called by the scatter protocol contract"
+        );
+        _;
     }
 }

@@ -28,4 +28,10 @@ interface IEvaluationJobToken {
         address validatorAddress,
         address trainerAddress
     ) external view returns (bool);
+
+    function getAverageScoreForTrainerForJob(
+        address requestorAddress,
+        string memory topicName,
+        address trainerAddress
+    ) external view returns (uint);
 }

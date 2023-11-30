@@ -29,6 +29,11 @@
             "name": "ReputationManager",
             "packageName": "reputationmanager",
             "projectDirectory": "reputation"
+        },
+        {
+            "name": "VoteManager",
+            "packageName": "votemanager",
+            "projectDirectory": "vote-manager"
         }
     ]
 }

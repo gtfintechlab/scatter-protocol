@@ -9,6 +9,7 @@ import "./IScatterToken.sol";
 import "./IModelToken.sol";
 import "./IReputationManager.sol";
 import "./IScatterProtocol.sol";
+import "./IVoteManager.sol";
 import "./Shared.sol";
 
 // Model Validator: 10,000 Scatter Token Staked
@@ -23,6 +24,7 @@ contract ScatterProtocol is IScatterProtocol {
         uint256 jobTerminationDate;
         uint256 validatorValidationCount;
         uint256 jobStartDate;
+        uint validationThresholdScore;
     }
 
     address payable public owner;
@@ -31,6 +33,7 @@ contract ScatterProtocol is IScatterProtocol {
     IScatterToken public scatterTokenContract;
     IModelToken public modelTokenContract;
     IReputationManager public reputationManagerContract;
+    IVoteManager public voteManagerContract;
 
     mapping(address => uint256) internal addressToStake;
     mapping(address => uint256) internal addressToStakeTime;
@@ -122,7 +125,8 @@ contract ScatterProtocol is IScatterProtocol {
         address evaluationTokenContractAddress,
         address scatterTokenContractAddress,
         address modelTokenContractAddress,
-        address reputationManagerAddress
+        address reputationManagerAddress,
+        address voteManagerAddress
     ) {
         owner = payable(msg.sender);
         trainingJobContract = ITrainingJobToken(trainingTokenContractAddress);
@@ -134,6 +138,7 @@ contract ScatterProtocol is IScatterProtocol {
         reputationManagerContract = IReputationManager(
             reputationManagerAddress
         );
+        voteManagerContract = IVoteManager(voteManagerAddress);
     }
 
     /**
@@ -408,7 +413,8 @@ contract ScatterProtocol is IScatterProtocol {
         string memory trainingTokenURI,
         string memory evaluationTokenURI,
         string memory topicName,
-        uint256 pooledReward
+        uint256 pooledReward,
+        uint256 validationThresholdScore
     ) external isRequestor {
         trainingJobContract.publishTrainingJob(trainingTokenURI, msg.sender);
 
@@ -428,7 +434,8 @@ contract ScatterProtocol is IScatterProtocol {
             block.timestamp +
                 getTimeFromCheckpoint(Checkpoints.FederatedJobEnd), // All jobs must be completed within 30 days of submission
             0,
-            block.timestamp
+            block.timestamp,
+            validationThresholdScore
         );
         addressToFederatedJob[msg.sender][topicName] = trainingInfo;
         // Enables trainers to view all topics by a specific network participant
@@ -437,6 +444,12 @@ contract ScatterProtocol is IScatterProtocol {
             msg.sender,
             topicName,
             pooledReward
+        );
+
+        voteManagerContract.createValidationProposal(
+            msg.sender,
+            topicName,
+            validationThresholdScore
         );
     }
 
@@ -851,7 +864,7 @@ contract ScatterProtocol is IScatterProtocol {
             uint(
                 keccak256(
                     abi.encodePacked(
-                        block.difficulty,
+                        block.prevrandao,
                         block.timestamp,
                         networkValidators,
                         randomNonce
