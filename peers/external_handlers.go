@@ -77,7 +77,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			zippedEvaluationJobPath := fmt.Sprintf("%s/%s_%s_evaluation.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
 			networking.WriteBytesToFile(zippedEvaluationJobPath, zippedEvaluationFileBytes.Bytes())
 
-			trainingTopicCid, evaluationTopicCid, _ := protocol.AddTopicForRequestor(node, zippedTrainingJobPath, zippedEvaluationJobPath, requestBody.Topic, *requestBody.Reward)
+			trainingTopicCid, evaluationTopicCid, _ := protocol.AddTopicForRequestor(node, zippedTrainingJobPath, zippedEvaluationJobPath, requestBody.Topic, *requestBody.Reward, *requestBody.ValidationThreshold)
 			peerDatabase.AddTopicFromInfo(
 				node,
 				*node.BlockchainAddress,

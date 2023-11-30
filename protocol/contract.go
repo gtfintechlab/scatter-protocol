@@ -200,12 +200,12 @@ func GetTrainingJobFromAddressAndTopic(node *utils.PeerNode, address string, top
 	return trainingInfo.TrainingJobCid
 }
 
-func AddTopicForRequestor(node *utils.PeerNode, trainingJobPath string, evaluationJobPath string, topicName string, reward int64) (string, string, string) {
+func AddTopicForRequestor(node *utils.PeerNode, trainingJobPath string, evaluationJobPath string, topicName string, reward int64, validationThreshold int64) (string, string, string) {
 	auth := getTransactor(node)
 	trainingIpfsCid := utils.UploadFileToIpfs(trainingJobPath)
 	evaluationIpfsCid := utils.UploadFileToIpfs(evaluationJobPath)
 	transaction, err := scatterProtocolContract.RequestorAddTopic(
-		auth, trainingIpfsCid, evaluationIpfsCid, topicName, big.NewInt(reward))
+		auth, trainingIpfsCid, evaluationIpfsCid, topicName, big.NewInt(reward), big.NewInt(validationThreshold))
 
 	if err != nil {
 		log.Fatal(err)

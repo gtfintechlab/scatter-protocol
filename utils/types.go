@@ -39,6 +39,7 @@ type Contracts struct {
 	EvaluationTokenContract   string `json:"EVALUATION_TOKEN_CONTRACT"`
 	ModelTokenContract        string `json:"MODEL_TOKEN_CONTRACT"`
 	ReputationManagerContract string `json:"REPUTATION_MANAGER_CONTRACT"`
+	VoteManagerContract       string `json:"VOTE_MANAGER_CONTRACT"`
 }
 
 func ReadContractInfo() Contracts {
@@ -57,6 +58,7 @@ var (
 	SCATTER_TOKEN_CONTRACT      = CONTRACTS.ScatterTokenContract
 	MODEL_TOKEN_CONTRACT        = CONTRACTS.ModelTokenContract
 	REPUTATION_MANAGER_CONTRACT = CONTRACTS.ReputationManagerContract
+	VOTE_MANAGER_CONTRACT       = CONTRACTS.VoteManagerContract
 )
 
 var PROTOCOL_IDENTIFIER protocol.ID = "/scatter-protocol/1.0.0"
@@ -129,13 +131,14 @@ type TrainingInfoFromRequestor struct {
 }
 
 type AddTopicRequestBody struct {
-	Topic             string  `json:"topic"`
-	RequestorAddress  *string `json:"requestorAddress,omitempty"`
-	Path              *string `json:"path,omitempty"`
-	Reward            *int64  `json:"reward,omitempty"`
-	Stake             *int64  `json:"stake,omitempty"`
-	EvaluationJob     *string `json:"evaluationJob,omitempty"`
-	EvaluationJobData *string `json:"evaluationJobData,omitempty"`
+	Topic               string  `json:"topic"`
+	RequestorAddress    *string `json:"requestorAddress,omitempty"`
+	Path                *string `json:"path,omitempty"`
+	Reward              *int64  `json:"reward,omitempty"`
+	Stake               *int64  `json:"stake,omitempty"`
+	ValidationThreshold *int64  `json:"validationThreshold,omitempty"`
+	EvaluationJob       *string `json:"evaluationJob,omitempty"`
+	EvaluationJobData   *string `json:"evaluationJobData,omitempty"`
 }
 
 type PublishTopicRequestBody struct {

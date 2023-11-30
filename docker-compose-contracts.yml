@@ -28,4 +28,5 @@ services:
       - .env
     entrypoint: ./entrypoint-deploy.sh
     depends_on:
-      - compiler
+      compiler: 
+        condition: service_completed_successfully

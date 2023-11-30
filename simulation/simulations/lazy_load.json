@@ -59,6 +59,7 @@
                 "topic": "requestor topic 1",
                 "path": "training/requestor/train",
                 "reward": 100,
+                "validationThreshold": 60, 
                 "evaluationJob": "training/requestor/validate",
                 "evaluationJobData": "training/data/requestor/validate"
             }

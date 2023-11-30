@@ -20,6 +20,7 @@ import (
 	scatterprotocol "github.com/gtfintechlab/scatter-protocol/protocol/scatter-protocol"
 	scattertoken "github.com/gtfintechlab/scatter-protocol/protocol/scatter-token"
 	trainingtoken "github.com/gtfintechlab/scatter-protocol/protocol/training"
+	votemanager "github.com/gtfintechlab/scatter-protocol/protocol/vote-manager"
 	"github.com/gtfintechlab/scatter-protocol/utils"
 
 	"github.com/joho/godotenv"
@@ -135,6 +136,12 @@ func deployAllContracts(privateKey string) {
 	}
 	time.Sleep(time.Second * DEPLOY_PAUSE)
 
+	voteManagerAddress, voteManagerTransaction, voteManagerInstance, err := votemanager.DeployVotemanager(auth, client)
+	if err != nil {
+		log.Fatal("Failed to deploy reptuation manager", err.Error())
+	}
+	time.Sleep(time.Second * DEPLOY_PAUSE)
+
 	scatterProtocolAddress, scatterProtocolTransaction, scatterInstance, err := scatterprotocol.DeployScatterprotocol(
 		auth, client,
 		common.HexToAddress(trainingAddress.Hash().Hex()),
@@ -142,6 +149,7 @@ func deployAllContracts(privateKey string) {
 		common.HexToAddress(scatterTokenAddress.Hash().Hex()),
 		common.HexToAddress(modelAddress.Hash().Hex()),
 		common.HexToAddress(reputationManagerAddress.Hash().Hex()),
+		common.HexToAddress(voteManagerAddress.Hash().Hex()),
 	)
 	if err != nil {
 		log.Fatal("Failed to deploy scatter protocol", err.Error())
@@ -157,6 +165,9 @@ func deployAllContracts(privateKey string) {
 	reputationManagerInstance.SetModelTokenContract(auth, common.HexToAddress(modelAddress.Hash().Hex()))
 	reputationManagerInstance.SetScatterProtocolContract(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
 
+	voteManagerInstance.SetScatterProtocolContract(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+	voteManagerInstance.SetEvaluationJobTokenContract(auth, common.HexToAddress(evaluationAddress.Hash().Hex()))
+
 	scatterInstance.InitRequestorNode(auth)
 
 	log.Println("Transaction Info:")
@@ -165,6 +176,7 @@ func deployAllContracts(privateKey string) {
 	log.Printf("Evaluation Token: %s\n", evaluationTransaction.Hash())
 	log.Printf("Scatter Token: %s\n", scatterTokenTransaction.Hash())
 	log.Printf("Reputation Manager: %s\n", reputationManagerTransaction.Hash())
+	log.Printf("Vote Manager: %s\n", voteManagerTransaction.Hash())
 	log.Printf("Scatter Protocol: %s\n", scatterProtocolTransaction.Hash())
 	log.Println("===============")
 
@@ -174,6 +186,7 @@ func deployAllContracts(privateKey string) {
 	log.Printf("Evaluation Token: %s\n", evaluationAddress.Hex())
 	log.Printf("Scatter Token: %s\n", scatterTokenAddress.Hex())
 	log.Printf("Reputation Manager: %s\n", reputationManagerAddress.Hex())
+	log.Printf("Vote Manager: %s\n", voteManagerAddress.Hex())
 	log.Printf("Scatter Protocol: %s\n", scatterProtocolAddress.Hex())
 
 	contractInfo := map[string]string{
@@ -199,6 +212,7 @@ func deployScatterProtocol(privateKey string) {
 		common.HexToAddress(utils.SCATTER_TOKEN_CONTRACT),
 		common.HexToAddress(utils.MODEL_TOKEN_CONTRACT),
 		common.HexToAddress(utils.REPUTATION_MANAGER_CONTRACT),
+		common.HexToAddress(utils.VOTE_MANAGER_CONTRACT),
 	)
 	if err != nil {
 		log.Fatal(err)
