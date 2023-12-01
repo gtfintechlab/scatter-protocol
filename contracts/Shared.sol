@@ -15,6 +15,12 @@ enum Checkpoints {
     FederatedJobEnd
 }
 
+enum FederatedJobStatus {
+    NotStarted,
+    InProgress,
+    Complete
+}
+
 enum ValidationStatus {
     InvalidModel,
     ValidModel,

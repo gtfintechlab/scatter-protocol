@@ -75,14 +75,20 @@ contract VoteManager is Ownable {
         address requestorAddress,
         string memory topicName,
         uint256 validationThreshold
-    ) external onlyScatterProtocol {}
+    ) external onlyScatterProtocol {
+        validationProposals[requestorAddress][topicName] = ValidationProposal(
+            requestorAddress,
+            topicName,
+            validationThreshold
+        );
+    }
 
     function submitScoreVote(
         address requestorAddress,
         string memory topicName,
         address validatorAddress,
         address trainerAddress
-    ) external {
+    ) external onlyEvaluationTokenContract {
         require(
             validatorHasVoted[requestorAddress][topicName][validatorAddress][
                 trainerAddress
@@ -146,6 +152,14 @@ contract VoteManager is Ownable {
         require(
             msg.sender == address(scatterProtocolContract),
             "This method can only be called by the training job token contract"
+        );
+        _;
+    }
+
+    modifier onlyEvaluationTokenContract() {
+        require(
+            msg.sender == address(evaluationTokenContract),
+            "This method can only be called by the evaluation token contract"
         );
         _;
     }

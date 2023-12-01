@@ -7,8 +7,12 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 import "./Shared.sol";
+import "./Math.sol";
+
 import "./IScatterProtocol.sol";
 import "./IScatterToken.sol";
+import "./IReputationManager.sol";
+import "./IEvaluationJobToken.sol";
 
 contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
     uint256 public requiredModelValidatorStake;
@@ -29,17 +33,18 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
     uint256 lotteryPercentage = 2;
 
     // Punishment constants
-    uint256 validatorPunishmentPercentage = 100;
+    uint256 validatorPunishmentPercentage = 10;
 
-    // Reward constants
-    uint256 stakeFactor = 50;
-    uint256 performanceFactor = 50;
+    // Reward Factors
+    uint256 trainerRewardProportion = 80;
+    uint256 validatorRewardProportion = 20;
 
-    address public scatterProtocolAddress;
+    IScatterProtocol scatterProtocolContract;
+    IReputationManager reputationManagerContract;
+    IEvaluationJobToken evaluationJobTokenContract;
 
     event TokensStaked(address from, uint256 amount);
     event TokensUnstaked(address to, uint256 amount);
-    bool reentrancyLock;
 
     constructor(
         uint256 cap
@@ -48,18 +53,16 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
         _mint(owner, cap * (10 ** decimals()));
 
         requiredModelValidatorStake = 10000;
-        reentrancyLock = false;
-    }
-
-    modifier noReentrant() {
-        require(!reentrancyLock, "No re-entrancy");
-        reentrancyLock = true;
-        _;
-        reentrancyLock = false;
     }
 
     function setScatterProtocolAddress(address newAddress) public onlyOwner {
-        scatterProtocolAddress = newAddress;
+        scatterProtocolContract = IScatterProtocol(newAddress);
+    }
+
+    function setEvaluationJobTokenContract(
+        address newAddress
+    ) public onlyOwner {
+        evaluationJobTokenContract = IEvaluationJobToken(newAddress);
     }
 
     function _mint(
@@ -98,13 +101,16 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
             amount <= this.balanceOf(trainerAddress),
             "Cannot lock more tokens than you own"
         );
+
+        require(amount > 0, "Must lock some amount of tokens");
+
         _burn(trainerAddress, amount);
         trainerLockedTokenForTrainingJob[requestorAddress][topicName][
             trainerAddress
         ] += amount;
     }
 
-    function stakeToken(uint256 amount) public noReentrant {
+    function stakeToken(uint256 amount) public {
         require(
             amount <= this.balanceOf(msg.sender),
             "Cannot stake more tokens than you own"
@@ -117,7 +123,7 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
         emit TokensStaked(msg.sender, amount);
     }
 
-    function removeStake(uint256 amount) public noReentrant {
+    function removeStake(uint256 amount) public {
         require(
             addressToStakeTime[msg.sender] >= block.timestamp,
             "You must wait before being able to unstake Scatter Token"
@@ -130,16 +136,14 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
         _mint(msg.sender, amount);
         addressToStake[msg.sender] -= amount;
 
-        roles messageSenderRole = IScatterProtocol(scatterProtocolAddress)
-            .getEnumRoleByAddress(msg.sender);
+        roles messageSenderRole = scatterProtocolContract.getEnumRoleByAddress(
+            msg.sender
+        );
         if (
             messageSenderRole == roles.Validator &&
             addressToStake[msg.sender] < requiredModelValidatorStake
         ) {
-            IScatterProtocol(scatterProtocolAddress).setRole(
-                msg.sender,
-                roles.NoRole
-            );
+            scatterProtocolContract.setRole(msg.sender, roles.NoRole);
         }
     }
 
@@ -172,9 +176,11 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
 
     function punishRogueTrainers(
         address requestorAddress,
-        string memory topicName,
-        address[] memory trainers
+        string memory topicName
     ) external onlyScatterProtocolContract {
+        address[] memory trainers = reputationManagerContract
+            .getMalevolentTrainers(requestorAddress, topicName);
+
         for (uint i = 0; i < trainers.length; i++) {
             lotteryPool += trainerLockedTokenForTrainingJob[requestorAddress][
                 topicName
@@ -186,8 +192,12 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
     }
 
     function punishRogueValidators(
-        address[] memory validators
+        address requestorAddress,
+        string memory topicName
     ) external onlyScatterProtocolContract {
+        address[] memory validators = reputationManagerContract
+            .getMalevolentValidators(requestorAddress, topicName);
+
         for (uint i = 0; i < validators.length; i++) {
             uint256 punishmentAmount = (addressToStake[validators[i]] *
                 validatorPunishmentPercentage) / 100;
@@ -199,19 +209,96 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
 
     function rewardBenevolentTrainers(
         address requestorAddress,
-        string memory topicName,
-        address[] memory trainers
-    ) external onlyScatterProtocolContract {}
+        string memory topicName
+    ) external onlyScatterProtocolContract {
+        address[] memory trainers = reputationManagerContract
+            .getBenevolentTrainers(requestorAddress, topicName);
+
+        uint totalRewardPool = (requestorLockedTokenForTrainingJob[
+            requestorAddress
+        ][topicName] * trainerRewardProportion) / 100;
+
+        uint totalWeight = 0;
+        for (uint i = 0; i < trainers.length; i++) {
+            uint performanceWeight = evaluationJobTokenContract
+                .getAverageScoreForTrainerForJob(
+                    requestorAddress,
+                    topicName,
+                    trainers[i]
+                ) ** 2;
+
+            uint stakedToken = trainerLockedTokenForTrainingJob[
+                requestorAddress
+            ][topicName][trainers[i]];
+
+            uint stakeWeight = Math.floorSqrt(stakedToken);
+
+            totalWeight += performanceWeight * stakeWeight;
+        }
+
+        for (uint i = 0; i < trainers.length; i++) {
+            uint256 performanceWeight = evaluationJobTokenContract
+                .getAverageScoreForTrainerForJob(
+                    requestorAddress,
+                    topicName,
+                    trainers[i]
+                ) ** 2;
+
+            uint256 stakedToken = trainerLockedTokenForTrainingJob[
+                requestorAddress
+            ][topicName][trainers[i]];
+
+            uint256 stakeWeight = Math.floorSqrt(stakedToken);
+
+            uint256 tokenTransferred = (performanceWeight *
+                stakeWeight *
+                totalRewardPool) / totalWeight;
+
+            _mint(trainers[i], tokenTransferred);
+        }
+    }
 
     function rewardBenevolentValidators(
         address requestorAddress,
-        string memory topicName,
-        address[] memory validators
-    ) external onlyScatterProtocolContract {}
+        string memory topicName
+    ) external onlyScatterProtocolContract {
+        address[] memory validators = reputationManagerContract
+            .getBenevolentValidators(requestorAddress, topicName);
+
+        uint totalStaked = 0;
+        for (uint i = 0; i < validators.length; i++) {
+            totalStaked += addressToStake[validators[i]];
+        }
+        uint totalRewardPool = (requestorLockedTokenForTrainingJob[
+            requestorAddress
+        ][topicName] * validatorRewardProportion) / 100;
+
+        for (uint i = 0; i < validators.length; i++) {
+            uint256 tokenTransferred = (addressToStake[validators[i]] *
+                totalRewardPool) / totalStaked;
+            _mint(validators[i], tokenTransferred);
+        }
+    }
+
+    function returnTokensToTrainers(
+        address requestorAddress,
+        string memory topicName
+    ) external onlyScatterProtocolContract {
+        address[] memory trainers = reputationManagerContract
+            .getBenevolentTrainers(requestorAddress, topicName);
+
+        for (uint i = 0; i < trainers.length; i++) {
+            uint tokenTransferred = trainerLockedTokenForTrainingJob[
+                requestorAddress
+            ][topicName][trainers[i]];
+
+            _mint(trainers[i], tokenTransferred);
+        }
+    }
 
     modifier onlyScatterProtocolContract() {
         require(
-            msg.sender == scatterProtocolAddress,
+            msg.sender == address(scatterProtocolContract),
             "This method can only be called by the scatter protocol contract"
         );
         _;

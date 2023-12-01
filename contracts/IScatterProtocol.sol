@@ -25,4 +25,9 @@ interface IScatterProtocol {
         address requestorAddress,
         string memory topicName
     ) external view returns (address[] memory);
+
+    function isJobInProgress(
+        address requestorAddress,
+        string memory topicName
+    ) external view returns (bool);
 }

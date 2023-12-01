@@ -25,6 +25,7 @@ contract ScatterProtocol is IScatterProtocol {
         uint256 validatorValidationCount;
         uint256 jobStartDate;
         uint validationThresholdScore;
+        FederatedJobStatus status;
     }
 
     address payable public owner;
@@ -289,38 +290,40 @@ contract ScatterProtocol is IScatterProtocol {
         // Return trainer staked token to benevolent trainers
         // Reward benevolent trainers - reward should be proportional to their short-term stake & model score
         if (distributeRewards) {
-            address[] memory rogueTrainerList = reputationManagerContract
-                .getMalevolentTrainers(requestorAddress, topicName);
-            address[] memory rogueValidatorList = reputationManagerContract
-                .getMalevolentValidators(requestorAddress, topicName);
-
-            address[] memory benevolentTrainerList = reputationManagerContract
-                .getBenevolentTrainers(requestorAddress, topicName);
-            address[] memory benevolentValidatorList = reputationManagerContract
-                .getBenevolentValidators(requestorAddress, topicName);
-
             scatterTokenContract.donateToLottery(requestorAddress, topicName);
-
             scatterTokenContract.punishRogueTrainers(
                 requestorAddress,
-                topicName,
-                rogueTrainerList
+                topicName
             );
-
-            scatterTokenContract.punishRogueValidators(rogueValidatorList);
-
+            scatterTokenContract.punishRogueValidators(
+                requestorAddress,
+                topicName
+            );
             scatterTokenContract.rewardBenevolentTrainers(
                 requestorAddress,
-                topicName,
-                benevolentTrainerList
+                topicName
             );
-
             scatterTokenContract.rewardBenevolentValidators(
                 requestorAddress,
-                topicName,
-                benevolentValidatorList
+                topicName
             );
+
+            // Return staked tokens to trainers for a specific training job
+            // Change status to complete
+            this.federatedJobCleanUp(requestorAddress, topicName);
         }
+    }
+
+    function federatedJobCleanUp(
+        address requestorAddress,
+        string memory topicName
+    ) external {
+        scatterTokenContract.returnTokensToTrainers(
+            requestorAddress,
+            topicName
+        );
+        addressToFederatedJob[requestorAddress][topicName]
+            .status = FederatedJobStatus.Complete;
     }
 
     /**
@@ -350,6 +353,9 @@ contract ScatterProtocol is IScatterProtocol {
                 chosenValidators[i]
             );
         }
+
+        addressToFederatedJob[msg.sender][topicName].status = FederatedJobStatus
+            .InProgress;
 
         emit TrainingInitialized(msg.sender, topicName);
     }
@@ -435,7 +441,8 @@ contract ScatterProtocol is IScatterProtocol {
                 getTimeFromCheckpoint(Checkpoints.FederatedJobEnd), // All jobs must be completed within 30 days of submission
             0,
             block.timestamp,
-            validationThresholdScore
+            validationThresholdScore,
+            FederatedJobStatus.NotStarted
         );
         addressToFederatedJob[msg.sender][topicName] = trainingInfo;
         // Enables trainers to view all topics by a specific network participant
@@ -456,15 +463,21 @@ contract ScatterProtocol is IScatterProtocol {
     /**
      *  @dev Add a trainer to a specific topic
      *  @param requestorAddress The address of the node that requested the topic
-     *  @param requestorTopic The name of the topic
+     *  @param topicName The name of the topic\
+     *  @param stakeAmount The amount they want to stake in the job
      */
     function trainerAddTopic(
         address requestorAddress,
-        string memory requestorTopic,
+        string memory topicName,
         uint256 stakeAmount
     ) external isTrainer {
+        require(
+            addressToFederatedJob[requestorAddress][topicName].status ==
+                FederatedJobStatus.NotStarted,
+            "Federated job must not have started training yet"
+        );
         bool alreadyInTraining = trainerTrainingMap[requestorAddress][
-            requestorTopic
+            topicName
         ][msg.sender];
 
         if (alreadyInTraining) {
@@ -474,17 +487,15 @@ contract ScatterProtocol is IScatterProtocol {
         IScatterToken(scatterTokenContract).trainerLockToken(
             msg.sender,
             requestorAddress,
-            requestorTopic,
+            topicName,
             stakeAmount
         );
-        addressToFederatedJob[requestorAddress][requestorTopic].trainers.push(
+        addressToFederatedJob[requestorAddress][topicName].trainers.push(
             msg.sender
         );
 
-        trainerTrainingMap[requestorAddress][requestorTopic][msg.sender] = true;
-        trainerTrainingMapKeys[requestorAddress][requestorTopic].push(
-            msg.sender
-        );
+        trainerTrainingMap[requestorAddress][topicName][msg.sender] = true;
+        trainerTrainingMapKeys[requestorAddress][topicName].push(msg.sender);
     }
 
     /**
@@ -789,6 +800,15 @@ contract ScatterProtocol is IScatterProtocol {
         string memory topicName
     ) external view returns (address[] memory) {
         return validatorTrainingMapKeys[requestorAddress][topicName];
+    }
+
+    function isJobInProgress(
+        address requestorAddress,
+        string memory topicName
+    ) external view returns (bool) {
+        return
+            addressToFederatedJob[requestorAddress][topicName].status ==
+            FederatedJobStatus.InProgress;
     }
 
     function _checkValidatorModelValidations(

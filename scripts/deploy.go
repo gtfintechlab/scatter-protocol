@@ -142,7 +142,7 @@ func deployAllContracts(privateKey string) {
 	}
 	time.Sleep(time.Second * DEPLOY_PAUSE)
 
-	scatterProtocolAddress, scatterProtocolTransaction, scatterInstance, err := scatterprotocol.DeployScatterprotocol(
+	scatterProtocolAddress, scatterProtocolTransaction, scatterProtocolInstance, err := scatterprotocol.DeployScatterprotocol(
 		auth, client,
 		common.HexToAddress(trainingAddress.Hash().Hex()),
 		common.HexToAddress(evaluationAddress.Hash().Hex()),
@@ -160,15 +160,20 @@ func deployAllContracts(privateKey string) {
 	evaluationInstance.SetScatterContractAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
 	scatterTokenInstance.SetScatterProtocolAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
 	modelInstance.SetScatterContractAddress(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+	reputationManagerInstance.SetScatterProtocolContract(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+	voteManagerInstance.SetScatterProtocolContract(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+
+	scatterTokenInstance.SetEvaluationJobTokenContract(auth, common.HexToAddress(evaluationAddress.Hash().Hex()))
 
 	reputationManagerInstance.SetEvaluationJobContract(auth, common.HexToAddress(evaluationAddress.Hash().Hex()))
 	reputationManagerInstance.SetModelTokenContract(auth, common.HexToAddress(modelAddress.Hash().Hex()))
-	reputationManagerInstance.SetScatterProtocolContract(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+	reputationManagerInstance.SetVoteManagerContract(auth, common.HexToAddress(voteManagerAddress.Hash().Hex()))
 
-	voteManagerInstance.SetScatterProtocolContract(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
+	evaluationInstance.SetVoteManagerContract(auth, common.HexToAddress(voteManagerAddress.Hash().Hex()))
+
 	voteManagerInstance.SetEvaluationJobTokenContract(auth, common.HexToAddress(evaluationAddress.Hash().Hex()))
 
-	scatterInstance.InitRequestorNode(auth)
+	scatterProtocolInstance.InitRequestorNode(auth)
 
 	log.Println("Transaction Info:")
 	log.Printf("Training Token: %s\n", trainingTransaction.Hash())

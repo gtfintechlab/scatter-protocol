@@ -25,21 +25,26 @@ interface IScatterToken {
 
     function punishRogueTrainers(
         address requestorAddress,
-        string memory topicName,
-        address[] memory trainers
+        string memory topicName
     ) external;
 
-    function punishRogueValidators(address[] memory validators) external;
+    function punishRogueValidators(
+        address requestorAddress,
+        string memory topicName
+    ) external;
 
     function rewardBenevolentTrainers(
         address requestorAddress,
-        string memory topicName,
-        address[] memory trainers
+        string memory topicName
     ) external;
 
     function rewardBenevolentValidators(
         address requestorAddress,
-        string memory topicName,
-        address[] memory validators
+        string memory topicName
+    ) external;
+
+    function returnTokensToTrainers(
+        address requestorAddress,
+        string memory topicName
     ) external;
 }
