@@ -5,11 +5,12 @@ pragma solidity >=0.8.17;
 import "./IScatterProtocol.sol";
 import "./IScatterToken.sol";
 import "./IEvaluationJobToken.sol";
+import "./IVoteManager.sol";
 import "./Shared.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract VoteManager is Ownable {
+contract VoteManager is Ownable, IVoteManager {
     IScatterProtocol scatterProtocolContract;
     IScatterToken scatterTokenContract;
     IEvaluationJobToken evaluationTokenContract;

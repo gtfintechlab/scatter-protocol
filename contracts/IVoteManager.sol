@@ -15,8 +15,7 @@ interface IVoteManager {
         address requestorAddress,
         string memory topicName,
         address validatorAddress,
-        address trainerAddress,
-        uint256 score
+        address trainerAddress
     ) external;
 
     function getModelValidationStatus(

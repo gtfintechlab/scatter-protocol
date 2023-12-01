@@ -162,8 +162,7 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
             requestorAddress,
             topicName,
             validatorAddress,
-            trainerAddress,
-            score
+            trainerAddress
         );
     }
 

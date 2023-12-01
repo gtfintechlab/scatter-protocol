@@ -110,6 +110,16 @@ type PeerNode struct {
 	PubSubService        *pubsub.PubSub              // PubSub Service for the node
 	PubSubTopics         *map[string]*pubsub.Topic   // PubSub Topics for topics we have subscribed to
 	TrainingLock         *map[string]map[string]bool // A training lock to ensure subsequent fired emits don't cause extra training
+	JobQueue             *JobProcessor
+}
+
+// JobProcessor represents an asynchronous job processor
+type JobProcessor struct {
+	JobQueue   chan Job
+	Wg         sync.WaitGroup
+	Shutdown   chan struct{}
+	IsShutdown bool
+	Mu         sync.Mutex
 }
 
 type BootstrapNode struct {
@@ -210,6 +220,12 @@ type TopicInformation struct {
 	TopicName        string
 	TrainingTokenCID string
 	PooledReward     big.Int
+}
+
+type Job struct {
+	ID       string
+	Function interface{}
+	Args     []interface{}
 }
 
 type TrainingInitializedEvent struct {

@@ -32,6 +32,8 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 
 	ps, _ := pubsub.NewGossipSub(context.Background(), node)
 	database := peerDatabase.ConnectToPostgres(peerType, databaseUsername, databasePassword, databasePort)
+	jq := utils.NewJobProcessor(1)
+	jq.StartWorkers(1)
 	peerNode := utils.PeerNode{
 		PeerType:          peerType,
 		Start:             StartPeer,
@@ -48,6 +50,7 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 		PubSubTopics:         &map[string]*pubsub.Topic{},
 		DatastoreLock:        &sync.Mutex{},
 		TrainingLock:         &map[string]map[string]bool{},
+		JobQueue:             jq,
 	}
 	protocol.SetNodeId(&peerNode, node.ID().String())
 

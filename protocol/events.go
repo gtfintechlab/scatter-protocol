@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/google/uuid"
 	"github.com/gtfintechlab/scatter-protocol/networking"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/peers/db"
 
@@ -62,7 +63,12 @@ func TrainingEventListener(node *utils.PeerNode) {
 			trainersForTopic := GetAllTrainersByAddressAndTopic(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName)
 
 			if slices.Contains(trainersForTopic, strings.ToLower(*node.BlockchainAddress)) {
-				go TrainingHandler(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName)
+				node.JobQueue.Enqueue(utils.Job{
+					ID:       uuid.New().String(),
+					Function: TrainingHandler,
+					Args:     []interface{}{node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName},
+				})
+				// go TrainingHandler(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName)
 			}
 		}
 	}
@@ -95,7 +101,13 @@ func EvaluationRequestListener(node *utils.PeerNode) {
 			eventUnpacked := utils.EvaluationRequestEvent{}
 			contractABI.UnpackIntoInterface(&eventUnpacked, "RequestForEvaluationSet", event.Data)
 			if common.HexToAddress(*node.BlockchainAddress) == eventUnpacked.Requestor {
-				go EvaluationRequestHandler(node, eventUnpacked.TopicName)
+				// Requestor sends the evaluation request to smart contract
+				node.JobQueue.Enqueue(utils.Job{
+					ID:       uuid.New().String(),
+					Function: EvaluationRequestHandler,
+					Args:     []interface{}{node, eventUnpacked.TopicName},
+				})
+				// go EvaluationRequestHandler(node, eventUnpacked.TopicName)
 			}
 		}
 	}
@@ -127,7 +139,13 @@ func ModelValidationListener(node *utils.PeerNode) {
 			eventUnpacked := utils.ModelReadyToValidateEvent{}
 			contractABI.UnpackIntoInterface(&eventUnpacked, "ModelReadyToValidate", event.Data)
 			if IsValidatorForRequestorAndTopic(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName) {
-				go ModelValidationHandler(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName)
+				node.JobQueue.Enqueue(utils.Job{
+					ID:       uuid.New().String(),
+					Function: ModelValidationHandler,
+					Args:     []interface{}{node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName},
+				})
+
+				// go ModelValidationHandler(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName)
 			}
 		}
 	}
@@ -172,7 +190,6 @@ func TrainingHandler(node *utils.PeerNode, requestorId string, topicName string)
 
 func EvaluationRequestHandler(node *utils.PeerNode, topicName string) {
 	evaluationJobDataPath := peerDatabase.GetEvaluationJobDataFromAddressAndTopic(node, *node.BlockchainAddress, topicName)
-	log.Println("DEBUG: EVAL DATA PATH", evaluationJobDataPath)
 	zippedJobBytes, _ := networking.ZipFolder(evaluationJobDataPath)
 	zippedPath := fmt.Sprintf("%s/evaluation.zip", evaluationJobDataPath)
 	networking.WriteBytesToFile(
