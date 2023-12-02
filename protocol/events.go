@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 	"strings"
 
@@ -68,7 +69,6 @@ func TrainingEventListener(node *utils.PeerNode) {
 					Function: TrainingHandler,
 					Args:     []interface{}{node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName},
 				})
-				// go TrainingHandler(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName)
 			}
 		}
 	}
@@ -107,7 +107,6 @@ func EvaluationRequestListener(node *utils.PeerNode) {
 					Function: EvaluationRequestHandler,
 					Args:     []interface{}{node, eventUnpacked.TopicName},
 				})
-				// go EvaluationRequestHandler(node, eventUnpacked.TopicName)
 			}
 		}
 	}
@@ -144,8 +143,6 @@ func ModelValidationListener(node *utils.PeerNode) {
 					Function: ModelValidationHandler,
 					Args:     []interface{}{node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName},
 				})
-
-				// go ModelValidationHandler(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName)
 			}
 		}
 	}
@@ -177,14 +174,21 @@ func DebugEventListener(node *utils.PeerNode) {
 		}
 	}
 }
-func TrainingHandler(node *utils.PeerNode, requestorId string, topicName string) {
+func TrainingHandler(node *utils.PeerNode, requestorAddress string, topicName string) {
+	if *node.DummyLoad {
+		basePath, _ := os.Getwd()
+		modelPath := fmt.Sprintf("%s/training/dummy/model.pth", basePath)
+		PublishModel(node, modelPath, requestorAddress, topicName)
+		return
+	}
+
 	dockerSetup()
-	ipfsCid := GetTrainingJobFromAddressAndTopic(node, requestorId, topicName)
-	dataPath := peerDatabase.GetDatapathFromAddressAndIpfs(node, requestorId, ipfsCid)
-	downloadTrainingJob(ipfsCid, requestorId)
-	buildTrainingImage(requestorId, ipfsCid, dataPath)
-	runTrainingContainer(requestorId, ipfsCid)
-	submitModel(node, requestorId, ipfsCid, topicName)
+	ipfsCid := GetTrainingJobFromAddressAndTopic(node, requestorAddress, topicName)
+	dataPath := peerDatabase.GetDatapathFromAddressAndIpfs(node, requestorAddress, ipfsCid)
+	downloadTrainingJob(ipfsCid, requestorAddress)
+	buildTrainingImage(requestorAddress, ipfsCid, dataPath)
+	runTrainingContainer(requestorAddress, ipfsCid)
+	submitModel(node, requestorAddress, ipfsCid, topicName)
 
 }
 
@@ -202,6 +206,16 @@ func EvaluationRequestHandler(node *utils.PeerNode, topicName string) {
 }
 
 func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topicName string) {
+
+	if *node.DummyLoad {
+		trainers := GetAllTrainersByAddressAndTopic(node, requestorAddress, topicName)
+		for _, trainer := range trainers {
+			score := big.NewInt(75)
+			SubmitEvaluationScore(node, requestorAddress, topicName, trainer, score)
+		}
+		return
+	}
+
 	evaluationJobCid := GetEvaluationJobFromAddressAndTopic(node, requestorAddress, topicName)
 	evaluationDataCid := GetEvaluationDataFromAddressAndTopic(node, requestorAddress, topicName)
 

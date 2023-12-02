@@ -9,6 +9,7 @@ import "./IVoteManager.sol";
 import "./Shared.sol";
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
 contract VoteManager is Ownable, IVoteManager {
     IScatterProtocol scatterProtocolContract;
@@ -96,7 +97,6 @@ contract VoteManager is Ownable, IVoteManager {
             ] == false,
             "Validator cannot vote twice for a single model on a validation proposal"
         );
-
         validatorHasVoted[requestorAddress][topicName][validatorAddress][
             trainerAddress
         ] = true;

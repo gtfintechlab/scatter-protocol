@@ -12,8 +12,8 @@ import "./IEvaluationJobToken.sol";
 contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
     using Counters for Counters.Counter;
     mapping(uint256 => string) private _tokenURIs;
-    mapping(string => address) private jobToAddress;
-    mapping(string => string) evaluationJobToDataMapping;
+    mapping(address => mapping(string => string)) private jobToAddress;
+    mapping(address => mapping(string => string)) evaluationJobToDataMapping;
     string baseURI;
     address payable public protocolDeployer;
     IScatterProtocol public scatterProtocolContract;
@@ -67,35 +67,41 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
     }
 
     function publishEvaluationJob(
-        address recipient,
+        address requestorAddress,
+        string memory topicName,
         string memory tokenURI
     ) external onlyScatterProtocolContract returns (uint256) {
         _tokenIds.increment();
 
         uint256 newItemId = _tokenIds.current();
-        _safeMint(recipient, newItemId);
+        _safeMint(requestorAddress, newItemId);
         setTokenURI(newItemId, tokenURI);
-        jobToAddress[tokenURI] = recipient;
+        jobToAddress[requestorAddress][topicName] = tokenURI;
         return newItemId;
     }
 
     function publishEvaluationData(
-        address dataPublisher,
+        address requestorAddress,
+        string memory topicName,
         string memory jobURI,
         string memory evaluationDataURI
     ) external onlyScatterProtocolContract {
+        string memory checkOwner = jobToAddress[requestorAddress][topicName];
         require(
-            jobToAddress[jobURI] == dataPublisher,
+            keccak256(bytes(checkOwner)) == keccak256(bytes(jobURI)),
             "This evaluation job does not belong to the data publisher"
         );
 
         require(
-            keccak256(bytes(evaluationJobToDataMapping[jobURI])) ==
-                keccak256(bytes("")),
+            keccak256(
+                bytes(evaluationJobToDataMapping[requestorAddress][topicName])
+            ) == keccak256(bytes("")),
             "This job already has a mapping to it"
         );
 
-        evaluationJobToDataMapping[jobURI] = evaluationDataURI;
+        evaluationJobToDataMapping[requestorAddress][
+            topicName
+        ] = evaluationDataURI;
     }
 
     function setTokenURI(uint256 tokenId, string memory tokenURI) internal {
@@ -143,7 +149,6 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
             ),
             "You are not an assigned validator for this training job"
         );
-
         evaluationScore[requestorAddress][topicName][validatorAddress][
             trainerAddress
         ] = score;
@@ -157,7 +162,6 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
         evaluationScoreSet[requestorAddress][topicName][validatorAddress][
             trainerAddress
         ] = true;
-
         voteManagerContract.submitScoreVote(
             requestorAddress,
             topicName,
@@ -189,6 +193,10 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
         uint summedScore = 0;
         for (uint i = 0; i < trainerScores.length; i++) {
             summedScore += trainerScores[i];
+        }
+
+        if (trainerScores.length == 0) {
+            return 0;
         }
 
         return summedScore / trainerScores.length;

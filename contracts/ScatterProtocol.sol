@@ -277,7 +277,6 @@ contract ScatterProtocol is IScatterProtocol {
             requestorAddress,
             topicName
         );
-
         // We distribute rewards when all models are validated and submitted or the job is over time
         distributeRewards =
             distributeRewards ||
@@ -307,7 +306,6 @@ contract ScatterProtocol is IScatterProtocol {
                 requestorAddress,
                 topicName
             );
-
             // Return staked tokens to trainers for a specific training job
             // Change status to complete
             this.federatedJobCleanUp(requestorAddress, topicName);
@@ -426,6 +424,7 @@ contract ScatterProtocol is IScatterProtocol {
 
         evaluationJobContract.publishEvaluationJob(
             msg.sender,
+            topicName,
             evaluationTokenURI
         );
 
@@ -678,6 +677,7 @@ contract ScatterProtocol is IScatterProtocol {
     ) public isRequestor {
         evaluationJobContract.publishEvaluationData(
             msg.sender,
+            topicName,
             addressToFederatedJob[msg.sender][topicName].evaluationJobCid,
             evaluationDataURI
         );
@@ -710,6 +710,8 @@ contract ScatterProtocol is IScatterProtocol {
         );
         addressToFederatedJob[requestorAddress][topicName]
             .validatorValidationCount += 1;
+
+        rewardDistributor(requestorAddress, topicName);
     }
 
     /**

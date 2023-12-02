@@ -164,6 +164,7 @@ func deployAllContracts(privateKey string) {
 	voteManagerInstance.SetScatterProtocolContract(auth, common.HexToAddress(scatterProtocolAddress.Hash().Hex()))
 
 	scatterTokenInstance.SetEvaluationJobTokenContract(auth, common.HexToAddress(evaluationAddress.Hash().Hex()))
+	scatterTokenInstance.SetReputationManagerContract(auth, common.HexToAddress(reputationManagerAddress.Hash().Hex()))
 
 	reputationManagerInstance.SetEvaluationJobContract(auth, common.HexToAddress(evaluationAddress.Hash().Hex()))
 	reputationManagerInstance.SetModelTokenContract(auth, common.HexToAddress(modelAddress.Hash().Hex()))

@@ -25,6 +25,7 @@ func main() {
 	var peerType string
 	var extAddress string
 	var useMdns string
+	var dummyLoad string
 	var migrationDirection string
 	var simulationName string
 	var contractName string
@@ -50,14 +51,18 @@ func main() {
 	flag.StringVar(&migrationDirection, "direction", "up",
 		"Migration direction (up/down)")
 
-	flag.StringVar(&simulationName, "simulation", "lazy_load",
+	flag.StringVar(&simulationName, "simulation", "benevolent_trainer",
 		"Name of the simulation to run")
 	flag.StringVar(&contractName, "contract", "all",
 		"The smart contract you want to deploy")
 
+	flag.StringVar(&useMdns, "dummyLoad", "false",
+		"Whether to run training / eval procedures or use dummy data")
+
 	flag.Parse()
 
 	mdnsProtocol, _ := strconv.ParseBool(useMdns)
+	dummyLoadBool, _ := strconv.ParseBool(dummyLoad)
 	if nodeType == utils.NODE_BOOTSTRAP {
 		bootstrapNode := bootstrap.InitBootstrapNode(ipv4Address, tcpPort)
 		bootstrapNode.Start(bootstrapNode)
@@ -69,7 +74,7 @@ func main() {
 			dbPort = 8702
 		}
 		peerNode := peer.InitPeerNode(peerType, extAddress, "postgres", "postgres", dbPort,
-			os.Getenv("BLOCKCHAIN_ADDRESS"), os.Getenv("PRIVATE_KEY"))
+			os.Getenv("BLOCKCHAIN_ADDRESS"), os.Getenv("PRIVATE_KEY"), dummyLoadBool)
 		peerNode.Start(peerNode, mdnsProtocol)
 	}
 

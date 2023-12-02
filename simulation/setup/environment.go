@@ -16,6 +16,7 @@ type EnvironmentConfig struct {
 	ProtocolOwnerAddress    *string `json:"protocolOwnerAddress"`
 	ProtocolOwnerPrivateKey *string `json:"protocolOwnerPrivateKey"`
 	EthereumNode            *string `json:"ethereumNode"`
+	DummyLoad               *bool   `json:"dummyLoad"`
 }
 
 type SimulationConfiguration struct {

@@ -111,6 +111,7 @@ type PeerNode struct {
 	PubSubTopics         *map[string]*pubsub.Topic   // PubSub Topics for topics we have subscribed to
 	TrainingLock         *map[string]map[string]bool // A training lock to ensure subsequent fired emits don't cause extra training
 	JobQueue             *JobProcessor
+	DummyLoad            *bool
 }
 
 // JobProcessor represents an asynchronous job processor
@@ -201,6 +202,7 @@ type EnvironmentConfig struct {
 	ProtocolOwnerAddress    *string `json:"protocolOwnerAddress"`
 	ProtocolOwnerPrivateKey *string `json:"protocolOwnerPrivateKey"`
 	EthereumNode            *string `json:"ethereumNode"`
+	DummyLoad               *bool   `json:"dummyLoad"`
 }
 
 type SimulationNode struct {

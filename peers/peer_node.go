@@ -20,7 +20,7 @@ import (
 
 func InitPeerNode(peerType string, serverAddress string, databaseUsername string,
 	databasePassword string, databasePort int, blockchainAddress string,
-	privateKey string) *utils.PeerNode {
+	privateKey string, dummyLoad bool) *utils.PeerNode {
 	// Create a new libp2p host for the new node
 	node, _ := libp2p.New()
 	table, _ := networking.NewDHT(context.Background(), node)
@@ -51,6 +51,7 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 		DatastoreLock:        &sync.Mutex{},
 		TrainingLock:         &map[string]map[string]bool{},
 		JobQueue:             jq,
+		DummyLoad:            &dummyLoad,
 	}
 	protocol.SetNodeId(&peerNode, node.ID().String())
 

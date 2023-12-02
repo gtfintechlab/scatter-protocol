@@ -64,7 +64,6 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 	nodeConfig := make(map[string]utils.SimulationNodeConfig)
 	for _, node := range nodeList {
 		var simulationNode utils.SimulationNode
-
 		switch nodeType := node.Type; nodeType {
 		case utils.NODE_BOOTSTRAP:
 			createdNode := bootstrap.InitBootstrapNode(*node.Ipv4Address, *node.TcpPort)
@@ -79,6 +78,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				*node.DatastorePort,
 				*node.BlockchainAddress,
 				*node.PrivateKey,
+				*environment.DummyLoad,
 			)
 			transferToken(
 				*environment.ProtocolOwnerPrivateKey,
@@ -107,6 +107,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				*node.DatastorePort,
 				*node.BlockchainAddress,
 				*node.PrivateKey,
+				*environment.DummyLoad,
 			)
 			transferToken(
 				*environment.ProtocolOwnerPrivateKey,

@@ -296,32 +296,49 @@ func GetEvaluationDataFromAddressAndTopic(node *utils.PeerNode, requestorAddress
 
 func SubmitEvaluationScore(node *utils.PeerNode, requestorAddress string, topicName string, trainerAddress string, score *big.Int) {
 	auth := getTransactor(node)
-	scatterProtocolContract.SubmitEvaluationScore(auth, common.HexToAddress(requestorAddress), topicName, common.HexToAddress(trainerAddress), score)
+
+	_, err := scatterProtocolContract.SubmitEvaluationScore(auth, common.HexToAddress(requestorAddress), topicName, common.HexToAddress(trainerAddress), score)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func PublishModel(node *utils.PeerNode, modelPath string, requestorAddress string, topicName string) {
 	auth := getTransactor(node)
 	modelIpfsCid := utils.UploadFileToIpfs(modelPath)
-	scatterProtocolContract.PublishModelToProtocol(auth,
+	_, err := scatterProtocolContract.PublishModelToProtocol(auth,
 		modelIpfsCid,
 		common.HexToAddress(requestorAddress),
 		topicName,
 	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func GetModelCidByTrainer(node *utils.PeerNode, requestorAddress string, topicName string, trainerAddress string) string {
 	auth := getTransactor(node)
 
-	modelCid, _ := modelTokenContract.ModelLogger(&bind.CallOpts{
+	modelCid, err := modelTokenContract.ModelLogger(&bind.CallOpts{
 		From: auth.From,
 	}, common.HexToAddress(requestorAddress), topicName, common.HexToAddress(trainerAddress))
 
+	if err != nil {
+		log.Fatal(err)
+	}
 	return modelCid
 }
 
 func GetScatterTokenBalance(node *utils.PeerNode) *big.Int {
 	auth := getTransactor(node)
-	balance, _ := scatterTokenContract.BalanceOf(&bind.CallOpts{From: auth.From}, auth.From)
+	balance, err := scatterTokenContract.BalanceOf(&bind.CallOpts{From: auth.From}, auth.From)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return balance
 }
 

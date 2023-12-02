@@ -5,6 +5,7 @@ pragma solidity >=0.8.17;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "hardhat/console.sol";
 
 import "./Shared.sol";
 import "./Math.sol";
@@ -63,6 +64,10 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
         address newAddress
     ) public onlyOwner {
         evaluationJobTokenContract = IEvaluationJobToken(newAddress);
+    }
+
+    function setReputationManagerContract(address newAddress) public onlyOwner {
+        reputationManagerContract = IReputationManager(newAddress);
     }
 
     function _mint(
@@ -180,7 +185,6 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
     ) external onlyScatterProtocolContract {
         address[] memory trainers = reputationManagerContract
             .getMalevolentTrainers(requestorAddress, topicName);
-
         for (uint i = 0; i < trainers.length; i++) {
             lotteryPool += trainerLockedTokenForTrainingJob[requestorAddress][
                 topicName
@@ -255,6 +259,7 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
                 totalRewardPool) / totalWeight;
 
             _mint(trainers[i], tokenTransferred);
+            console.log("Trainer Balance: ", this.balanceOf(trainers[i]));
         }
     }
 
