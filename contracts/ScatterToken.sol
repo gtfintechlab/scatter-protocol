@@ -257,9 +257,7 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
             uint256 tokenTransferred = (performanceWeight *
                 stakeWeight *
                 totalRewardPool) / totalWeight;
-
             _mint(trainers[i], tokenTransferred);
-            console.log("Trainer Balance: ", this.balanceOf(trainers[i]));
         }
     }
 

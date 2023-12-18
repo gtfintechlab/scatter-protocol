@@ -1,10 +1,9 @@
 FROM node:latest
 
-WORKDIR /usr/app
+WORKDIR /app
 
 COPY package-lock.json ./package-lock.json
 COPY package.json ./package.json 
-COPY hardhat.config.js ./hardhat.config.js
 
 RUN npm install --save-dev hardhat
 EXPOSE 8545

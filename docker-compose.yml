@@ -49,6 +49,8 @@ services:
       context: .
       dockerfile: dockerfiles/Dockerfile.hardhat
     image: hardhat-network:latest
+    volumes: 
+      - ./hardhat.config.js:/app/hardhat.config.js
     ports:
       - "8545:8545"
 
