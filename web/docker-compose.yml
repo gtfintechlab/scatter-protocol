@@ -1,0 +1,11 @@
+services:
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - scatter-web-net
+
+networks:
+  scatter-web-net:
+    driver: bridge
