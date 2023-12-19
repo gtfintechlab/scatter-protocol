@@ -34,11 +34,11 @@ __pycache__
 
 .vscode
 
-training/trainer/jobs/*
-!training/trainer/jobs/.gitkeep
+core/training/trainer/jobs/*
+!core/training/trainer/jobs/.gitkeep
 
-training/validator/jobs/*
-!training/validator/jobs/.gitkeep
+core/training/validator/jobs/*
+!core/training/validator/jobs/.gitkeep
 *.zip
 
 *.pth
