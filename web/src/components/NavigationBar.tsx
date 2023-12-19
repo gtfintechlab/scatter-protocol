@@ -8,6 +8,7 @@ import SandwichMenuIcon from "@/components/icons/SandwichMenuIcon";
 import { NAVBAR_ITEMS } from "@/utils/constants";
 import { ScreenContext } from "@/contexts/ScreenContext";
 import { NavbarItem } from "@/utils/types";
+import WorkspaceDropdownMenu from "@/components/WorkspaceDropdownMenu";
 
 export default function NavigationBar() {
     const [toggleOpen, setToggleOpen] = useState<boolean>(false);
@@ -27,6 +28,8 @@ export default function NavigationBar() {
                 setToggleOpen(false);
             }
         };
+
+
         handleResize();
         window.addEventListener('resize', handleResize);
         setInitialLoad(true);
@@ -37,7 +40,7 @@ export default function NavigationBar() {
 
     return (
         <div className="relative">
-            <header className="flex items-center h-16 px-4 border-b bg-white shadow-sm text-gray-600 md:px-6">
+            <header className="flex items-center h-16 px-4 border-b bg-white shadow-sm text-gray-600 md:px-6 justify-between">
                 <nav className="flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 lg:gap-6">
                     {!isMobile && <Link className="flex items-center gap-2 text-lg font-semibold md:text-base"
                         href="/">
@@ -60,6 +63,7 @@ export default function NavigationBar() {
                     </div>
                     }
                 </nav>
+                <div><WorkspaceDropdownMenu /></div>
             </header>
             {
                 isMobile && toggleOpen && <div className="flex flex-col absolute w-full z-50">

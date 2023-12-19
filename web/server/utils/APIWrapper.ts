@@ -2,7 +2,6 @@ import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 import { HttpMethod } from "@/utils/types";
 import { APIWrapperType } from "@/utils/types"
-import * as context from "next/headers";
 
 interface RouteConfig {
     handleResponse?: boolean;

@@ -35,19 +35,26 @@ const ProtocolNodeSchema = new Schema<ProtocolNode>(
         dummyLoad: {
             type: Boolean,
             required: true,
+            default: true
         },
         useMdns: {
             type: Boolean,
             required: true,
+            default: true
         },
         tokenSupply: {
             type: Number,
             required: true,
+            default: 0
         },
         isProtocolOwner: {
             type: Boolean,
             required: true,
         },
+        workspaceId: {
+            type: Schema.ObjectId,
+            required: true
+        }
     },
     {
         timestamps: {

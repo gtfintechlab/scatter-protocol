@@ -27,6 +27,7 @@ export interface ProtocolNode {
     useMdns: boolean;
     tokenSupply: number;
     isProtocolOwner: boolean;
+    workspaceId: Types.ObjectId;
 }
 
 export enum PeerType {
@@ -36,6 +37,12 @@ export enum PeerType {
     CHALLENGER = "challenger",
     NO_ROLE = "no role"
 }
+
+export interface Workspace {
+    _id?: Types.ObjectId;
+    name?: string;
+}
+
 
 export enum HttpMethod {
     GET = "GET",

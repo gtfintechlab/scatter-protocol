@@ -1,7 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { ScreensURLs } from "@/utils/types";
+import { ScreensURLs, Workspace } from "@/utils/types";
 import { ScreenContext } from "@/contexts/ScreenContext";
+import { ProtocolContext } from "./ProtocolContext";
 
 export default function ContextProvider({
     children
@@ -10,6 +11,7 @@ export default function ContextProvider({
 }) {
     const [isMobile, setIsMobile] = useState<boolean>(false);
     const [currentScreen, setCurrentScreen] = useState<ScreensURLs>(ScreensURLs.HOME)
+    const [currentWorkspace, setWorkspace] = useState<Workspace>({ name: undefined, _id: undefined });
 
     useEffect(() => {
         const handleResize = () => {
@@ -36,6 +38,12 @@ export default function ContextProvider({
                 setCurrentScreen(screen);
             }
         }}>
-            {children}
+            <ProtocolContext.Provider value={{
+                currentWorkspace,
+                setCurrentWorkspace: (workspace: Workspace) => { setWorkspace({ ...workspace }) }
+            }}>
+                {children}
+
+            </ProtocolContext.Provider>
         </ScreenContext.Provider>)
 }
