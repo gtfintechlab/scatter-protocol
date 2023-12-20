@@ -1,6 +1,6 @@
 import APIWrapper from "server/utils/APIWrapper";
-import { APIWrapperType } from "@/utils/types"
-import { getNodesByWorkspaceId } from "server/mongodb/actions/ProtocolNode";
+import { APIWrapperType, ProtocolNode } from "@/utils/types"
+import { createProtocolNode, getNodesByWorkspaceId } from "server/mongodb/actions/ProtocolNode";
 
 const route: APIWrapperType = APIWrapper({
     GET: {
@@ -12,6 +12,14 @@ const route: APIWrapperType = APIWrapper({
             return nodes
         },
     },
+    POST: {
+        config: {},
+        handler: async (req) => {
+            const body: ProtocolNode | Partial<ProtocolNode> = await req.json()
+            const node = await createProtocolNode(body);
+            return node;
+        },
+    }
 });
 
 export let GET: APIWrapperType, POST: APIWrapperType, PATCH: APIWrapperType, DELETE: APIWrapperType, PUT: APIWrapperType;

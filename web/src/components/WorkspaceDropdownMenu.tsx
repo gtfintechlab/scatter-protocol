@@ -39,6 +39,7 @@ const WorkspaceDropdownMenu = () => {
 
     const setActiveWorkspace = (workspace: Workspace) => {
         setCurrentWorkspace(workspace)
+        localStorage.setItem("currentWorkspace", JSON.stringify(workspace))
         toggleDropdown();
     }
 

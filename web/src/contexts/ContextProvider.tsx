@@ -23,6 +23,11 @@ export default function ContextProvider({
         handleResize();
         window.addEventListener('resize', handleResize);
 
+        const currentWorkspace = localStorage.getItem("currentWorkspace");
+        if (currentWorkspace) {
+            setWorkspace(JSON.parse(currentWorkspace))
+        }
+
         return () => {
             window.removeEventListener('resize', handleResize);
         };

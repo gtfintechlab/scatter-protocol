@@ -5,7 +5,7 @@ import { ProtocolNode } from "@/utils/types"
 import { getNodesForWorkspace } from "@/actions/ProtocolNode";
 import { useContext, useEffect, useState } from "react"
 
-export default function NodeManager({ nodeCallback, isNodesPage }: { nodeCallback: (node: ProtocolNode | null) => void, isNodesPage?: boolean }) {
+export default function NodeManager({ nodeCallback, isNodesPage, className }: { nodeCallback: (node: ProtocolNode | null) => void, isNodesPage?: boolean, className?: string }) {
     const { currentWorkspace } = useContext(ProtocolContext);
     const [nodes, setNodes] = useState<ProtocolNode[]>([]);
     useEffect(() => {
@@ -20,7 +20,7 @@ export default function NodeManager({ nodeCallback, isNodesPage }: { nodeCallbac
         workspaceNodesSetter().then().catch()
     }, [])
     return (
-        <div className="h-full bg-white w-full rounded-md p-4">
+        <div className={`h-full bg-white w-full rounded-md p-4 ${className}`}>
             <div>
                 {nodes.map((node: ProtocolNode) => {
                     return (
@@ -28,11 +28,11 @@ export default function NodeManager({ nodeCallback, isNodesPage }: { nodeCallbac
                     )
                 })}
             </div>
-            {isNodesPage && <div
+            {isNodesPage && <button
                 className="p-2 text-white w-full border-2 rounded-md border-black bg-black text-center hover:bg-white hover:text-black cursor-pointer"
                 onClick={() => nodeCallback(null)}
             >
-                Add a Node</div>}
+                Add a Node</button>}
         </div>
     )
 }

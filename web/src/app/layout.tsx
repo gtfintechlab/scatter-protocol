@@ -21,7 +21,7 @@ export default function RootLayout({
       <ContextProvider>
         <body className={inter.className}>
           <main>
-            <div className="bg-gray-100 h-screen overflow-y-hidden">
+            <div className="bg-gray-100 h-screen overflow-y-hidden w-screen overflow-x-hidden">
               <NavigationBar></NavigationBar>
               <main className='h-full pb-16'>
                 {children}

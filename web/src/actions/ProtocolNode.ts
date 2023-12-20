@@ -13,3 +13,13 @@ export const getNodesForWorkspace = async (workspaceId: string) => {
         }
     })
 }
+
+export const createProtocolNode = async (nodeInfo: ProtocolNode | Partial<ProtocolNode>) => {
+    return internalRequest<ProtocolNode>({
+        url: nodeUrl,
+        method: HttpMethod.POST,
+        body: {
+            ...nodeInfo
+        }
+    })
+}
