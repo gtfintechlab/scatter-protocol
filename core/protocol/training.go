@@ -39,14 +39,14 @@ func buildTrainingImage(requestorId string, ipfsCid string, dataPath string) {
 		requestorIdLower,
 		ipfsCidLower,
 	),
-		0700,
+		0777,
 	)
 	os.MkdirAll(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/data",
 		basePath,
 		requestorIdLower,
 		ipfsCidLower,
 	),
-		0700,
+		0777,
 	)
 
 	exec.Command("cp", "--recursive", dataPath,

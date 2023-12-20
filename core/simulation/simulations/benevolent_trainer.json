@@ -16,7 +16,7 @@
         {
             "id": "requestor_node",
             "type": "requestor",
-            "extAddress": ":5002",
+            "apiPort": 5002,
             "datastorePort": 8701,
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
@@ -28,7 +28,7 @@
         {
             "id": "trainer_node",
             "type": "trainer",
-            "extAddress": ":6001",
+            "apiPort": 6001,
             "datastorePort": 8702,
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",
@@ -40,7 +40,7 @@
         {
             "id": "validator_node",
             "type": "validator",
-            "extAddress": ":7002",
+            "apiPort": 7002,
             "datastorePort": 8703,
             "datastoreUsername": "postgres",
             "datastorePassword": "postgres",

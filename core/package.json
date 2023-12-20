@@ -5,6 +5,7 @@
     "keygen": "go run main.go --utils keygen",
     "simulation": "go run simulation/setup/environment.go && go run main.go --utils simulation",
     "peer": "go run main.go --type peer",
+    "api": "go run main.go --utils api",
     "bootstrap": "go run main.go --type bootstrap",
     "peer:requestor": "npm run migrate:peer-requestor && go run main.go --type peer --peerType requestor --extAddress :5002",
     "peer:trainer": "npm run migrate:peer-trainer && go run main.go --type peer --peerType trainer --extAddress :6001",

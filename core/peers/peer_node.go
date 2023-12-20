@@ -2,6 +2,7 @@ package peers
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 
@@ -18,7 +19,7 @@ import (
 	network "github.com/libp2p/go-libp2p/core/network"
 )
 
-func InitPeerNode(peerType string, serverAddress string, databaseUsername string,
+func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 	databasePassword string, databasePort int, blockchainAddress string,
 	privateKey string, dummyLoad bool) *utils.PeerNode {
 	// Create a new libp2p host for the new node
@@ -41,7 +42,7 @@ func InitPeerNode(peerType string, serverAddress string, databaseUsername string
 		BlockchainAddress: &blockchainAddress,
 		PrivateKey:        &privateKey,
 		ExternalServer: &http.Server{
-			Addr: serverAddress,
+			Addr: fmt.Sprintf(":%d", apiPort),
 		},
 		PeerToPeerServer:     &node,
 		DistributedHashTable: table,

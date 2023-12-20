@@ -25,7 +25,7 @@ const (
 
 var UTIL_GENERATE_KEYS = "keygen"
 var UTIL_DEBUG_MODE = "debug"
-var UTIL_CELESTIAL_DATABASE_MIGRATION = "migrate:celestial"
+var UTIL_SIMULATION_API = "api"
 var UTIL_PEER_DATABASE_MIGRATION = "migrate:peer"
 var UTIL_RUN_SIMULATION = "simulation"
 var UTIL_RUN_IPFS_NODE = "ipfs"
@@ -186,7 +186,7 @@ type NodeConfig struct {
 	Type                      string  `json:"type"`
 	Ipv4Address               *string `json:"ipv4Address"`
 	TcpPort                   *int    `json:"tcpPort"`
-	ExtAddress                *string `json:"extAddress"`
+	ApiPort                   *int    `json:"apiPort"`
 	DatastorePort             *int    `json:"datastorePort"`
 	DatastoreUsername         *string `json:"datastoreUsername"`
 	DatastorePassword         *string `json:"datastorePassword"`
@@ -247,4 +247,16 @@ type EvaluationRequestEvent struct {
 
 type DebugEvent struct {
 	Message string
+}
+
+type StartNodeRequest struct {
+	PeerType          string `json:"peerType"`
+	ApiPort           uint   `json:"apiPort"`
+	PostgresUsername  string `json:"postgresUsername"`
+	PostgresPassword  string `json:"postgresPassword"`
+	DatabasePort      uint   `json:"databasePort"`
+	BlockchainAddress string `json:"blockchainAddress"`
+	PrivateKey        string `json:"privateKey"`
+	DummyLoad         bool   `json:"dummyLoad"`
+	UseMdns           bool   `json:"useMdns"`
 }

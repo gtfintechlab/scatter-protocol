@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	api "github.com/gtfintechlab/scatter-protocol/core/api"
 	bootstrap "github.com/gtfintechlab/scatter-protocol/core/bootstrap"
 	peer "github.com/gtfintechlab/scatter-protocol/core/peers"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/core/peers/db"
@@ -23,7 +24,7 @@ func main() {
 	var tcpPort int
 	var ipv4Address string
 	var peerType string
-	var extAddress string
+	var apiPort int
 	var useMdns string
 	var dummyLoad string
 	var migrationDirection string
@@ -43,7 +44,7 @@ func main() {
 	// Peer Node Options
 	flag.StringVar(&peerType, "peerType", utils.PEER_REQUESTOR,
 		"Type of peer node you want to run (requestor, trainer)")
-	flag.StringVar(&extAddress, "extAddress", ":5002",
+	flag.IntVar(&apiPort, "apiPort", 5002,
 		"External server address (for communication with the node)")
 
 	flag.StringVar(&useMdns, "useMdns", "true",
@@ -73,7 +74,7 @@ func main() {
 		} else {
 			dbPort = 8702
 		}
-		peerNode := peer.InitPeerNode(peerType, extAddress, "postgres", "postgres", dbPort,
+		peerNode := peer.InitPeerNode(peerType, apiPort, "postgres", "postgres", dbPort,
 			os.Getenv("BLOCKCHAIN_ADDRESS"), os.Getenv("PRIVATE_KEY"), dummyLoadBool)
 		peerNode.Start(peerNode, mdnsProtocol)
 	}
@@ -92,5 +93,7 @@ func main() {
 		peerDatabase.MigratePeerDB(migrationDirection, peerType, "postgres", "postgres", dbPort)
 	} else if util == utils.UTIL_RUN_SIMULATION {
 		simulation.RunSimulation(simulationName)
+	} else if util == utils.UTIL_SIMULATION_API {
+		api.StartSimulationApi()
 	}
 }

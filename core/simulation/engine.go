@@ -72,7 +72,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 		case utils.PEER_REQUESTOR, utils.PEER_TRAINER:
 			createdNode := peers.InitPeerNode(
 				node.Type,
-				*node.ExtAddress,
+				*node.ApiPort,
 				*node.DatastoreUsername,
 				*node.DatastorePassword,
 				*node.DatastorePort,
@@ -101,7 +101,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 		case utils.PEER_VALIDATOR:
 			createdNode := peers.InitPeerNode(
 				node.Type,
-				*node.ExtAddress,
+				*node.ApiPort,
 				*node.DatastoreUsername,
 				*node.DatastorePassword,
 				*node.DatastorePort,
