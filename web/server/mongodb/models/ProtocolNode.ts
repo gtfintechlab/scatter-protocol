@@ -9,7 +9,7 @@ const ProtocolNodeSchema = new Schema<ProtocolNode>(
             enum: Object.values(PeerType),
         },
         apiPort: {
-            type: String,
+            type: Number,
             required: true,
         },
         postgresUsername: {
@@ -21,7 +21,7 @@ const ProtocolNodeSchema = new Schema<ProtocolNode>(
             required: true,
         },
         databasePort: {
-            type: String,
+            type: Number,
             required: true,
         },
         blockchainAddress: {

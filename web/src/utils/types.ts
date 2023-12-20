@@ -14,13 +14,22 @@ export interface NavbarItem {
     url: string;
 }
 
+export interface EthereumAccount {
+    _id: Types.ObjectId
+    privateKey: string;
+    address: string;
+    mnemonic: string;
+    path: string;
+    index: number;
+}
+
 export interface ProtocolNode {
     _id: Types.ObjectId
     peerType: PeerType;
-    apiPort: string | number;
+    apiPort: number;
     postgresUsername: string;
     postgresPassword: string;
-    databasePort: string | number;
+    databasePort: number;
     blockchainAddress: string;
     privateKey: string;
     dummyLoad: boolean;

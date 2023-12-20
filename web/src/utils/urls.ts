@@ -10,6 +10,9 @@ export const urls = {
         },
         workspaces: {
             general: "/api/workspaces"
+        },
+        web3: {
+            accounts: "/api/web3/accounts"
         }
     }
 };

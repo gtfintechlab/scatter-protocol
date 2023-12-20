@@ -16,3 +16,17 @@ export const ROLE_TO_COLOR_MAPPING = {
     [PeerType.NO_ROLE]: "gray",
 
 }
+
+export const WEB3_NUM_ACCOUNTS = 100;
+export const WEB3_MNEMONIC = "test test test test test test test test test test test junk"
+export const WEB3_PATH = "m/44'/60'/0'/0"
+
+export const DEFAULT_NODE_OPTIONS = {
+    apiPort: 5002,
+    intialTokenSupply: 10000,
+    useMdns: true,
+    useDummyData: true,
+    isProtocolOwner: false,
+    postgresUsername: "postgres",
+    postgresPassword: "postgres",
+}
