@@ -23,6 +23,11 @@ export interface EthereumAccount {
     index: number;
 }
 
+export enum ProtocolNodeState {
+    STARTED = "started",
+    STOPPED = "stopped"
+}
+
 export interface ProtocolNode {
     _id: Types.ObjectId
     peerType: PeerType;
@@ -35,7 +40,9 @@ export interface ProtocolNode {
     dummyLoad: boolean;
     useMdns: boolean;
     tokenSupply: number;
+    initialTokenSupply: number;
     isProtocolOwner: boolean;
+    state: ProtocolNodeState;
     workspaceId: Types.ObjectId;
 }
 

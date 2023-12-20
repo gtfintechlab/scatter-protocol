@@ -29,4 +29,11 @@ export const DEFAULT_NODE_OPTIONS = {
     isProtocolOwner: false,
     postgresUsername: "postgres",
     postgresPassword: "postgres",
+    databasePorts: {
+        [PeerType.REQUESTOR]: 8701,
+        [PeerType.TRAINER]: 8702,
+        [PeerType.VALIDATOR]: 8703,
+        [PeerType.NO_ROLE]: 0,
+        [PeerType.CHALLENGER]: 0
+    }
 }

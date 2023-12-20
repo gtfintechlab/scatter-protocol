@@ -23,3 +23,23 @@ export const createProtocolNode = async (nodeInfo: ProtocolNode | Partial<Protoc
         }
     })
 }
+
+export const deleteProtocolNode = async (nodeId: string) => {
+    return internalRequest<ProtocolNode>({
+        url: nodeUrl,
+        method: HttpMethod.DELETE,
+        body: {
+            nodeId
+        }
+    })
+}
+
+export const updateProtocolNode = async (nodeInfo: ProtocolNode | Partial<ProtocolNode>) => {
+    return internalRequest<ProtocolNode>({
+        url: nodeUrl,
+        method: HttpMethod.PATCH,
+        body: {
+            ...nodeInfo
+        }
+    })
+}

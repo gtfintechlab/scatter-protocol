@@ -14,3 +14,16 @@ export const createProtocolNode = async (nodeInfo: ProtocolNode | Partial<Protoc
     const node = await ProtocolNodeModel.create(nodeInfo);
     return node;
 }
+
+export const deleteProtocolNode = async (nodeId: string | Types.ObjectId) => {
+    await dbConnect();
+    const node = await ProtocolNodeModel.findOneAndDelete({ _id: nodeId });
+    return node;
+}
+
+
+export const updateProtocolNode = async (nodeInfo: ProtocolNode | Partial<ProtocolNode>) => {
+    await dbConnect();
+    const node = await ProtocolNodeModel.findOneAndUpdate({ _id: nodeInfo._id }, nodeInfo);
+    return node;
+}

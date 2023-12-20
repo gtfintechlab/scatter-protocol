@@ -1,4 +1,4 @@
-import { PeerType, ProtocolNode } from "@/utils/types";
+import { PeerType, ProtocolNode, ProtocolNodeState } from "@/utils/types";
 import mongoose, { Schema } from "mongoose";
 
 const ProtocolNodeSchema = new Schema<ProtocolNode>(
@@ -47,9 +47,20 @@ const ProtocolNodeSchema = new Schema<ProtocolNode>(
             required: true,
             default: 0
         },
+        initialTokenSupply: {
+            type: Number,
+            required: true,
+        },
         isProtocolOwner: {
             type: Boolean,
             required: true,
+        },
+        state: {
+            type: String,
+            required: true,
+            enum: Object.values(ProtocolNodeState),
+            default: ProtocolNodeState.STOPPED
+
         },
         workspaceId: {
             type: Schema.ObjectId,
