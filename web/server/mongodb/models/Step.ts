@@ -25,7 +25,7 @@ const StepSchema = new Schema<Step>(
             type: Schema.Types.ObjectId,
             required: true,
         },
-        node: {
+        nodeId: {
             type: Schema.Types.ObjectId,
             required: true,
         },

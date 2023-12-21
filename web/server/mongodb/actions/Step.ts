@@ -18,6 +18,6 @@ export const createStep = async (step: Step | Partial<Step>) => {
 
 export const deletStepById = async (stepId: string | Types.ObjectId) => {
     await dbConnect();
-    const createdStep = await StepModel.findByIdAndDelete({ stepId });
+    const createdStep = await StepModel.findByIdAndDelete({ _id: stepId });
     return createdStep;
 }

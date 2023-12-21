@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/gtfintechlab/scatter-protocol/core/networking"
@@ -16,7 +17,7 @@ var Nodes map[string]*utils.PeerNode
 func startNode() http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.PostValidator(request, response)
-		var requestBody utils.StartNodeRequest
+		var requestBody utils.SimulationStartNodeRequest
 		json.NewDecoder(request.Body).Decode(&requestBody)
 
 		node := peers.InitPeerNode(
@@ -26,18 +27,23 @@ func startNode() http.HandlerFunc {
 			requestBody.PostgresPassword,
 			int(requestBody.DatabasePort),
 			requestBody.BlockchainAddress,
-			requestBody.PrivateKey,
+			utils.RemoveHexPrefix(requestBody.PrivateKey),
 			requestBody.DummyLoad,
 		)
-		simulation.ClearDatabase(node.DataStore)
+		if int(requestBody.DatabasePort) != 0 {
+			simulation.ClearDatabase(node.DataStore)
+			peerDatabase.MigratePeerDB(
+				"up",
+				requestBody.PeerType,
+				requestBody.PostgresUsername,
+				requestBody.PostgresPassword,
+				int(requestBody.DatabasePort),
+			)
+		}
 
-		peerDatabase.MigratePeerDB(
-			"up",
-			requestBody.PeerType,
-			requestBody.PostgresUsername,
-			requestBody.PostgresPassword,
-			int(requestBody.DatabasePort),
-		)
+		if Nodes == nil {
+			Nodes = make(map[string]*utils.PeerNode)
+		}
 
 		Nodes[requestBody.BlockchainAddress] = node
 		go node.Start(node, requestBody.UseMdns)
@@ -47,10 +53,27 @@ func startNode() http.HandlerFunc {
 
 }
 
+func addTopic() http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		networking.PostValidator(request, response)
+		var requestBody utils.SimulationAppTopicRequest
+		json.NewDecoder(request.Body).Decode(&requestBody)
+		node := Nodes[requestBody.BlockchainAddress]
+		bodyData, err := json.Marshal(requestBody)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		networking.MakePostRequestToServer(node.ExternalServer, "/add-topic", bodyData)
+		networking.SendJson(response, map[string]interface{}{"success": true})
+	}
+}
+
 func stopNode() http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.PostValidator(request, response)
-		var requestBody utils.StopNodeRequest
+		var requestBody utils.SimulationStopNodeRequest
 		json.NewDecoder(request.Body).Decode(&requestBody)
 
 		peers.StopPeer(Nodes[requestBody.BlockchainAddress])

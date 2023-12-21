@@ -1,4 +1,7 @@
-export function capitalizeWords(inputString: string) {
+export function capitalizeWords(inputString: string | null) {
+    if (!inputString) {
+        return ""
+    }
     return inputString.replace(/\b\w/g, (char: string) => char.toUpperCase());
 }
 

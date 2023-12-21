@@ -25,7 +25,7 @@ export const createStep = async (step: Step | Partial<Step>) => {
 }
 
 export const deleteStep = async (stepId: string) => {
-    return internalRequest<Step[]>({
+    return internalRequest<Step>({
         url: stepUrl,
         method: HttpMethod.DELETE,
         body: {

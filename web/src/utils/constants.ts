@@ -34,8 +34,8 @@ export const DEFAULT_NODE_OPTIONS = {
         [PeerType.REQUESTOR]: 8701,
         [PeerType.TRAINER]: 8702,
         [PeerType.VALIDATOR]: 8703,
-        [PeerType.NO_ROLE]: -1,
-        [PeerType.CHALLENGER]: -1
+        [PeerType.NO_ROLE]: 0,
+        [PeerType.CHALLENGER]: 0
     }
 }
 
@@ -51,8 +51,15 @@ export const STEPS_DICTIONARY = enumToDictionary(StepTypes);
 
 export const STEPS_CONFIG = {
     [StepTypes.REQUESTOR_ADD_TOPIC]: {
-        apiPath: "/add-topic",
+        apiPath: "/requestor/add-topic",
         apiMethod: HttpMethod.POST
-
-    }
+    },
+    [StepTypes.TRAINER_ADD_TOPIC]: {
+        apiPath: "/trainer/add-topic",
+        apiMethod: HttpMethod.POST
+    },
+    [StepTypes.REQUESTOR_START_TRAINING]: {
+        apiPath: "/requestor/start-training",
+        apiMethod: HttpMethod.POST
+    },
 }

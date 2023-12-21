@@ -3,7 +3,7 @@
 import NodeManager from "@/components/NodeManager";
 import { ScreenContext } from "@/contexts/ScreenContext";
 import { ProtocolNode, ScreensURLs } from "@/utils/types";
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import StepManager from "@/components/StepManager";
 
 export default function Home() {
@@ -12,7 +12,6 @@ export default function Home() {
     setCurrentScreen(ScreensURLs.HOME)
   }, [])
   const selectedNodeCallback = (node: ProtocolNode | null) => {
-
   }
 
 
@@ -21,6 +20,7 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-[360px,1fr] gap-5 items-start h-full">
         <NodeManager nodeCallback={selectedNodeCallback}></NodeManager>
         <StepManager></StepManager>
+        {isMobile && <div className="bg-gray-100 text-gray-100">{"Hello World"}</div>}
       </div>
     </main>
   )

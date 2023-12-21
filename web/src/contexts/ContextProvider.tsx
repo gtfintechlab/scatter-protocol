@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { ScreensURLs, Workspace } from "@/utils/types";
 import { ScreenContext } from "@/contexts/ScreenContext";
-import { ProtocolContext } from "./ProtocolContext";
+import { ProtocolContext, StepContext } from "./ProtocolContext";
 
 export default function ContextProvider({
     children
@@ -12,6 +12,7 @@ export default function ContextProvider({
     const [isMobile, setIsMobile] = useState<boolean>(false);
     const [currentScreen, setCurrentScreen] = useState<ScreensURLs>(ScreensURLs.HOME)
     const [currentWorkspace, setWorkspace] = useState<Workspace>({ name: undefined, _id: undefined });
+    const [stepUpdateKey, setUpdateKey] = useState<number>(0);
 
     useEffect(() => {
         const handleResize = () => {
@@ -47,7 +48,9 @@ export default function ContextProvider({
                 currentWorkspace,
                 setCurrentWorkspace: (workspace: Workspace) => { setWorkspace({ ...workspace }) }
             }}>
-                {children}
+                <StepContext.Provider value={{ stepUpdateKey, setStepUpdateKey: (key: number) => setUpdateKey(key) }}>
+                    {children}
+                </StepContext.Provider>
 
             </ProtocolContext.Provider>
         </ScreenContext.Provider>)

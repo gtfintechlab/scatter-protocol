@@ -29,6 +29,9 @@ import (
 )
 
 func ClearDatabase(datastore *sql.DB) {
+	if datastore == nil {
+		return
+	}
 	_, err := datastore.Query(`DROP SCHEMA public CASCADE;`)
 
 	if err != nil {

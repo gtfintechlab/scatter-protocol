@@ -61,7 +61,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				return
 			}
 
-			if requestBody.EvaluationJob == nil {
+			if requestBody.EvaluationJobPath == nil {
 				networking.SendJson(response, map[string]interface{}{
 					"success": false,
 					"Error":   "requestors must include an evaluation job",
@@ -69,12 +69,12 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				return
 			}
 
-			zippedTrainingFileBytes, _ := networking.ZipFolder(*requestBody.Path)
-			zippedTrainingJobPath := fmt.Sprintf("%s/%s_%s_training.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
+			zippedTrainingFileBytes, _ := networking.ZipFolder(*requestBody.TrainingJobPath)
+			zippedTrainingJobPath := fmt.Sprintf("%s/%s_%s_training.zip", *requestBody.TrainingJobPath, *node.BlockchainAddress, requestBody.Topic)
 			networking.WriteBytesToFile(zippedTrainingJobPath, zippedTrainingFileBytes.Bytes())
 
-			zippedEvaluationFileBytes, _ := networking.ZipFolder(*requestBody.EvaluationJob)
-			zippedEvaluationJobPath := fmt.Sprintf("%s/%s_%s_evaluation.zip", *requestBody.Path, *node.BlockchainAddress, requestBody.Topic)
+			zippedEvaluationFileBytes, _ := networking.ZipFolder(*requestBody.EvaluationJobPath)
+			zippedEvaluationJobPath := fmt.Sprintf("%s/%s_%s_evaluation.zip", *requestBody.TrainingJobPath, *node.BlockchainAddress, requestBody.Topic)
 			networking.WriteBytesToFile(zippedEvaluationJobPath, zippedEvaluationFileBytes.Bytes())
 
 			trainingTopicCid, evaluationTopicCid, _ := protocol.AddTopicForRequestor(node, zippedTrainingJobPath, zippedEvaluationJobPath, requestBody.Topic, *requestBody.Reward, *requestBody.ValidationThreshold)
@@ -85,7 +85,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				requestBody.Topic,
 				nil,
 				&evaluationTopicCid,
-				requestBody.EvaluationJobData,
+				requestBody.EvaluationJobDataPath,
 			)
 
 			os.RemoveAll(zippedTrainingJobPath)
@@ -100,7 +100,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			var requestBody utils.AddTopicRequestBody
 			json.NewDecoder(request.Body).Decode(&requestBody)
 
-			if requestBody.Path == nil {
+			if requestBody.TrainingJobPath == nil {
 				response.WriteHeader(http.StatusBadRequest)
 				fmt.Fprintln(response,
 					"Trainer nodes must specify a path to the data of the topic they want to subscribe to")
@@ -112,7 +112,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				*requestBody.RequestorAddress,
 				protocol.GetTrainingJobFromAddressAndTopic(node, *requestBody.RequestorAddress, requestBody.Topic),
 				requestBody.Topic,
-				requestBody.Path,
+				requestBody.TrainingJobPath,
 				nil,
 				nil,
 			)
@@ -121,7 +121,7 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				"success":            true,
 				"requestor_address":  *requestBody.RequestorAddress,
 				"topic":              requestBody.Topic,
-				"training_data_path": requestBody.Path,
+				"training_data_path": requestBody.TrainingJobPath,
 			})
 		}
 	}

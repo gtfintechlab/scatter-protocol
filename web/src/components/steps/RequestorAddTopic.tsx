@@ -1,7 +1,7 @@
 import { getNodesForWorkspace } from "@/actions/ProtocolNode";
-import { ProtocolContext } from "@/contexts/ProtocolContext";
+import { ProtocolContext, StepContext } from "@/contexts/ProtocolContext";
 import { DEFAULT_STEP_OPTIONS, STEPS_CONFIG } from "@/utils/constants";
-import { ProtocolNode, Step, StepTypes } from "@/utils/types";
+import { PeerType, ProtocolNode, Step, StepTypes } from "@/utils/types";
 import { useContext, useEffect, useState } from "react"
 import NodeDropdown from "../NodeDropdown";
 import { createStep, getStepsByWorkspace } from "@/actions/Step";
@@ -18,6 +18,7 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
     const [submitting, setSubmitting] = useState<boolean>(false);
     const [workspaceNodes, setWorkspacesNodes] = useState<ProtocolNode[]>([]);
     const { currentWorkspace } = useContext(ProtocolContext)
+    const { setStepUpdateKey, stepUpdateKey } = useContext(StepContext);
 
     const setDefaultValues = () => {
         setTopicName(DEFAULT_STEP_OPTIONS.topicName)
@@ -43,7 +44,7 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
             }
 
             const nodes = await getNodesForWorkspace(currentWorkspace._id?.toString())
-            setWorkspacesNodes([...nodes])
+            setWorkspacesNodes([...nodes.filter((node) => { return (node.peerType === PeerType.REQUESTOR) })])
         }
         setDefaultValues()
         workspaceNodeSetter().then().catch()
@@ -67,7 +68,7 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
                 evaluationJobPath
             },
             workspaceId: currentWorkspace._id?.toString() as string,
-            node: selectedNode,
+            nodeId: selectedNode,
             order: steps.length
         }
 
@@ -75,6 +76,7 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
         setSubmitting(false);
 
         completionCallback();
+        setStepUpdateKey(stepUpdateKey + 1)
     }
 
     return (

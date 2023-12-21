@@ -24,7 +24,7 @@ function NodeDropdown({
         }
     }
     return (
-        <div className="">
+        <div className="relative">
             <div className="p-2 border-none outline-none bg-gray-100 text-sm rounded-md flex flex-row gap-x-2 w-64 items-center cursor-pointer justify-between" onClick={() => setIsOpen(!isOpen)}>
                 {!selectedDisplay && <div className="text-gray-500">Select One</div>}
                 {selectedDisplay && <div className="text-gray-500 flex flex-row w-full">
@@ -35,7 +35,7 @@ function NodeDropdown({
                 {!isOpen && <IoChevronDownOutline className="text-gray-500" />}
                 {isOpen && <IoChevronUpOutline className="text-gray-500" />}
             </div>
-            {isOpen && <div className="mt-2 w-64 rounded-md shadow-sm bg-white ring-1 ring-black ring-opacity-5 absolute z-50">
+            {isOpen && <div className="absolute left-0 top-8 mt-3 ml-1 w-64 rounded-md shadow-sm bg-white ring-1 ring-black ring-opacity-5 absolute z-50">
                 <div
                     className="max-h-48 overflow-y-scroll"
                     role="menu"

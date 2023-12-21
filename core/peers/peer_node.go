@@ -2,6 +2,7 @@ package peers
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"sync"
@@ -32,7 +33,12 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 	log.Println("Peer Node:", node.ID())
 
 	ps, _ := pubsub.NewGossipSub(context.Background(), node)
-	database := peerDatabase.ConnectToPostgres(peerType, databaseUsername, databasePassword, databasePort)
+	var database *sql.DB
+	if databasePort != 0 {
+		database = peerDatabase.ConnectToPostgres(peerType, databaseUsername, databasePassword, databasePort)
+	} else {
+		database = nil
+	}
 	jq := utils.NewJobProcessor(1)
 	jq.StartWorkers(1)
 	peerNode := utils.PeerNode{
@@ -94,7 +100,6 @@ func StartPeer(node *utils.PeerNode, useMdns bool) {
 
 func StopPeer(node *utils.PeerNode) {
 	node.ExternalServer.Close()
-	(*node.PeerToPeerServer).Close()
 }
 
 func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {

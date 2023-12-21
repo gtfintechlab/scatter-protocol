@@ -58,11 +58,11 @@
             "action": "POST /node/topic/add",
             "body": {
                 "topic": "requestor topic 1",
-                "path": "training/requestor/train",
+                "trainingJobPath": "training/requestor/train",
                 "reward": 1000,
                 "validationThreshold": 40, 
-                "evaluationJob": "training/requestor/validate",
-                "evaluationJobData": "training/data/requestor/validate"
+                "evaluationJobPath": "training/requestor/validate",
+                "evaluationJobDataPath": "training/data/requestor/validate"
             }
         },
         {
@@ -98,11 +98,11 @@
             "action": "POST /node/topic/add",
             "body": {
                 "topic": "requestor topic 2",
-                "path": "training/requestor/train",
+                "trainingJobPath": "training/requestor/train",
                 "reward": 1000,
                 "validationThreshold": 40, 
-                "evaluationJob": "training/requestor/validate",
-                "evaluationJobData": "training/data/requestor/validate"
+                "evaluationJobPath": "training/requestor/validate",
+                "evaluationJobDataPath": "training/data/requestor/validate"
             }
         },
         {

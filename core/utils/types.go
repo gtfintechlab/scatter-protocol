@@ -141,14 +141,14 @@ type TrainingInfoFromRequestor struct {
 }
 
 type AddTopicRequestBody struct {
-	Topic               string  `json:"topic"`
-	RequestorAddress    *string `json:"requestorAddress,omitempty"`
-	Path                *string `json:"path,omitempty"`
-	Reward              *int64  `json:"reward,omitempty"`
-	Stake               *int64  `json:"stake,omitempty"`
-	ValidationThreshold *int64  `json:"validationThreshold,omitempty"`
-	EvaluationJob       *string `json:"evaluationJob,omitempty"`
-	EvaluationJobData   *string `json:"evaluationJobData,omitempty"`
+	Topic                 string  `json:"topic"`
+	RequestorAddress      *string `json:"requestorAddress,omitempty"`
+	TrainingJobPath       *string `json:"trainingJobPath,omitempty"`
+	Reward                *int64  `json:"reward,omitempty"`
+	Stake                 *int64  `json:"stake,omitempty"`
+	ValidationThreshold   *int64  `json:"validationThreshold,omitempty"`
+	EvaluationJobPath     *string `json:"evaluationJobPath,omitempty"`
+	EvaluationJobDataPath *string `json:"evaluationJobDataPath,omitempty"`
 }
 
 type PublishTopicRequestBody struct {
@@ -249,7 +249,7 @@ type DebugEvent struct {
 	Message string
 }
 
-type StartNodeRequest struct {
+type SimulationStartNodeRequest struct {
 	PeerType          string `json:"peerType"`
 	ApiPort           uint   `json:"apiPort"`
 	PostgresUsername  string `json:"postgresUsername"`
@@ -261,6 +261,10 @@ type StartNodeRequest struct {
 	UseMdns           bool   `json:"useMdns"`
 }
 
-type StopNodeRequest struct {
+type SimulationAppTopicRequest struct {
+	BlockchainAddress string `json:"blockchainAddress"`
+}
+
+type SimulationStopNodeRequest struct {
 	BlockchainAddress string `json:"blockchainAddress"`
 }

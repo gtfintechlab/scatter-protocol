@@ -1,9 +1,10 @@
-function getBaseURL() {
-    return "http://localhost:3000";
-}
-
 export const urls = {
-    baseUrl: getBaseURL(),
+    baseUrl: "http://localhost:3000",
+    externalUrl: "http://localhost:2000",
+    external: {
+        startNode: "/start-node",
+        stopNode: "/stop-node"
+    },
     api: {
         nodes: {
             general: "/api/nodes"

@@ -69,6 +69,8 @@ export enum HttpMethod {
 }
 
 export enum StepTypes {
+    DEPLOY_PROTOCOL = "Deploy Protocol",
+    PROTOCOL_OWNER_TRANSFER_TOKEN = "Protocol Owner - Transfer Initial Supply",
     REQUESTOR_ADD_TOPIC = "Requestor - Add Topic",
     GET_PUBLISHED_TOPIC = "Get Published Topics",
     TRAINER_ADD_TOPIC = "Trainer - Add Topic",
@@ -82,7 +84,7 @@ export interface Step {
     apiMethod: HttpMethod;
     body: Record<string, string | number>;
     workspaceId: Types.ObjectId | string;
-    node: Types.ObjectId | string;
+    nodeId: Types.ObjectId | string;
     order: number;
 }
 

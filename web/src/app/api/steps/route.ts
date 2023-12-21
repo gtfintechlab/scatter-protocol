@@ -29,8 +29,8 @@ const route: APIWrapperType = APIWrapper({
         config: {},
         handler: async (req) => {
             const body: DeleteStepRequest = await req.json();
-            const workspace = await deletStepById(body.stepId)
-            return workspace
+            const step = await deletStepById(body.stepId)
+            return step
         },
     }
 
