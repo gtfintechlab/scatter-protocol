@@ -1,4 +1,5 @@
-import { PeerType, ScreensURLs } from "@/utils/types";
+import { HttpMethod, PeerType, ScreensURLs, StepTypes } from "@/utils/types";
+import { enumToDictionary } from "./format";
 
 // Home page for steps the simulations go through
 // Environment to configure blockchain env
@@ -33,7 +34,25 @@ export const DEFAULT_NODE_OPTIONS = {
         [PeerType.REQUESTOR]: 8701,
         [PeerType.TRAINER]: 8702,
         [PeerType.VALIDATOR]: 8703,
-        [PeerType.NO_ROLE]: 0,
-        [PeerType.CHALLENGER]: 0
+        [PeerType.NO_ROLE]: -1,
+        [PeerType.CHALLENGER]: -1
+    }
+}
+
+export const DEFAULT_STEP_OPTIONS = {
+    topicName: "cats and dogs",
+    trainingJobPath: "training/requestor/train",
+    reward: 1000,
+    validationThreshold: 40,
+    evaluationJobPath: "training/requestor/validate",
+    evaluationJobDataPath: "training/data/requestor/validate"
+}
+export const STEPS_DICTIONARY = enumToDictionary(StepTypes);
+
+export const STEPS_CONFIG = {
+    [StepTypes.REQUESTOR_ADD_TOPIC]: {
+        apiPath: "/add-topic",
+        apiMethod: HttpMethod.POST
+
     }
 }

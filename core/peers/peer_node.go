@@ -92,6 +92,11 @@ func StartPeer(node *utils.PeerNode, useMdns bool) {
 	select {}
 }
 
+func StopPeer(node *utils.PeerNode) {
+	node.ExternalServer.Close()
+	(*node.PeerToPeerServer).Close()
+}
+
 func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 	// "Public" method handlers for peers to communicate with your node
 	return func(stream network.Stream) {

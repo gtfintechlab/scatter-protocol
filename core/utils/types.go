@@ -260,3 +260,7 @@ type StartNodeRequest struct {
 	DummyLoad         bool   `json:"dummyLoad"`
 	UseMdns           bool   `json:"useMdns"`
 }
+
+type StopNodeRequest struct {
+	BlockchainAddress string `json:"blockchainAddress"`
+}

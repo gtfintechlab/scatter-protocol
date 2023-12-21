@@ -68,6 +68,24 @@ export enum HttpMethod {
     DELETE = "DELETE",
 }
 
+export enum StepTypes {
+    REQUESTOR_ADD_TOPIC = "Requestor - Add Topic",
+    GET_PUBLISHED_TOPIC = "Get Published Topics",
+    TRAINER_ADD_TOPIC = "Trainer - Add Topic",
+    REQUESTOR_START_TRAINING = "Requestor - Start Training"
+}
+
+export interface Step {
+    _id: Types.ObjectId;
+    type: StepTypes;
+    apiPath: string;
+    apiMethod: HttpMethod;
+    body: Record<string, string | number>;
+    workspaceId: Types.ObjectId | string;
+    node: Types.ObjectId | string;
+    order: number;
+}
+
 export interface InternalRequest extends NextApiRequest {
     body: { [key: string]: unknown };
 }

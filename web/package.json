@@ -3,17 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "docker compose up -d && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "hardhat": "^2.19.3",
     "mongoose": "^8.0.3",
     "next": "14.0.4",
     "react": "^18",
     "react-dom": "^18",
-    "hardhat": "^2.19.3"
+    "react-icons": "^4.12.0"
   },
   "devDependencies": {
     "@types/node": "^20",

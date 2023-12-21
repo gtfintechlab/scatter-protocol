@@ -28,7 +28,7 @@ import (
 	"github.com/gtfintechlab/scatter-protocol/core/utils"
 )
 
-func clearDatabase(datastore *sql.DB) {
+func ClearDatabase(datastore *sql.DB) {
 	_, err := datastore.Query(`DROP SCHEMA public CASCADE;`)
 
 	if err != nil {
@@ -88,7 +88,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				utils.SCATTER_TOKEN_CONTRACT,
 			)
 
-			clearDatabase(createdNode.DataStore)
+			ClearDatabase(createdNode.DataStore)
 			peerDatabase.MigratePeerDB("up",
 				node.Type,
 				*node.DatastoreUsername,
@@ -120,7 +120,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 			protocol.AddScatterTokenStake(createdNode, utils.VALIDATOR_STAKE)
 			protocol.InitValidatorNode(createdNode)
 
-			clearDatabase(createdNode.DataStore)
+			ClearDatabase(createdNode.DataStore)
 			peerDatabase.MigratePeerDB("up",
 				node.Type,
 				*node.DatastoreUsername,

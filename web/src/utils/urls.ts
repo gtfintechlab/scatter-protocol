@@ -13,6 +13,9 @@ export const urls = {
         },
         web3: {
             accounts: "/api/web3/accounts"
+        },
+        steps: {
+            general: "/api/steps"
         }
     }
 };

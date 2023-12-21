@@ -54,13 +54,17 @@ export default function NodeCard({ node, onEdit, updateCallback }: { node: Proto
                     setInUpdateState(false);
                 }} disabled={inUpdateState}>Edit Node</button>
             </div>}
-            {(currentScreen === ScreensURLs.HOME && node.state === ProtocolNodeState.STOPPED) && <div className={`col-span-2 bg-green-500 text-white rounded-md p-1 border-2 border-green-500 hover:text-green-500 hover:bg-white`}>
+            {(currentScreen === ScreensURLs.HOME && node.state === ProtocolNodeState.STOPPED) && <div className={`bg-green-500 text-white rounded-md p-1 border-2 border-green-500 hover:text-green-500 hover:bg-white`}>
                 <button className="w-full text-center" onClick={() => {
                 }} disabled={inUpdateState}>Start Node</button>
             </div>}
-            {(currentScreen === ScreensURLs.HOME && node.state === ProtocolNodeState.STARTED) && <div className={`col-span-2 bg-green-500 text-white rounded-md p-1 border-2 border-green-500 hover:text-green-500 hover:bg-white`}>
+            {(currentScreen === ScreensURLs.HOME && node.state === ProtocolNodeState.STARTED) && <div className={`bg-green-500 text-white rounded-md p-1 border-2 border-green-500 hover:text-green-500 hover:bg-white`}>
                 <button className="w-full text-center" onClick={() => {
                 }} disabled={inUpdateState}>Stop Node</button>
+            </div>}
+            {(currentScreen === ScreensURLs.HOME) && <div className={`bg-blue-500 text-white rounded-md p-1 border-2 border-blue-500 hover:text-blue-500 hover:bg-white`}>
+                <button className="w-full text-center" onClick={() => {
+                }} disabled={inUpdateState}>View Steps</button>
             </div>}
 
         </div>
