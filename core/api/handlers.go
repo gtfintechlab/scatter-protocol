@@ -30,6 +30,7 @@ func startNode() http.HandlerFunc {
 			requestBody.BlockchainAddress,
 			utils.RemoveHexPrefix(requestBody.PrivateKey),
 			requestBody.DummyLoad,
+			true,
 		)
 		if int(requestBody.DatabasePort) != 0 {
 			simulation.ClearDatabase(node.DataStore)
@@ -60,12 +61,11 @@ func addTopic() http.HandlerFunc {
 		json.NewDecoder(request.Body).Decode(&requestBody)
 		node := Nodes[requestBody.BlockchainAddress]
 		bodyData, err := json.Marshal(requestBody)
-
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		networking.MakePostRequestToServer(node.ExternalServer, "/add-topic", bodyData)
+		networking.MakePostRequestToServer(node.ExternalServer, "/node/topic/add", bodyData)
 		networking.SendJson(response, map[string]interface{}{"success": true})
 	}
 }
@@ -98,6 +98,22 @@ func deployProtocol() http.HandlerFunc {
 	}
 }
 
+func startTraining() http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		networking.PostValidator(request, response)
+		var requestBody utils.SimulationStartTrainingRequest
+		json.NewDecoder(request.Body).Decode(&requestBody)
+		node := Nodes[requestBody.BlockchainAddress]
+		bodyData, err := json.Marshal(requestBody)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		networking.MakePostRequestToServer(node.ExternalServer, "/node/training/start", bodyData)
+		networking.SendJson(response, map[string]interface{}{"success": true})
+	}
+}
+
 func transferInitialSupply() http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.PostValidator(request, response)
@@ -106,13 +122,14 @@ func transferInitialSupply() http.HandlerFunc {
 
 		for address, amount := range requestBody.TransferAmounts {
 			transferToken(
-				requestBody.PrivateKey,
+				utils.RemoveHexPrefix(requestBody.PrivateKey),
 				int64(amount),
 				address,
 				"ws://127.0.0.1:8545",
 				utils.ReadContractInfo().ScatterTokenContract,
 			)
 		}
+		networking.SendJson(response, map[string]interface{}{"success": true})
 
 	}
 }

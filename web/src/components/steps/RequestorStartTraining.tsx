@@ -48,7 +48,8 @@ export default function RequestorStartTraining({ completionCallback }: { complet
             apiPath,
             apiMethod,
             body: {
-                topic: topicName
+                blockchainAddress: node.blockchainAddress,
+                topicName: topicName
             },
             workspaceId: currentWorkspace._id?.toString() as string,
             nodeId: node._id,

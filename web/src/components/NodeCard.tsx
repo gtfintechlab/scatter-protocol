@@ -7,7 +7,7 @@ import { ProtocolNode, ProtocolNodeState, ScreensURLs } from "@/utils/types";
 import { useContext, useState } from "react";
 
 
-export default function NodeCard({ node, onEdit, updateCallback }: { node: ProtocolNode, updateCallback: () => void, onEdit?: () => void }) {
+export default function NodeCard({ node, onEdit, updateCallback, disableStart }: { node: ProtocolNode, updateCallback: () => void, onEdit?: () => void, disableStart?: boolean }) {
     const { currentScreen } = useContext(ScreenContext);
     const [inUpdateState, setInUpdateState] = useState<boolean>(false);
 
@@ -68,19 +68,20 @@ export default function NodeCard({ node, onEdit, updateCallback }: { node: Proto
                     setInUpdateState(false);
                 }} disabled={inUpdateState}>Edit Node</button>
             </div>}
-            {(currentScreen === ScreensURLs.HOME && node.state === ProtocolNodeState.STOPPED) && <div className={`bg-green-500 text-white rounded-md p-1 border-2 border-green-500 hover:text-green-500 hover:bg-white`}>
-                <button className="w-full text-center" onClick={async () => {
-                    await startProtocolNode()
-                }} disabled={inUpdateState}>Start Node</button>
+            {(currentScreen === ScreensURLs.HOME && node.state === ProtocolNodeState.STOPPED) && <div className={`bg-green-500 text-white rounded-md p-1 border-2 border-green-500 hover:text-green-500 hover:bg-white ${disableStart || inUpdateState ? "opacity-50" : ""}`}>
+                <button className="w-full text-center"
+                    onClick={async () => {
+                        await startProtocolNode()
+                    }} disabled={disableStart || inUpdateState}>Start Node</button>
             </div>}
-            {(currentScreen === ScreensURLs.HOME && node.state === ProtocolNodeState.STARTED) && <div className={`bg-red-500 text-white rounded-md p-1 border-2 border-red-500 hover:text-red-500 hover:bg-white`}>
+            {(currentScreen === ScreensURLs.HOME && node.state === ProtocolNodeState.STARTED) && <div className={`bg-red-500 text-white rounded-md p-1 border-2 border-red-500 hover:text-red-500 hover:bg-white ${disableStart || inUpdateState ? "opacity-50" : ""}`}>
                 <button className="w-full text-center" onClick={async () => {
                     await stopProtocolNode()
-                }} disabled={inUpdateState}>Stop Node</button>
+                }} disabled={disableStart || inUpdateState}>Stop Node</button>
             </div>}
             {(currentScreen === ScreensURLs.HOME) && <div className={`bg-blue-500 text-white rounded-md p-1 border-2 border-blue-500 hover:text-blue-500 hover:bg-white`}>
                 <button className="w-full text-center" onClick={async () => {
-                }} disabled={inUpdateState}>View Steps</button>
+                }}>View Steps</button>
             </div>}
 
         </div>

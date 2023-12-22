@@ -75,7 +75,7 @@ func main() {
 			dbPort = 8702
 		}
 		peerNode := peer.InitPeerNode(peerType, apiPort, "postgres", "postgres", dbPort,
-			os.Getenv("BLOCKCHAIN_ADDRESS"), os.Getenv("PRIVATE_KEY"), dummyLoadBool)
+			os.Getenv("BLOCKCHAIN_ADDRESS"), os.Getenv("PRIVATE_KEY"), dummyLoadBool, false)
 		peerNode.Start(peerNode, mdnsProtocol)
 	}
 

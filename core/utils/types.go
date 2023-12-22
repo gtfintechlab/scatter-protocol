@@ -109,8 +109,9 @@ type PeerNode struct {
 	PubSubService        *pubsub.PubSub              // PubSub Service for the node
 	PubSubTopics         *map[string]*pubsub.Topic   // PubSub Topics for topics we have subscribed to
 	TrainingLock         *map[string]map[string]bool // A training lock to ensure subsequent fired emits don't cause extra training
-	JobQueue             *JobProcessor
-	DummyLoad            *bool
+	JobQueue             *JobProcessor               // Asynchrnous job queue to process training requests
+	DummyLoad            *bool                       // Use dummy data to make simulations go faster
+	LogMode              *bool                       // Log mode to keep track of metrics during simulations
 }
 
 // JobProcessor represents an asynchronous job processor
@@ -141,7 +142,7 @@ type TrainingInfoFromRequestor struct {
 }
 
 type AddTopicRequestBody struct {
-	Topic                 string  `json:"topic"`
+	TopicName             string  `json:"topicName"`
 	RequestorAddress      *string `json:"requestorAddress,omitempty"`
 	TrainingJobPath       *string `json:"trainingJobPath,omitempty"`
 	Reward                *int64  `json:"reward,omitempty"`
@@ -149,22 +150,15 @@ type AddTopicRequestBody struct {
 	ValidationThreshold   *int64  `json:"validationThreshold,omitempty"`
 	EvaluationJobPath     *string `json:"evaluationJobPath,omitempty"`
 	EvaluationJobDataPath *string `json:"evaluationJobDataPath,omitempty"`
-}
-
-type PublishTopicRequestBody struct {
-	Topic string `json:"topic"`
+	TrainingDataPath      *string `json:"trainingDataPath,omitempty"`
 }
 
 type InitializeTrainingRequestBody struct {
-	Topic string `json:"topic"`
+	TopicName string `json:"TopicName"`
 }
 
 type DiscoveryNotifee struct {
 	Host host.Host
-}
-
-type PublishTrainingJobPayload struct {
-	TopicCid string `json:"topicCid"`
 }
 
 type SimulationConfiguration struct {
@@ -263,7 +257,16 @@ type SimulationStartNodeRequest struct {
 }
 
 type SimulationAppTopicRequest struct {
-	BlockchainAddress string `json:"blockchainAddress"`
+	BlockchainAddress     string  `json:"blockchainAddress"`
+	TopicName             string  `json:"topicName"`
+	RequestorAddress      *string `json:"requestorAddress,omitempty"`
+	TrainingJobPath       *string `json:"trainingJobPath,omitempty"`
+	Reward                *int64  `json:"reward,omitempty"`
+	Stake                 *int64  `json:"stake,omitempty"`
+	ValidationThreshold   *int64  `json:"validationThreshold,omitempty"`
+	EvaluationJobPath     *string `json:"evaluationJobPath,omitempty"`
+	EvaluationJobDataPath *string `json:"evaluationJobDataPath,omitempty"`
+	TrainingDataPath      *string `json:"trainingDataPath,omitempty"`
 }
 
 type SimulationStopNodeRequest struct {
@@ -273,6 +276,11 @@ type SimulationStopNodeRequest struct {
 type SimulationDeployProtocolRequest struct {
 	BlockchainAddress string `json:"blockchainAddress"`
 	PrivateKey        string `json:"privateKey"`
+}
+
+type SimulationStartTrainingRequest struct {
+	BlockchainAddress string `json:"blockchainAddress"`
+	TopicName         string `json:"topicName"`
 }
 
 type SimulationTransferInitialSupplyRequest struct {

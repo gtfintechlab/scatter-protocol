@@ -1,4 +1,4 @@
-import { getNodesForWorkspace } from "@/actions/ProtocolNode";
+import { getNodesForWorkspace, getSingleNodeById } from "@/actions/ProtocolNode";
 import { ProtocolContext, StepContext } from "@/contexts/ProtocolContext";
 import { DEFAULT_STEP_OPTIONS, STEPS_CONFIG } from "@/utils/constants";
 import { PeerType, ProtocolNode, Step, StepTypes } from "@/utils/types";
@@ -54,6 +54,7 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
     const submitStep = async () => {
         setSubmitting(true);
         const steps = await getStepsByWorkspace(currentWorkspace._id?.toString() as string);
+        const node = await getSingleNodeById(selectedNode);
 
         const step: Omit<Step, "_id"> = {
             type: StepTypes.REQUESTOR_ADD_TOPIC,
@@ -65,7 +66,8 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
                 reward: reward as number,
                 validationThreshold: validationThreshold as number,
                 evaluationJobDataPath,
-                evaluationJobPath
+                evaluationJobPath,
+                blockchainAddress: node.blockchainAddress
             },
             workspaceId: currentWorkspace._id?.toString() as string,
             nodeId: selectedNode,

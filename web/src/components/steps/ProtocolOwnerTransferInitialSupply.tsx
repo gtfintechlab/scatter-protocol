@@ -52,7 +52,7 @@ export default function ProtocolOwnerTransferInitialSupply({ completionCallback 
             body: {
                 privateKey: node.privateKey,
                 blockchainAddress: node.blockchainAddress,
-                nodeToInitialSupply
+                transferAmounts: nodeToInitialSupply
             },
             workspaceId: currentWorkspace._id?.toString() as string,
             nodeId: node._id,

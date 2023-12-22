@@ -17,7 +17,7 @@ func simulationServerHandlers() http.Handler {
 	r.HandleFunc("/requestor/add-topic", addTopic())
 	r.HandleFunc("/trainer/add-topic", addTopic())
 
-	r.HandleFunc("/requestor/start-training", addTopic())
+	r.HandleFunc("/requestor/start-training", startTraining())
 	r.HandleFunc("/stop-node", stopNode())
 
 	return r

@@ -7,7 +7,9 @@ import (
 	"log"
 	"sync"
 
+	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"github.com/rs/cors"
 
 	"net/http"
 
@@ -22,7 +24,7 @@ import (
 
 func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 	databasePassword string, databasePort int, blockchainAddress string,
-	privateKey string, dummyLoad bool) *utils.PeerNode {
+	privateKey string, dummyLoad bool, logMode bool) *utils.PeerNode {
 	// Create a new libp2p host for the new node
 	node, _ := libp2p.New()
 	table, _ := networking.NewDHT(context.Background(), node)
@@ -59,6 +61,7 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 		TrainingLock:         &map[string]map[string]bool{},
 		JobQueue:             jq,
 		DummyLoad:            &dummyLoad,
+		LogMode:              &logMode,
 	}
 	protocol.SetNodeId(&peerNode, node.ID().String())
 
@@ -83,6 +86,17 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 
 func StartPeer(node *utils.PeerNode, useMdns bool) {
 	serverMux := externalServerHandlers(node)
+
+	// Create a new CORS handler
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"}, // Replace with your Next.js app's URL
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS", "PUT", "DELETE", "PATCH"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	})
+	// Attach the CORS handler to your existing server handler
+	handler := c.Handler(serverMux)
+
 	if useMdns {
 		utils.InitializePeerDiscovery(node.PeerToPeerServer)
 	} else {
@@ -94,7 +108,7 @@ func StartPeer(node *utils.PeerNode, useMdns bool) {
 		)
 	}
 
-	go http.ListenAndServe(node.ExternalServer.Addr, serverMux)
+	go http.ListenAndServe(node.ExternalServer.Addr, handler)
 	select {}
 }
 
@@ -112,8 +126,8 @@ func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 }
 
 // "Private" method handlers for you to communicate with your own node
-func externalServerHandlers(node *utils.PeerNode) *http.ServeMux {
-	serverMux := http.NewServeMux()
+func externalServerHandlers(node *utils.PeerNode) http.Handler {
+	serverMux := mux.NewRouter()
 	serverMux.HandleFunc("/node/health", health(node))
 	serverMux.HandleFunc("/node/role/switch", switchPeerNodeRole(node))
 	serverMux.HandleFunc("/node/topic/add", addTopic(node))

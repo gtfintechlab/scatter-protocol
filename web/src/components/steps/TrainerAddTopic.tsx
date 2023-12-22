@@ -53,17 +53,19 @@ export function TrainerAddTopic({ completionCallback }: { completionCallback: ()
     const submitStep = async () => {
         setSubmitting(true);
         const steps = await getStepsByWorkspace(currentWorkspace._id?.toString() as string);
-        const node = await getSingleNodeById(selectedRequestor);
+        const requestorNode = await getSingleNodeById(selectedRequestor);
+        const trainerNode = await getSingleNodeById(selectedTrainer);
 
         const step: Omit<Step, "_id"> = {
             type: StepTypes.TRAINER_ADD_TOPIC,
             apiPath,
             apiMethod,
             body: {
-                topic: topicName,
-                requestorAddress: node.blockchainAddress,
+                topicName,
+                requestorAddress: requestorNode.blockchainAddress,
                 stake: stake as number,
-                path: trainingDataPath
+                trainingDataPath: trainingDataPath,
+                blockchainAddress: trainerNode.blockchainAddress
             },
             workspaceId: currentWorkspace._id?.toString() as string,
             nodeId: selectedTrainer,

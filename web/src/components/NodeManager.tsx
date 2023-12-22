@@ -16,6 +16,8 @@ export default function NodeManager({ nodeCallback, className }: { nodeCallback:
     const [allStarted, setAllStarted] = useState<boolean>(false);
     const [allStopped, setAllStopped] = useState<boolean>(false);
     const [error, setError] = useState<string>("")
+    const [disableStart, setDisableStart] = useState<boolean>(false);
+
     useEffect(() => {
         const workspaceNodesSetter = async () => {
             if (currentWorkspace._id) {
@@ -33,6 +35,7 @@ export default function NodeManager({ nodeCallback, className }: { nodeCallback:
 
     const runAllNodes = async () => {
         setError("")
+        setDisableStart(true);
         for (let i = 0; i < nodes.length; i++) {
             if (nodes[i].state !== ProtocolNodeState.STARTED) {
                 try {
@@ -43,12 +46,13 @@ export default function NodeManager({ nodeCallback, className }: { nodeCallback:
                 await updateProtocolNode({ ...nodes[i], state: ProtocolNodeState.STARTED })
             }
         }
-
         setUpdateNodes(updateNodes + 1);
+        setDisableStart(false);
     }
 
     const stopAllNodes = async () => {
         setError("")
+        setDisableStart(true);
         for (let i = 0; i < nodes.length; i++) {
             if (nodes[i].state !== ProtocolNodeState.STOPPED) {
                 try {
@@ -61,6 +65,7 @@ export default function NodeManager({ nodeCallback, className }: { nodeCallback:
         }
 
         setUpdateNodes(updateNodes + 1);
+        setDisableStart(false);
     }
     return (
         <div className={`h-full bg-white w-full rounded-md p-4 ${className} flex flex-col gap-2 h-full ${!isMobile ? "overflow-y-scroll" : ""}`}>
@@ -70,22 +75,30 @@ export default function NodeManager({ nodeCallback, className }: { nodeCallback:
                     onClick={() => nodeCallback(null)}
                 >
                     Add a Node</button>}
-                {(currentScreen === ScreensURLs.HOME && !allStarted) && <div className="flex flex-col gap-y-2"><button
-                    className="p-1 text-white w-full border-2 rounded-md border-green-500 bg-green-500 text-center hover:bg-white hover:text-green-500 cursor-pointer"
-                    onClick={async () => await runAllNodes()}
-                >
-                    Start All Nodes</button>
+                {(currentScreen === ScreensURLs.HOME && !allStarted) && <div className="flex flex-col gap-y-2">
+                    <button
+                        className={`p-1 text-white w-full border-2 rounded-md border-green-500 bg-green-500 text-center hover:bg-white hover:text-green-500 cursor-pointer ${disableStart ? "opacity-50" : ""}`}
+                        onClick={async () => await runAllNodes()}
+                        disabled={disableStart}
+                    >
+                        Start All Nodes</button>
                 </div>}
-                {(currentScreen === ScreensURLs.HOME && !allStopped) && <button
-                    className="p-1 text-white w-full border-2 rounded-md border-red-500 bg-red-500 text-center hover:bg-white hover:text-red-500 cursor-pointer"
-                    onClick={async () => await stopAllNodes()}
-                >
-                    Stop All Nodes</button>}
+                {(currentScreen === ScreensURLs.HOME && !allStopped) &&
+                    <button
+                        className={`p-1 text-white w-full border-2 rounded-md border-red-500 bg-red-500 text-center hover:bg-white hover:text-red-500 cursor-pointer ${disableStart ? "opacity-50" : ""}`}
+                        onClick={async () => await stopAllNodes()}
+                        disabled={disableStart}
+                    >
+                        Stop All Nodes
+                    </button>}
                 {error && <p className="text-red-500 text-center text-sm font-semibold">Error: {error}</p>}
             </div>
             <div className="h-full overflow-y-scroll flex flex-col gap-2">
                 {nodes.map((node: ProtocolNode, index: number) => {
-                    return (<NodeCard node={node} key={index} updateCallback={() => setUpdateNodes(updateNodes + 1)} onEdit={() => nodeCallback(node)} />)
+                    return (
+                        <NodeCard node={node} key={index} updateCallback={() => setUpdateNodes(updateNodes + 1)} onEdit={() => nodeCallback(node)}
+                            disableStart={disableStart}
+                        />)
                 })}
             </div>
         </div>

@@ -57,7 +57,7 @@
             "nodeId": "requestor_node",
             "action": "POST /node/topic/add",
             "body": {
-                "topic": "requestor topic 1",
+                "topicName": "requestor topic 1",
                 "trainingJobPath": "training/requestor/train",
                 "reward": 1000,
                 "validationThreshold": 40, 
@@ -79,8 +79,8 @@
             "action": "POST /node/topic/add",
             "body": {
                 "requestorAddress": "{PUBLISHED_TOPICS.topics[0].NodeAddress}",
-                "topic": "{PUBLISHED_TOPICS.topics[0].TopicName}",
-                "path": "/home/samrat/Documents/scatterchain/core/training/data/trainer/example",
+                "topicName": "{PUBLISHED_TOPICS.topics[0].TopicName}",
+                "trainingDataPath": "/home/samrat/Documents/scatterchain/core/training/data/trainer/example",
                 "stake": 500
             }
         },
@@ -89,7 +89,7 @@
             "nodeId": "requestor_node",
             "action": "POST /node/training/start",
             "body": {
-                "topic": "requestor topic 1"
+                "topicName": "requestor topic 1"
             }
         }
     ]

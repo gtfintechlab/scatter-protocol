@@ -82,6 +82,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				*node.BlockchainAddress,
 				*node.PrivateKey,
 				*environment.DummyLoad,
+				false,
 			)
 			transferToken(
 				*environment.ProtocolOwnerPrivateKey,
@@ -111,6 +112,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				*node.BlockchainAddress,
 				*node.PrivateKey,
 				*environment.DummyLoad,
+				false,
 			)
 			transferToken(
 				*environment.ProtocolOwnerPrivateKey,
