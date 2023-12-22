@@ -3,7 +3,7 @@ import { HttpMethod, Step } from "@/utils/types";
 import { urls } from "@/utils/urls";
 
 const stepUrl = urls.baseUrl + urls.api.steps.general;
-
+const stepsByNodeUrl = urls.baseUrl + urls.api.steps.byNode;
 export const getStepsByWorkspace = async (workspaceId: string) => {
     return internalRequest<Step[]>({
         url: stepUrl,
@@ -15,7 +15,7 @@ export const getStepsByWorkspace = async (workspaceId: string) => {
 }
 
 export const createStep = async (step: Step | Partial<Step>) => {
-    return internalRequest<Step[]>({
+    return internalRequest<Step>({
         url: stepUrl,
         method: HttpMethod.POST,
         body: {
@@ -30,6 +30,17 @@ export const deleteStep = async (stepId: string) => {
         method: HttpMethod.DELETE,
         body: {
             stepId
+        }
+    })
+}
+
+
+export const getStepsByNode = async (nodeId: string) => {
+    return internalRequest<Step[]>({
+        url: stepsByNodeUrl,
+        method: HttpMethod.GET,
+        queryParams: {
+            nodeId
         }
     })
 }

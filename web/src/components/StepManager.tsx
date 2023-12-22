@@ -66,7 +66,7 @@ export default function StepManager({ className }: { className?: string }) {
                                 return (
                                     <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted" key={index}>
                                         <td className="p-4 align-middle [&amp;:has([role=checkbox])]:pr-0 text-black border-solid border-b-2 border-gray-300">{step.order}</td>
-                                        <td className="p-4 align-middle [&amp;:has([role=checkbox])]:pr-0 text-black border-solid border-b-2 border-gray-300 truncate">{workspaceNodes[step.nodeId.toString() as string]?.blockchainAddress}</td>
+                                        <td className="p-4 align-middle [&amp;:has([role=checkbox])]:pr-0 text-black border-solid border-b-2 border-gray-300 truncate max-w-[30px]">{workspaceNodes[step.nodeId.toString() as string]?.blockchainAddress}</td>
                                         <td className="p-4 align-middle [&amp;:has([role=checkbox])]:pr-0 text-black border-solid border-b-2 border-gray-300">
                                             <div className={`p-1 bg-${ROLE_TO_COLOR_MAPPING[workspaceNodes[step.nodeId.toString() as string]?.peerType]}-500 rounded-md text-white text-center`}>
                                                 {capitalizeWords(workspaceNodes[step.nodeId.toString() as string]?.peerType)}

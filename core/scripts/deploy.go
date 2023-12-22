@@ -202,6 +202,7 @@ func deployAllContracts(privateKey string) {
 		"EVALUATION_TOKEN_CONTRACT":   evaluationAddress.Hex(),
 		"MODEL_TOKEN_CONTRACT":        modelAddress.Hex(),
 		"REPUTATION_MANAGER_CONTRACT": reputationManagerAddress.Hex(),
+		"VOTE_MANAGER_CONTRACT":       voteManagerAddress.Hex(),
 	}
 
 	jsonData, _ := json.MarshalIndent(contractInfo, "", "  ")

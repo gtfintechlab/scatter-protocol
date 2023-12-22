@@ -259,6 +259,7 @@ type SimulationStartNodeRequest struct {
 	PrivateKey        string `json:"privateKey"`
 	DummyLoad         bool   `json:"dummyLoad"`
 	UseMdns           bool   `json:"useMdns"`
+	IsProtocolOwner   bool   `json:"isProtocolOwner"`
 }
 
 type SimulationAppTopicRequest struct {
@@ -267,4 +268,15 @@ type SimulationAppTopicRequest struct {
 
 type SimulationStopNodeRequest struct {
 	BlockchainAddress string `json:"blockchainAddress"`
+}
+
+type SimulationDeployProtocolRequest struct {
+	BlockchainAddress string `json:"blockchainAddress"`
+	PrivateKey        string `json:"privateKey"`
+}
+
+type SimulationTransferInitialSupplyRequest struct {
+	BlockchainAddress string         `json:"blockchainAddress"`
+	PrivateKey        string         `json:"privateKey"`
+	TransferAmounts   map[string]int `json:"transferAmounts"`
 }

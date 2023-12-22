@@ -10,6 +10,13 @@ export const findStepsByWorkspace = async (workspaceId: string | Types.ObjectId)
     return steps
 }
 
+export const findStepsByNodeId = async (nodeId: string | Types.ObjectId) => {
+    await dbConnect();
+    const steps = await StepModel.find({ nodeId });
+
+    return steps
+}
+
 export const createStep = async (step: Step | Partial<Step>) => {
     await dbConnect();
     const createdStep = await StepModel.create(step);

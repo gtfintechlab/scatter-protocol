@@ -82,7 +82,7 @@ export interface Step {
     type: StepTypes;
     apiPath: string;
     apiMethod: HttpMethod;
-    body: Record<string, string | number>;
+    body: Record<string, string | number | Record<string, string | number>>;
     workspaceId: Types.ObjectId | string;
     nodeId: Types.ObjectId | string;
     order: number;

@@ -26,11 +26,11 @@ import (
 var _ = godotenv.Load(".env")
 var ethereumClient, _ = ethclient.Dial(os.Getenv("ETHEREUM_NODE"))
 
-var scatterProtocolContractAddress common.Address = common.HexToAddress(utils.SCATTER_PROTOCOL_CONTRACT)
-var scatterTokenContractAddress common.Address = common.HexToAddress(utils.SCATTER_TOKEN_CONTRACT)
-var trainingTokenContractAddress common.Address = common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT)
-var evaluationTokenContractAddress common.Address = common.HexToAddress(utils.EVALUATION_TOKEN_CONTRACT)
-var modelTokenContractAddress common.Address = common.HexToAddress(utils.MODEL_TOKEN_CONTRACT)
+var scatterProtocolContractAddress common.Address = common.HexToAddress(utils.ReadContractInfo().ScatterProtocolContract)
+var scatterTokenContractAddress common.Address = common.HexToAddress(utils.ReadContractInfo().ScatterTokenContract)
+var trainingTokenContractAddress common.Address = common.HexToAddress(utils.ReadContractInfo().TrainingTokenContract)
+var evaluationTokenContractAddress common.Address = common.HexToAddress(utils.ReadContractInfo().EvaluationTokenContract)
+var modelTokenContractAddress common.Address = common.HexToAddress(utils.ReadContractInfo().ModelTokenContract)
 
 var scatterProtocolContract, _ = scatterprotocol.NewScatterprotocol(scatterProtocolContractAddress, ethereumClient)
 var scatterTokenContract, _ = scattertoken.NewScattertoken(scatterTokenContractAddress, ethereumClient)

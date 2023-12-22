@@ -45,11 +45,22 @@ export const DEFAULT_STEP_OPTIONS = {
     reward: 1000,
     validationThreshold: 40,
     evaluationJobPath: "training/requestor/validate",
-    evaluationJobDataPath: "training/data/requestor/validate"
+    evaluationJobDataPath: "training/data/requestor/validate",
+    trainingDataPath: "training/data/trainer/example",
+    stake: 500
 }
 export const STEPS_DICTIONARY = enumToDictionary(StepTypes);
 
 export const STEPS_CONFIG = {
+    [StepTypes.DEPLOY_PROTOCOL]: {
+        apiPath: "/deploy-protocol",
+        apiMethod: HttpMethod.POST
+    },
+    [StepTypes.PROTOCOL_OWNER_TRANSFER_TOKEN]: {
+        apiPath: "/transfer-initial-supply",
+        apiMethod: HttpMethod.POST
+    },
+
     [StepTypes.REQUESTOR_ADD_TOPIC]: {
         apiPath: "/requestor/add-topic",
         apiMethod: HttpMethod.POST

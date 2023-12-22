@@ -80,7 +80,7 @@
             "body": {
                 "requestorAddress": "{PUBLISHED_TOPICS.topics[0].NodeAddress}",
                 "topic": "{PUBLISHED_TOPICS.topics[0].TopicName}",
-                "path": "/home/samrat/Documents/scatterchain/training/data/trainer/example",
+                "path": "/home/samrat/Documents/scatterchain/core/training/data/trainer/example",
                 "stake": 500
             }
         },

@@ -27,3 +27,9 @@ export const updateProtocolNode = async (nodeInfo: ProtocolNode | Partial<Protoc
     const node = await ProtocolNodeModel.findOneAndUpdate({ _id: nodeInfo._id }, nodeInfo);
     return node;
 }
+
+export const getNodeById = async (nodeId: string | Types.ObjectId) => {
+    await dbConnect();
+    const node = await ProtocolNodeModel.findOne({ _id: nodeId })
+    return node;
+}

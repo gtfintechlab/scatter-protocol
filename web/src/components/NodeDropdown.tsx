@@ -8,8 +8,9 @@ import { IoChevronDownOutline, IoChevronUpOutline } from "react-icons/io5";
 
 function NodeDropdown({
     items,
-    selectedCallback
-}: { items: Record<string, ProtocolNode>, selectedCallback?: (itemKey: string) => void | Promise<void> }) {
+    selectedCallback,
+    className
+}: { items: Record<string, ProtocolNode>, selectedCallback?: (itemKey: string) => void | Promise<void>, className?: string }) {
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [selectedOption, setSelectedOption] = useState<string | null>(null)
     const [selectedDisplay, setSelectedDisplay] = useState<ProtocolNode | null>(null);
@@ -24,7 +25,7 @@ function NodeDropdown({
         }
     }
     return (
-        <div className="relative">
+        <div className={`relative ${className}`}>
             <div className="p-2 border-none outline-none bg-gray-100 text-sm rounded-md flex flex-row gap-x-2 w-64 items-center cursor-pointer justify-between" onClick={() => setIsOpen(!isOpen)}>
                 {!selectedDisplay && <div className="text-gray-500">Select One</div>}
                 {selectedDisplay && <div className="text-gray-500 flex flex-row w-full">

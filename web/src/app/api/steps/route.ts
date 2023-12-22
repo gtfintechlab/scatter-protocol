@@ -21,8 +21,8 @@ const route: APIWrapperType = APIWrapper({
         config: {},
         handler: async (req) => {
             const body: Step | Partial<Step> = await req.json();
-            const workspace = await createStep(body);
-            return workspace
+            const step = await createStep(body);
+            return step
         },
     },
     DELETE: {

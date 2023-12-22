@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os/exec"
 
 	"github.com/gtfintechlab/scatter-protocol/core/networking"
 	"github.com/gtfintechlab/scatter-protocol/core/peers"
@@ -40,7 +41,6 @@ func startNode() http.HandlerFunc {
 				int(requestBody.DatabasePort),
 			)
 		}
-
 		if Nodes == nil {
 			Nodes = make(map[string]*utils.PeerNode)
 		}
@@ -78,6 +78,41 @@ func stopNode() http.HandlerFunc {
 
 		peers.StopPeer(Nodes[requestBody.BlockchainAddress])
 		delete(Nodes, requestBody.BlockchainAddress)
+
 		networking.SendJson(response, map[string]interface{}{"success": true})
+	}
+}
+
+func deployProtocol() http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		networking.PostValidator(request, response)
+		var requestBody utils.SimulationDeployProtocolRequest
+		json.NewDecoder(request.Body).Decode(&requestBody)
+		utils.ReplaceEnvValue(".env", "BLOCKCHAIN_ADDRESS", utils.RemoveHexPrefix(requestBody.BlockchainAddress))
+		utils.ReplaceEnvValue(".env", "PRIVATE_KEY", utils.RemoveHexPrefix(requestBody.PrivateKey))
+
+		exec.Command("docker-compose", "-f", "docker-compose-contracts.yml", "up").Run()
+		contracts := utils.ReadContractInfo()
+		networking.SendJson(response, map[string]interface{}{"success": true, "payload": contracts})
+
+	}
+}
+
+func transferInitialSupply() http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		networking.PostValidator(request, response)
+		var requestBody utils.SimulationTransferInitialSupplyRequest
+		json.NewDecoder(request.Body).Decode(&requestBody)
+
+		for address, amount := range requestBody.TransferAmounts {
+			transferToken(
+				requestBody.PrivateKey,
+				int64(amount),
+				address,
+				"ws://127.0.0.1:8545",
+				utils.ReadContractInfo().ScatterTokenContract,
+			)
+		}
+
 	}
 }

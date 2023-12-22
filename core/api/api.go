@@ -11,10 +11,12 @@ import (
 
 func simulationServerHandlers() http.Handler {
 	r := mux.NewRouter()
-
+	r.HandleFunc("/deploy-protocol", deployProtocol())
+	r.HandleFunc("/transfer-initial-supply", transferInitialSupply())
 	r.HandleFunc("/start-node", startNode())
 	r.HandleFunc("/requestor/add-topic", addTopic())
 	r.HandleFunc("/trainer/add-topic", addTopic())
+
 	r.HandleFunc("/requestor/start-training", addTopic())
 	r.HandleFunc("/stop-node", stopNode())
 

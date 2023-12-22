@@ -3,6 +3,7 @@ import { HttpMethod, ProtocolNode } from "@/utils/types";
 import { urls } from "@/utils/urls";
 
 const nodeUrl = urls.baseUrl + urls.api.nodes.general;
+const singleNodeUrl = urls.baseUrl + urls.api.nodes.single;
 
 export const getNodesForWorkspace = async (workspaceId: string) => {
     return internalRequest<ProtocolNode[]>({
@@ -40,6 +41,16 @@ export const updateProtocolNode = async (nodeInfo: ProtocolNode | Partial<Protoc
         method: HttpMethod.PATCH,
         body: {
             ...nodeInfo
+        }
+    })
+}
+
+export const getSingleNodeById = async (nodeId: string) => {
+    return internalRequest<ProtocolNode>({
+        url: singleNodeUrl,
+        method: HttpMethod.GET,
+        queryParams: {
+            nodeId
         }
     })
 }

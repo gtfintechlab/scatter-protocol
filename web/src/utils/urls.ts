@@ -7,7 +7,8 @@ export const urls = {
     },
     api: {
         nodes: {
-            general: "/api/nodes"
+            general: "/api/nodes",
+            single: "/api/nodes/single"
         },
         workspaces: {
             general: "/api/workspaces"
@@ -16,7 +17,8 @@ export const urls = {
             accounts: "/api/web3/accounts"
         },
         steps: {
-            general: "/api/steps"
+            general: "/api/steps",
+            byNode: "/api/steps/by-node"
         }
     }
 };
