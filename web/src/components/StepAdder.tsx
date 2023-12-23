@@ -7,6 +7,7 @@ import DeployProtocol from "./steps/DeployProtocol";
 import ProtocolOwnerTransferInitialSupply from "./steps/ProtocolOwnerTransferInitialSupply";
 import { TrainerAddTopic } from "./steps/TrainerAddTopic";
 import RequestorStartTraining from "./steps/RequestorStartTraining";
+import InitializeRoles from "./steps/InitializeRoles";
 
 export function StepAdder({ completeAdditionCallback }: { completeAdditionCallback: () => void }) {
     const [selectedStep, setSelectedStep] = useState<null | StepTypes | string>(null);
@@ -21,6 +22,7 @@ export function StepAdder({ completeAdditionCallback }: { completeAdditionCallba
                 {selectedStep === StepTypes.PROTOCOL_OWNER_TRANSFER_TOKEN && <ProtocolOwnerTransferInitialSupply completionCallback={completeAdditionCallback} />}
                 {selectedStep === StepTypes.TRAINER_ADD_TOPIC && <TrainerAddTopic completionCallback={completeAdditionCallback} />}
                 {selectedStep === StepTypes.REQUESTOR_START_TRAINING && <RequestorStartTraining completionCallback={completeAdditionCallback} />}
+                {selectedStep === StepTypes.INITIALIZE_ROLES && <InitializeRoles completionCallback={completeAdditionCallback} />}
 
             </div>
         </div>)

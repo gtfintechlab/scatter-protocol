@@ -3,11 +3,12 @@ import { StepAdder } from "./StepAdder";
 import { deleteStep, getStepsByWorkspace } from "@/actions/Step";
 import { ProtocolContext, StepContext } from "@/contexts/ProtocolContext";
 import { ProtocolNode, Step } from "@/utils/types";
-import { getNodesForWorkspace } from "@/actions/ProtocolNode";
+import { getNodesForWorkspace, resetProtocolNodesByWorkspace } from "@/actions/ProtocolNode";
 import { ROLE_TO_COLOR_MAPPING } from "@/utils/constants";
 import { capitalizeWords } from "@/utils/format";
 import { externalRequest } from "@/utils/requests";
 import { urls } from "@/utils/urls";
+import { deleteLogEvents } from "@/actions/LogEvent";
 
 export default function StepManager({ className }: { className?: string }) {
     const [stepAddMode, setStepAddMode] = useState<boolean>(false);
@@ -49,6 +50,9 @@ export default function StepManager({ className }: { className?: string }) {
 
     const executeSteps = async () => {
         setIsExecuting(true);
+        await resetProtocolNodesByWorkspace(currentWorkspace._id?.toString() as string);
+        await deleteLogEvents(currentWorkspace._id?.toString() as string)
+
         for (let step of steps) {
             await externalRequest({
                 url: urls.externalUrl + step.apiPath,

@@ -4,12 +4,13 @@ import (
 	"context"
 	"log"
 	"math/big"
+	"os"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/gtfintechlab/scatter-protocol/core/protocol"
 	scattertoken "github.com/gtfintechlab/scatter-protocol/core/protocol/scatter-token"
 )
 
@@ -27,7 +28,9 @@ func getTransactor(ownerPrivateKey string, ethereumNode string) *bind.TransactOp
 		log.Fatal(err)
 	}
 
-	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, protocol.CHAIN)
+	var CHAIN_ID, _ = strconv.Atoi(os.Getenv("CHAIN_ID"))
+	var CHAIN = big.NewInt(int64(CHAIN_ID))
+	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
 	auth.Value = big.NewInt(0)
 	var ethereumClient, _ = ethclient.Dial(ethereumNode)
 	gas, _ := ethereumClient.SuggestGasPrice(context.Background())

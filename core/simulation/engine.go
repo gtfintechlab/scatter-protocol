@@ -83,13 +83,14 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				*node.PrivateKey,
 				*environment.DummyLoad,
 				false,
+				nil,
 			)
 			transferToken(
 				*environment.ProtocolOwnerPrivateKey,
 				int64(*node.InitialScatterTokenSupply),
 				*node.BlockchainAddress,
 				*environment.EthereumNode,
-				utils.SCATTER_TOKEN_CONTRACT,
+				protocol.GetContractInfo().ScatterTokenContract,
 			)
 
 			ClearDatabase(createdNode.DataStore)
@@ -113,13 +114,14 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				*node.PrivateKey,
 				*environment.DummyLoad,
 				false,
+				nil,
 			)
 			transferToken(
 				*environment.ProtocolOwnerPrivateKey,
 				int64(*node.InitialScatterTokenSupply),
 				*node.BlockchainAddress,
 				*environment.EthereumNode,
-				utils.SCATTER_TOKEN_CONTRACT,
+				protocol.GetContractInfo().ScatterTokenContract,
 			)
 
 			protocol.AddScatterTokenStake(createdNode, utils.VALIDATOR_STAKE)
@@ -306,8 +308,10 @@ func getTransactor(ownerPrivateKey string, ethereumNode string) *bind.TransactOp
 	if err != nil {
 		log.Fatal(err)
 	}
+	var CHAIN_ID, _ = strconv.Atoi(os.Getenv("CHAIN_ID"))
+	var CHAIN = big.NewInt(int64(CHAIN_ID))
 
-	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, protocol.CHAIN)
+	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
 	auth.Value = big.NewInt(0)
 	var ethereumClient, _ = ethclient.Dial(ethereumNode)
 	gas, _ := ethereumClient.SuggestGasPrice(context.Background())

@@ -7,14 +7,18 @@ import (
 	"math/big"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/google/uuid"
+	scatterlogs "github.com/gtfintechlab/scatter-protocol/core/logs"
 	"github.com/gtfintechlab/scatter-protocol/core/networking"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/core/peers/db"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	scatterprotocol "github.com/gtfintechlab/scatter-protocol/core/protocol/scatter-protocol"
 	"github.com/gtfintechlab/scatter-protocol/core/utils"
@@ -25,7 +29,7 @@ func TrainingEventListener(node *utils.PeerNode) {
 	contractABI, _ := abi.JSON(strings.NewReader(string(scatterprotocol.ScatterprotocolABI)))
 
 	query := ethereum.FilterQuery{
-		Addresses: []common.Address{common.HexToAddress(utils.SCATTER_PROTOCOL_CONTRACT)},
+		Addresses: []common.Address{common.HexToAddress(GetContractInfo().ScatterProtocolContract)},
 		Topics:    [][]common.Hash{{contractABI.Events["TrainingInitialized"].ID}},
 	}
 
@@ -34,12 +38,14 @@ func TrainingEventListener(node *utils.PeerNode) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	node.Subscriptions.TrainingInitialized = &subscription
 	defer subscription.Unsubscribe()
 
 	for {
 		select {
 		case err := <-subscription.Err():
-			log.Fatal(err)
+			log.Printf("Subscription Closed %s", err)
+			return
 		case event := <-logs:
 			eventUnpacked := utils.TrainingInitializedEvent{}
 			contractABI.UnpackIntoInterface(&eventUnpacked, "TrainingInitialized", event.Data)
@@ -78,7 +84,7 @@ func EvaluationRequestListener(node *utils.PeerNode) {
 	contractABI, _ := abi.JSON(strings.NewReader(string(scatterprotocol.ScatterprotocolABI)))
 
 	query := ethereum.FilterQuery{
-		Addresses: []common.Address{common.HexToAddress(utils.SCATTER_PROTOCOL_CONTRACT)},
+		Addresses: []common.Address{common.HexToAddress(GetContractInfo().ScatterProtocolContract)},
 		Topics:    [][]common.Hash{{contractABI.Events["RequestForEvaluationSet"].ID}},
 	}
 
@@ -92,7 +98,8 @@ func EvaluationRequestListener(node *utils.PeerNode) {
 	for {
 		select {
 		case err := <-subscription.Err():
-			log.Fatal(err)
+			log.Printf("Subscription Closed %s", err)
+			return
 		case event := <-logs:
 			if GetRoleByAddress(node, *node.BlockchainAddress) != utils.PEER_REQUESTOR {
 				return
@@ -116,7 +123,7 @@ func ModelValidationListener(node *utils.PeerNode) {
 	contractABI, _ := abi.JSON(strings.NewReader(string(scatterprotocol.ScatterprotocolABI)))
 
 	query := ethereum.FilterQuery{
-		Addresses: []common.Address{common.HexToAddress(utils.SCATTER_PROTOCOL_CONTRACT)},
+		Addresses: []common.Address{common.HexToAddress(GetContractInfo().ScatterProtocolContract)},
 		Topics:    [][]common.Hash{{contractABI.Events["ModelReadyToValidate"].ID}},
 	}
 
@@ -130,7 +137,8 @@ func ModelValidationListener(node *utils.PeerNode) {
 	for {
 		select {
 		case err := <-subscription.Err():
-			log.Fatal(err)
+			log.Printf("Subscription Closed %s", err)
+			return
 		case event := <-logs:
 			if GetRoleByAddress(node, *node.BlockchainAddress) != utils.PEER_VALIDATOR {
 				return
@@ -152,7 +160,7 @@ func DebugEventListener(node *utils.PeerNode) {
 	contractABI, _ := abi.JSON(strings.NewReader(string(scatterprotocol.ScatterprotocolABI)))
 
 	query := ethereum.FilterQuery{
-		Addresses: []common.Address{common.HexToAddress(utils.SCATTER_PROTOCOL_CONTRACT)},
+		Addresses: []common.Address{common.HexToAddress(GetContractInfo().ScatterProtocolContract)},
 		Topics:    [][]common.Hash{{contractABI.Events["DebugEvent"].ID}},
 	}
 
@@ -166,7 +174,8 @@ func DebugEventListener(node *utils.PeerNode) {
 	for {
 		select {
 		case err := <-subscription.Err():
-			log.Fatal(err)
+			log.Printf("Subscription Closed %s", err)
+			return
 		case event := <-logs:
 			eventUnpacked := utils.DebugEvent{}
 			contractABI.UnpackIntoInterface(&eventUnpacked, "DebugEvent", event.Data)
@@ -174,6 +183,49 @@ func DebugEventListener(node *utils.PeerNode) {
 		}
 	}
 }
+
+func JobCompleteEventListener(node *utils.PeerNode) {
+	contractABI, _ := abi.JSON(strings.NewReader(string(scatterprotocol.ScatterprotocolABI)))
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{common.HexToAddress(GetContractInfo().ScatterProtocolContract)},
+		Topics:    [][]common.Hash{{contractABI.Events["JobComplete"].ID}},
+	}
+
+	logs := make(chan types.Log)
+	subscription, err := ethereumClient.SubscribeFilterLogs(context.Background(), query, logs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer subscription.Unsubscribe()
+
+	for {
+		select {
+		case err := <-subscription.Err():
+			log.Printf("Subscription Closed %s", err)
+			return
+		case event := <-logs:
+			eventUnpacked := utils.JobCompleteEvent{}
+			contractABI.UnpackIntoInterface(&eventUnpacked, "JobComplete", event.Data)
+			if !(*node.LogMode) {
+				return
+			}
+
+			if node.PeerType == utils.PEER_REQUESTOR || node.PeerType == utils.PEER_TRAINER || node.PeerType == utils.PEER_VALIDATOR {
+
+				if *node.LogMode {
+					UpdateTokenSupply(node)
+
+					balance, _ := new(big.Float).SetInt(GetScatterTokenBalance(node)).Float64()
+					timstamp := float64(time.Now().UnixMilli())
+					scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timstamp, balance, node)
+				}
+
+			}
+
+		}
+	}
+}
+
 func TrainingHandler(node *utils.PeerNode, requestorAddress string, topicName string) {
 	if *node.DummyLoad {
 		basePath, _ := os.Getwd()
@@ -229,4 +281,15 @@ func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topic
 		score := runEvaluationContainer(requestorAddress, evaluationJobCid)
 		SubmitEvaluationScore(node, requestorAddress, topicName, trainer, score)
 	}
+}
+
+func UpdateTokenSupply(node *utils.PeerNode) {
+	client, _ := utils.DbConnect()
+	filter := bson.D{{"blockchainAddress", *node.BlockchainAddress}}
+	opts := options.FindOneAndUpdate().SetUpsert(true)
+	tokenSupply := GetScatterTokenBalance(node).Int64()
+	log.Printf("TOKEN BALANCE: %d", tokenSupply)
+	update := bson.D{{"$set", bson.D{{"tokenSupply", tokenSupply}}}}
+	var updatedDocument bson.M
+	client.Collection("protocolnodes").FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&updatedDocument)
 }

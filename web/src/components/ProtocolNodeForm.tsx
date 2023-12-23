@@ -74,7 +74,8 @@ const ProtocolNodeForm = ({ node, nodeCreationCallback }: { node: ProtocolNode |
             setError("Must select a workspace before creating a node")
             return;
         }
-        if (!databasePort || !peerType) {
+        if (databasePort === undefined || !peerType) {
+            console.log(databasePort, peerType)
             setError("Must complete all fields before creating node")
             return;
         }

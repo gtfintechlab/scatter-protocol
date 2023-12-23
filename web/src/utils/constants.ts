@@ -24,7 +24,7 @@ export const WEB3_PATH = "m/44'/60'/0'/0"
 
 export const DEFAULT_NODE_OPTIONS = {
     apiPort: 5002,
-    intialTokenSupply: 10000,
+    intialTokenSupply: 100000,
     useMdns: true,
     useDummyData: true,
     isProtocolOwner: false,
@@ -60,7 +60,10 @@ export const STEPS_CONFIG = {
         apiPath: "/transfer-initial-supply",
         apiMethod: HttpMethod.POST
     },
-
+    [StepTypes.INITIALIZE_ROLES]: {
+        apiPath: "/initialize-roles",
+        apiMethod: HttpMethod.POST
+    },
     [StepTypes.REQUESTOR_ADD_TOPIC]: {
         apiPath: "/requestor/add-topic",
         apiMethod: HttpMethod.POST

@@ -41,7 +41,7 @@ export default function NodeManager({ nodeCallback, className }: { nodeCallback:
                 try {
                     await startNode(nodes[i]);
                 } catch {
-                    setError("Failed to start all nodes");
+                    setError("Failed to start all nodes; Force starting");
                 }
                 await updateProtocolNode({ ...nodes[i], state: ProtocolNodeState.STARTED })
             }
@@ -58,7 +58,7 @@ export default function NodeManager({ nodeCallback, className }: { nodeCallback:
                 try {
                     await stopNode(nodes[i].blockchainAddress);
                 } catch {
-                    setError("Failed to stop all nodes");
+                    setError("Failed to stop all nodes; Force Stopping");
                 }
                 await updateProtocolNode({ ...nodes[i], state: ProtocolNodeState.STOPPED })
             }

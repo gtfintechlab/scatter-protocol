@@ -6,7 +6,7 @@ async function dbConnect(): Promise<void> {
     await mongoose
         .connect(process.env.DATABASE_URL ?? "mongodb://127.0.0.1:27017" as string, {
             socketTimeoutMS: 360000,
-            dbName: process.env.DATABASE_NAME ?? "scatter-protocol-web",
+            dbName: process.env.DATABASE_NAME ?? "scatter-protocol",
         })
         .catch((error) => {
             console.error("Unable to connect to database.");

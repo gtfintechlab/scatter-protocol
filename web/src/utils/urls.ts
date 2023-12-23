@@ -8,7 +8,9 @@ export const urls = {
     api: {
         nodes: {
             general: "/api/nodes",
-            single: "/api/nodes/single"
+            single: "/api/nodes/single",
+            reset: "/api/nodes/reset",
+
         },
         workspaces: {
             general: "/api/workspaces"
@@ -19,6 +21,9 @@ export const urls = {
         steps: {
             general: "/api/steps",
             byNode: "/api/steps/by-node"
+        },
+        events: {
+            logs: "/api/events/logs"
         }
     }
 };

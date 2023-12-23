@@ -71,8 +71,8 @@ export enum HttpMethod {
 export enum StepTypes {
     DEPLOY_PROTOCOL = "Deploy Protocol",
     PROTOCOL_OWNER_TRANSFER_TOKEN = "Protocol Owner - Transfer Initial Supply",
+    INITIALIZE_ROLES = "Initialize Roles",
     REQUESTOR_ADD_TOPIC = "Requestor - Add Topic",
-    GET_PUBLISHED_TOPIC = "Get Published Topics",
     TRAINER_ADD_TOPIC = "Trainer - Add Topic",
     REQUESTOR_START_TRAINING = "Requestor - Start Training"
 }
@@ -104,6 +104,16 @@ export interface InternalResponseData<T> {
     message?: string;
     payload?: T;
 
+}
+
+export interface LogEvent {
+    _id?: Types.ObjectId;
+    logType: string;
+    workspaceId: Types.ObjectId;
+    blockchainAddress: string;
+    xDataPoint: number;
+    yDataPoint: number;
+    createdAt: Date;
 }
 
 export type APIWrapperResponse = Promise<NextResponse<{ success: boolean; message: string; }> | NextResponse<{ success: boolean; payload: unknown; }> | undefined>;

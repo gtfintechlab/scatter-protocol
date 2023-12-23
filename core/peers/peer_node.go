@@ -24,7 +24,7 @@ import (
 
 func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 	databasePassword string, databasePort int, blockchainAddress string,
-	privateKey string, dummyLoad bool, logMode bool) *utils.PeerNode {
+	privateKey string, dummyLoad bool, logMode bool, workspaceId *string) *utils.PeerNode {
 	// Create a new libp2p host for the new node
 	node, _ := libp2p.New()
 	table, _ := networking.NewDHT(context.Background(), node)
@@ -43,6 +43,7 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 	}
 	jq := utils.NewJobProcessor(1)
 	jq.StartWorkers(1)
+
 	peerNode := utils.PeerNode{
 		PeerType:          peerType,
 		Start:             StartPeer,
@@ -62,13 +63,18 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 		JobQueue:             jq,
 		DummyLoad:            &dummyLoad,
 		LogMode:              &logMode,
+		WorkspaceId:          workspaceId,
+		Subscriptions:        &utils.SubscriptionManager{},
+		Subscribe:            Subscribe,
 	}
+
 	protocol.SetNodeId(&peerNode, node.ID().String())
 
 	go protocol.TrainingEventListener(&peerNode)
 	go protocol.EvaluationRequestListener(&peerNode)
 	go protocol.ModelValidationListener(&peerNode)
 	go protocol.DebugEventListener(&peerNode)
+	go protocol.JobCompleteEventListener(&peerNode)
 
 	if protocol.GetRoleByAddress(&peerNode, *peerNode.BlockchainAddress) == utils.PEER_NO_ROLE {
 		switch peerType {
@@ -82,6 +88,14 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 	node.SetStreamHandler(utils.PROTOCOL_IDENTIFIER, peerStreamHandler(&peerNode))
 
 	return &peerNode
+}
+
+func Subscribe(node *utils.PeerNode) {
+	go protocol.TrainingEventListener(node)
+	go protocol.EvaluationRequestListener(node)
+	go protocol.ModelValidationListener(node)
+	go protocol.DebugEventListener(node)
+	go protocol.JobCompleteEventListener(node)
 }
 
 func StartPeer(node *utils.PeerNode, useMdns bool) {

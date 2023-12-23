@@ -9,6 +9,7 @@ import (
 	"github.com/gtfintechlab/scatter-protocol/core/networking"
 	"github.com/gtfintechlab/scatter-protocol/core/peers"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/core/peers/db"
+	"github.com/gtfintechlab/scatter-protocol/core/protocol"
 	"github.com/gtfintechlab/scatter-protocol/core/simulation"
 	"github.com/gtfintechlab/scatter-protocol/core/utils"
 )
@@ -31,6 +32,7 @@ func startNode() http.HandlerFunc {
 			utils.RemoveHexPrefix(requestBody.PrivateKey),
 			requestBody.DummyLoad,
 			true,
+			requestBody.WorkspaceId,
 		)
 		if int(requestBody.DatabasePort) != 0 {
 			simulation.ClearDatabase(node.DataStore)
@@ -70,6 +72,22 @@ func addTopic() http.HandlerFunc {
 	}
 }
 
+func initializeRoles() http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		for _, node := range Nodes {
+			if node.PeerType == utils.PEER_VALIDATOR {
+				protocol.AddScatterTokenStake(node, utils.VALIDATOR_STAKE)
+				protocol.InitValidatorNode(node)
+			} else if node.PeerType == utils.PEER_REQUESTOR {
+				protocol.InitRequestorNode(node)
+			} else if node.PeerType == utils.PEER_TRAINER {
+				protocol.InitTrainerNode(node)
+			}
+		}
+		networking.SendJson(response, map[string]interface{}{"success": true})
+	}
+}
+
 func stopNode() http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		networking.PostValidator(request, response)
@@ -92,7 +110,11 @@ func deployProtocol() http.HandlerFunc {
 		utils.ReplaceEnvValue(".env", "PRIVATE_KEY", utils.RemoveHexPrefix(requestBody.PrivateKey))
 
 		exec.Command("docker-compose", "-f", "docker-compose-contracts.yml", "up").Run()
-		contracts := utils.ReadContractInfo()
+		contracts := protocol.GetContractInfo()
+
+		for _, node := range Nodes {
+			node.Subscribe(node)
+		}
 		networking.SendJson(response, map[string]interface{}{"success": true, "payload": contracts})
 
 	}
@@ -126,7 +148,7 @@ func transferInitialSupply() http.HandlerFunc {
 				int64(amount),
 				address,
 				"ws://127.0.0.1:8545",
-				utils.ReadContractInfo().ScatterTokenContract,
+				protocol.GetContractInfo().ScatterTokenContract,
 			)
 		}
 		networking.SendJson(response, map[string]interface{}{"success": true})

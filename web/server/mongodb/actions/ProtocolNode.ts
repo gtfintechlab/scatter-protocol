@@ -33,3 +33,12 @@ export const getNodeById = async (nodeId: string | Types.ObjectId) => {
     const node = await ProtocolNodeModel.findOne({ _id: nodeId })
     return node;
 }
+
+export const resetNodeTokenSupply = async (workspaceId: string) => {
+    await dbConnect();
+    const nodes = await ProtocolNodeModel.find({ workspaceId: workspaceId });
+
+    for (let i = 0; i < nodes.length; i++) {
+        await ProtocolNodeModel.findOneAndUpdate({ _id: nodes[i]._id }, { tokenSupply: 0 })
+    }
+}

@@ -2,18 +2,18 @@ package utils
 
 import (
 	"database/sql"
-	"encoding/json"
 	"math/big"
 	"net/http"
-	"os"
 	"sync"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
 	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 var BOOTSTRAP_NODE_MULTIADDR string = "/ip4/127.0.0.1/tcp/7001/p2p/QmSgdAwbFv5W1eLwCzmwFT8NqCnQTvWWrj3avtAfWPFjTm"
@@ -32,33 +32,15 @@ var UTIL_RUN_IPFS_NODE = "ipfs"
 var UTIL_DEPLOY_CONTRACTS = "deploy-contracts"
 
 type Contracts struct {
-	ScatterProtocolContract   string `json:"SCATTER_PROTOCOL_CONTRACT"`
-	ScatterTokenContract      string `json:"SCATTER_TOKEN_CONTRACT"`
-	TrainingTokenContract     string `json:"TRAINING_TOKEN_CONTRACT"`
-	EvaluationTokenContract   string `json:"EVALUATION_TOKEN_CONTRACT"`
-	ModelTokenContract        string `json:"MODEL_TOKEN_CONTRACT"`
-	ReputationManagerContract string `json:"REPUTATION_MANAGER_CONTRACT"`
-	VoteManagerContract       string `json:"VOTE_MANAGER_CONTRACT"`
+	ID                        primitive.ObjectID `bson:"_id,omitempty"`
+	ScatterProtocolContract   string             `bson:"SCATTER_PROTOCOL_CONTRACT"`
+	ScatterTokenContract      string             `bson:"SCATTER_TOKEN_CONTRACT"`
+	TrainingTokenContract     string             `bson:"TRAINING_TOKEN_CONTRACT"`
+	EvaluationTokenContract   string             `bson:"EVALUATION_TOKEN_CONTRACT"`
+	ModelTokenContract        string             `bson:"MODEL_TOKEN_CONTRACT"`
+	ReputationManagerContract string             `bson:"REPUTATION_MANAGER_CONTRACT"`
+	VoteManagerContract       string             `bson:"VOTE_MANAGER_CONTRACT"`
 }
-
-func ReadContractInfo() Contracts {
-	jsonData, _ := os.ReadFile("utils/contracts.json")
-	var contractData Contracts
-	json.Unmarshal(jsonData, &contractData)
-	return contractData
-}
-
-var CONTRACTS = ReadContractInfo()
-
-var (
-	SCATTER_PROTOCOL_CONTRACT   = CONTRACTS.ScatterProtocolContract
-	TRAINING_TOKEN_CONTRACT     = CONTRACTS.TrainingTokenContract
-	EVALUATION_TOKEN_CONTRACT   = CONTRACTS.EvaluationTokenContract
-	SCATTER_TOKEN_CONTRACT      = CONTRACTS.ScatterTokenContract
-	MODEL_TOKEN_CONTRACT        = CONTRACTS.ModelTokenContract
-	REPUTATION_MANAGER_CONTRACT = CONTRACTS.ReputationManagerContract
-	VOTE_MANAGER_CONTRACT       = CONTRACTS.VoteManagerContract
-)
 
 var PROTOCOL_IDENTIFIER protocol.ID = "/scatter-protocol/1.0.0"
 var DATA_DIRECTORY = "training/data"
@@ -74,6 +56,10 @@ const (
 	PEER_VALIDATOR  = "validator"
 	PEER_CHALLENGER = "challenger"
 	PEER_NO_ROLE    = "no role"
+)
+
+const (
+	LOG_EVENT_TOKEN_BALANCE = "Token Balance"
 )
 
 const (
@@ -112,6 +98,17 @@ type PeerNode struct {
 	JobQueue             *JobProcessor               // Asynchrnous job queue to process training requests
 	DummyLoad            *bool                       // Use dummy data to make simulations go faster
 	LogMode              *bool                       // Log mode to keep track of metrics during simulations
+	WorkspaceId          *string                     // For debugging and simulation purposes
+	Subscriptions        *SubscriptionManager
+	Subscribe            func(*PeerNode)
+}
+
+type SubscriptionManager struct {
+	TrainingInitialized     *ethereum.Subscription
+	RequestForEvaluationSet *ethereum.Subscription
+	ModelReadyToValidate    *ethereum.Subscription
+	DebugEvent              *ethereum.Subscription
+	JobComplete             *ethereum.Subscription
 }
 
 // JobProcessor represents an asynchronous job processor
@@ -243,17 +240,23 @@ type DebugEvent struct {
 	Message string
 }
 
+type JobCompleteEvent struct {
+	Requestor common.Address
+	TopicName string
+}
+
 type SimulationStartNodeRequest struct {
-	PeerType          string `json:"peerType"`
-	ApiPort           uint   `json:"apiPort"`
-	PostgresUsername  string `json:"postgresUsername"`
-	PostgresPassword  string `json:"postgresPassword"`
-	DatabasePort      uint   `json:"databasePort"`
-	BlockchainAddress string `json:"blockchainAddress"`
-	PrivateKey        string `json:"privateKey"`
-	DummyLoad         bool   `json:"dummyLoad"`
-	UseMdns           bool   `json:"useMdns"`
-	IsProtocolOwner   bool   `json:"isProtocolOwner"`
+	PeerType          string  `json:"peerType"`
+	ApiPort           uint    `json:"apiPort"`
+	PostgresUsername  string  `json:"postgresUsername"`
+	PostgresPassword  string  `json:"postgresPassword"`
+	DatabasePort      uint    `json:"databasePort"`
+	BlockchainAddress string  `json:"blockchainAddress"`
+	PrivateKey        string  `json:"privateKey"`
+	DummyLoad         bool    `json:"dummyLoad"`
+	UseMdns           bool    `json:"useMdns"`
+	IsProtocolOwner   bool    `json:"isProtocolOwner"`
+	WorkspaceId       *string `json:"workspaceId,omitempty"`
 }
 
 type SimulationAppTopicRequest struct {
@@ -287,4 +290,16 @@ type SimulationTransferInitialSupplyRequest struct {
 	BlockchainAddress string         `json:"blockchainAddress"`
 	PrivateKey        string         `json:"privateKey"`
 	TransferAmounts   map[string]int `json:"transferAmounts"`
+}
+
+// Generic Log event for metrics --> can be simplified into x and y
+// Units of measurement will be determined by the log type, client-side
+type LogEvent struct {
+	ID                primitive.ObjectID `bson:"_id,omitempty"`
+	LogType           string             `bson:"logType"`
+	WorkspaceID       primitive.ObjectID `bson:"workspaceId"`
+	BlockchainAddress string             `bson:"blockchainAddress"`
+	XDataPoint        float64            `bson:"xDataPoint"`
+	YDataPoint        float64            `bson:"yDataPoint"`
+	CreatedAt         primitive.DateTime `bson:"createdAt"`
 }

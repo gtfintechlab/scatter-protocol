@@ -115,6 +115,9 @@ contract ScatterProtocol is IScatterProtocol {
     // An event used for debugging purposes
     event DebugEvent(string message);
 
+    // An event used to signify a job is complete
+    event JobComplete(address requestor, string topicName);
+
     /**
      *  @dev Deploys the Protocol with associated contracts
      *  @param trainingTokenContractAddress Contract address for the training job token contract
@@ -322,6 +325,8 @@ contract ScatterProtocol is IScatterProtocol {
         );
         addressToFederatedJob[requestorAddress][topicName]
             .status = FederatedJobStatus.Complete;
+
+        emit JobComplete(requestorAddress, topicName);
     }
 
     /**

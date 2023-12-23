@@ -4,6 +4,7 @@ import { urls } from "@/utils/urls";
 
 const nodeUrl = urls.baseUrl + urls.api.nodes.general;
 const singleNodeUrl = urls.baseUrl + urls.api.nodes.single;
+const resetUrl = urls.baseUrl + urls.api.nodes.reset;
 
 export const getNodesForWorkspace = async (workspaceId: string) => {
     return internalRequest<ProtocolNode[]>({
@@ -51,6 +52,16 @@ export const getSingleNodeById = async (nodeId: string) => {
         method: HttpMethod.GET,
         queryParams: {
             nodeId
+        }
+    })
+}
+
+export const resetProtocolNodesByWorkspace = async (workspaceId: string) => {
+    return internalRequest({
+        url: resetUrl,
+        method: HttpMethod.POST,
+        body: {
+            workspaceId
         }
     })
 }

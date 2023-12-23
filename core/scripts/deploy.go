@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"log"
 	"math/big"
@@ -22,6 +21,7 @@ import (
 	trainingtoken "github.com/gtfintechlab/scatter-protocol/core/protocol/training"
 	votemanager "github.com/gtfintechlab/scatter-protocol/core/protocol/vote-manager"
 	"github.com/gtfintechlab/scatter-protocol/core/utils"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/joho/godotenv"
 )
@@ -195,18 +195,17 @@ func deployAllContracts(privateKey string) {
 	log.Printf("Vote Manager: %s\n", voteManagerAddress.Hex())
 	log.Printf("Scatter Protocol: %s\n", scatterProtocolAddress.Hex())
 
-	contractInfo := map[string]string{
-		"SCATTER_PROTOCOL_CONTRACT":   scatterProtocolAddress.Hex(),
-		"SCATTER_TOKEN_CONTRACT":      scatterTokenAddress.Hex(),
-		"TRAINING_TOKEN_CONTRACT":     trainingAddress.Hex(),
-		"EVALUATION_TOKEN_CONTRACT":   evaluationAddress.Hex(),
-		"MODEL_TOKEN_CONTRACT":        modelAddress.Hex(),
-		"REPUTATION_MANAGER_CONTRACT": reputationManagerAddress.Hex(),
-		"VOTE_MANAGER_CONTRACT":       voteManagerAddress.Hex(),
+	contractInfo := utils.Contracts{
+		ScatterProtocolContract:   scatterProtocolAddress.Hex(),
+		ScatterTokenContract:      scatterTokenAddress.Hex(),
+		TrainingTokenContract:     trainingAddress.Hex(),
+		EvaluationTokenContract:   evaluationAddress.Hex(),
+		ModelTokenContract:        modelAddress.Hex(),
+		ReputationManagerContract: reputationManagerAddress.Hex(),
+		VoteManagerContract:       voteManagerAddress.Hex(),
 	}
 
-	jsonData, _ := json.MarshalIndent(contractInfo, "", "  ")
-	os.WriteFile("utils/contracts.json", jsonData, 0644)
+	UpdateContractInfo(contractInfo)
 }
 
 func deployScatterProtocol(privateKey string) {
@@ -214,12 +213,12 @@ func deployScatterProtocol(privateKey string) {
 
 	address, transaction, _, err := scatterprotocol.DeployScatterprotocol(
 		auth, client,
-		common.HexToAddress(utils.TRAINING_TOKEN_CONTRACT),
-		common.HexToAddress(utils.EVALUATION_TOKEN_CONTRACT),
-		common.HexToAddress(utils.SCATTER_TOKEN_CONTRACT),
-		common.HexToAddress(utils.MODEL_TOKEN_CONTRACT),
-		common.HexToAddress(utils.REPUTATION_MANAGER_CONTRACT),
-		common.HexToAddress(utils.VOTE_MANAGER_CONTRACT),
+		common.HexToAddress(GetContractInfo().TrainingTokenContract),
+		common.HexToAddress(GetContractInfo().EvaluationTokenContract),
+		common.HexToAddress(GetContractInfo().ScatterTokenContract),
+		common.HexToAddress(GetContractInfo().ModelTokenContract),
+		common.HexToAddress(GetContractInfo().ReputationManagerContract),
+		common.HexToAddress(GetContractInfo().VoteManagerContract),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -227,7 +226,25 @@ func deployScatterProtocol(privateKey string) {
 
 	log.Println("Contract Address: " + address.Hex())
 	log.Println("Transaction Hash: " + transaction.Hash().Hex())
+}
 
+func UpdateContractInfo(contracts utils.Contracts) {
+	client, _ := utils.DbConnect()
+	contractsCollection := client.Collection("contracts")
+	contractsCollection.DeleteMany(context.Background(), bson.D{})
+	contractsCollection.InsertOne(context.Background(), contracts)
+
+}
+
+func GetContractInfo() utils.Contracts {
+	client, _ := utils.DbConnect()
+	contractsCollection := client.Collection("contracts")
+	singleResult := contractsCollection.FindOne(context.Background(), bson.D{})
+	var contracts utils.Contracts
+	if err := singleResult.Decode(&contracts); err != nil {
+		return utils.Contracts{}
+	}
+	return contracts
 }
 
 func deployScatterToken(privateKey string) {
