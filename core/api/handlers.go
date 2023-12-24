@@ -94,6 +94,10 @@ func stopNode() http.HandlerFunc {
 		var requestBody utils.SimulationStopNodeRequest
 		json.NewDecoder(request.Body).Decode(&requestBody)
 
+		if Nodes == nil {
+			networking.SendJson(response, map[string]interface{}{"success": true})
+			return
+		}
 		peers.StopPeer(Nodes[requestBody.BlockchainAddress])
 		delete(Nodes, requestBody.BlockchainAddress)
 

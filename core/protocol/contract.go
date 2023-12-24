@@ -421,7 +421,7 @@ func getTransactor(node *utils.PeerNode) *bind.TransactOpts {
 	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
 	auth.Value = big.NewInt(0)
 	gas, _ := ethereumClient.SuggestGasPrice(context.Background())
-	auth.GasPrice = new(big.Int).Mul(gas, big.NewInt(150))
+	auth.GasPrice = new(big.Int).Mul(gas, big.NewInt(1000))
 
 	return auth
 }

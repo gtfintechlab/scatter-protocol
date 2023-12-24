@@ -67,6 +67,8 @@ export default function NodeManager({ nodeCallback, className }: { nodeCallback:
         setUpdateNodes(updateNodes + 1);
         setDisableStart(false);
     }
+
+    const viewAllData = () => { }
     return (
         <div className={`h-full bg-white w-full rounded-md p-4 ${className} flex flex-col gap-2 h-full overflow-y-scroll`}>
             <div className="flex flex-col gap-y-2">
@@ -91,6 +93,14 @@ export default function NodeManager({ nodeCallback, className }: { nodeCallback:
                     >
                         Stop All Nodes
                     </button>}
+                {(currentScreen === ScreensURLs.DATA) &&
+                    <button
+                        className={`p-1 text-white w-full border-2 rounded-md border-blue-500 bg-blue-500 text-center hover:bg-white hover:text-blue-500 cursor-pointer`}
+                        onClick={async () => viewAllData()}
+                    >
+                        View All Data
+                    </button>}
+
                 {error && <p className="text-red-500 text-center text-sm font-semibold">Error: {error}</p>}
             </div>
             <div className="h-full overflow-y-scroll flex flex-col gap-2">

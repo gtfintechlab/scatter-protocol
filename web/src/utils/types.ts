@@ -118,5 +118,9 @@ export interface LogEvent {
     createdAt: Date;
 }
 
+export enum Nodes {
+    ALL = "all"
+}
+
 export type APIWrapperResponse = Promise<NextResponse<{ success: boolean; message: string; }> | NextResponse<{ success: boolean; payload: unknown; }> | undefined>;
 export type APIWrapperType = (req: NextRequest) => APIWrapperResponse;

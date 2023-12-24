@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@react-spring/web": "^9.7.3",
+    "@visx/visx": "^3.6.1",
     "hardhat": "^2.19.3",
     "mongoose": "^8.0.3",
     "next": "14.0.4",
