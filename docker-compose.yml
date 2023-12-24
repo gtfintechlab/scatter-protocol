@@ -47,15 +47,29 @@ services:
   hardhat-network:
     build:
       context: .
-      dockerfile: dockerfiles/Dockerfile.hardhat
+      dockerfile: ./core/dockerfiles/Dockerfile.hardhat
     image: hardhat-network:latest
     volumes: 
-      - ./hardhat.config.js:/app/hardhat.config.js
+      - ./core/hardhat.config.js:/app/hardhat.config.js
     ports:
       - "8545:8545"
+  
+  mongo:
+    image: mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - scatter-web-net
+    volumes:
+      - mongodb-data:/data/db
 
+networks:
+  scatter-web-net:
+    driver: bridge
+    
 volumes:
   requestor-postgres-data:
   trainer-postgres-data:
   validator-postgres-data:
   ipfs-data:
+  mongodb-data:

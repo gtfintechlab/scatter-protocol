@@ -1,0 +1,24 @@
+{
+  "scripts": {
+    "format": "prettier --write \"**/*.{sol,}\"",
+    "debug": "go run main.go --utils debug",
+    "keygen": "go run main.go --utils keygen",
+    "simulation": "go run simulation/setup/environment.go && go run main.go --utils simulation",
+    "peer": "go run main.go --type peer",
+    "api": "docker compose -f ../docker-compose.yml up -d && go run main.go --utils api",
+    "bootstrap": "go run main.go --type bootstrap",
+    "peer:requestor": "npm run migrate:peer-requestor && go run main.go --type peer --peerType requestor --extAddress :5002",
+    "peer:trainer": "npm run migrate:peer-trainer && go run main.go --type peer --peerType trainer --extAddress :6001",
+    "merge-contracts": "sol-merger \"./contracts/*.sol\" ./build"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.3",
+    "concurrently": "^7.6.0"
+  },
+  "devDependencies": {
+    "hardhat": "^2.19.1",
+    "prettier": "^2.8.1",
+    "prettier-plugin-solidity": "^1.0.0",
+    "sol-merger": "^4.4.0"
+  }
+}
