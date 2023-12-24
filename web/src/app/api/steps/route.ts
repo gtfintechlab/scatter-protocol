@@ -1,6 +1,6 @@
 import APIWrapper from "server/utils/APIWrapper";
 import { APIWrapperType, Step } from "@/utils/types"
-import { createStep, deletStepById, findStepsByWorkspace } from "server/mongodb/actions/Step";
+import { createStep, deletStepById, findStepsByWorkspace, updateStep } from "server/mongodb/actions/Step";
 import { Types } from "mongoose";
 
 interface DeleteStepRequest {
@@ -31,6 +31,14 @@ const route: APIWrapperType = APIWrapper({
             const body: DeleteStepRequest = await req.json();
             const step = await deletStepById(body.stepId)
             return step
+        },
+    },
+    PATCH: {
+        config: {},
+        handler: async (req) => {
+            const body: Step | Partial<Step> = await req.json();
+            const step = await updateStep(body);
+            return step;
         },
     }
 

@@ -1,7 +1,8 @@
+import { getSingleNodeById } from "@/actions/ProtocolNode";
 import { ROLE_TO_COLOR_MAPPING } from "@/utils/constants";
 import { capitalizeWords } from "@/utils/format";
 import { ProtocolNode } from "@/utils/types";
-import React from "react";
+import React, { useEffect } from "react";
 import { useState } from "react";
 import { IoChevronDownOutline, IoChevronUpOutline } from "react-icons/io5";
 
@@ -9,8 +10,9 @@ import { IoChevronDownOutline, IoChevronUpOutline } from "react-icons/io5";
 function NodeDropdown({
     items,
     selectedCallback,
+    initialValue,
     className
-}: { items: Record<string, ProtocolNode>, selectedCallback?: (itemKey: string) => void | Promise<void>, className?: string }) {
+}: { items: Record<string, ProtocolNode>, selectedCallback?: (itemKey: string) => void | Promise<void>, initialValue?: string | null, className?: string }) {
     const [isOpen, setIsOpen] = useState<boolean>(false);
     const [selectedOption, setSelectedOption] = useState<string | null>(null)
     const [selectedDisplay, setSelectedDisplay] = useState<ProtocolNode | null>(null);
@@ -24,6 +26,17 @@ function NodeDropdown({
             await selectedCallback(itemValue._id.toString())
         }
     }
+
+    useEffect(() => {
+        const optionSetter = async () => {
+            if (initialValue) {
+                const node = await getSingleNodeById(initialValue)
+                await selectOption(initialValue, node)
+            }
+            setIsOpen(false)
+        }
+        optionSetter().then().catch()
+    }, [])
     return (
         <div className={`relative ${className}`}>
             <div className="p-2 border-none outline-none bg-gray-100 text-sm rounded-md flex flex-row gap-x-2 w-64 items-center cursor-pointer justify-between" onClick={() => setIsOpen(!isOpen)}>

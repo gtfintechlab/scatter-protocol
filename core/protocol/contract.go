@@ -245,10 +245,8 @@ func AddTopicForRequestor(node *utils.PeerNode, trainingJobPath string, evaluati
 
 func AddTopicForTrainer(node *utils.PeerNode, requestorAddress string, topicName string, stakeAmount int64) {
 	var scatterProtocolContract = initScatterProtocolContract()
-	var scatterTokenContract = initScatterTokenContract()
 	auth := getTransactor(node)
-	balance, _ := scatterTokenContract.BalanceOf(&bind.CallOpts{From: auth.From}, common.HexToAddress(*node.BlockchainAddress))
-	log.Printf("BALANCE: %d, STAKE: %d", balance, stakeAmount)
+
 	_, err := scatterProtocolContract.TrainerAddTopic(
 		auth, common.HexToAddress(requestorAddress), topicName, big.NewInt(stakeAmount))
 
@@ -423,7 +421,7 @@ func getTransactor(node *utils.PeerNode) *bind.TransactOpts {
 	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
 	auth.Value = big.NewInt(0)
 	gas, _ := ethereumClient.SuggestGasPrice(context.Background())
-	auth.GasPrice = (*big.Int)(gas)
+	auth.GasPrice = new(big.Int).Mul(gas, big.NewInt(150))
 
 	return auth
 }

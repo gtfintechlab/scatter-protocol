@@ -12,7 +12,7 @@ export default function NodeManager({ nodeCallback, className }: { nodeCallback:
     const { currentWorkspace } = useContext(ProtocolContext);
     const [nodes, setNodes] = useState<ProtocolNode[]>([]);
     const [updateNodes, setUpdateNodes] = useState<number>(0);
-    const { isMobile, currentScreen } = useContext(ScreenContext);
+    const { currentScreen } = useContext(ScreenContext);
     const [allStarted, setAllStarted] = useState<boolean>(false);
     const [allStopped, setAllStopped] = useState<boolean>(false);
     const [error, setError] = useState<string>("")
@@ -68,7 +68,7 @@ export default function NodeManager({ nodeCallback, className }: { nodeCallback:
         setDisableStart(false);
     }
     return (
-        <div className={`h-full bg-white w-full rounded-md p-4 ${className} flex flex-col gap-2 h-full ${!isMobile ? "overflow-y-scroll" : ""}`}>
+        <div className={`h-full bg-white w-full rounded-md p-4 ${className} flex flex-col gap-2 h-full overflow-y-scroll`}>
             <div className="flex flex-col gap-y-2">
                 {currentScreen === ScreensURLs.NODES && <button
                     className="p-1 text-white w-full border-2 rounded-md border-black bg-black text-center hover:bg-white hover:text-black cursor-pointer"

@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { ScreensURLs, Workspace } from "@/utils/types";
+import { ScreensURLs, Step, Workspace } from "@/utils/types";
 import { ScreenContext } from "@/contexts/ScreenContext";
 import { ProtocolContext, StepContext } from "./ProtocolContext";
 
@@ -13,7 +13,8 @@ export default function ContextProvider({
     const [currentScreen, setCurrentScreen] = useState<ScreensURLs>(ScreensURLs.HOME)
     const [currentWorkspace, setWorkspace] = useState<Workspace>({ name: undefined, _id: undefined });
     const [stepUpdateKey, setUpdateKey] = useState<number>(0);
-
+    const [editMode, setEditMode] = useState<boolean>(false);
+    const [stepInEdit, setStepInEdit] = useState<Step | null>(null);
     useEffect(() => {
         const handleResize = () => {
             const mobileWidthThreshold = 768;
@@ -48,7 +49,17 @@ export default function ContextProvider({
                 currentWorkspace,
                 setCurrentWorkspace: (workspace: Workspace) => { setWorkspace({ ...workspace }) }
             }}>
-                <StepContext.Provider value={{ stepUpdateKey, setStepUpdateKey: (key: number) => setUpdateKey(key) }}>
+                <StepContext.Provider value={{
+                    stepUpdateKey, setStepUpdateKey: (key: number) => setUpdateKey(key),
+                    editMode, setEditMode: (mode: boolean) => { setEditMode(mode) },
+                    stepInEdit, setStepInEdit: (step: null | Step) => {
+                        if (step) {
+                            setStepInEdit({ ...step })
+                        } else {
+                            setStepInEdit(null);
+                        }
+                    }
+                }}>
                     {children}
                 </StepContext.Provider>
 

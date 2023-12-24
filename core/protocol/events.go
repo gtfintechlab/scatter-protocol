@@ -68,7 +68,9 @@ func TrainingEventListener(node *utils.PeerNode) {
 
 			// Run training procedure only if the node's address is a topic
 			trainersForTopic := GetAllTrainersByAddressAndTopic(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName)
-
+			if *node.LogMode {
+				log.Println(utils.Green + "Training has been initialized" + utils.Reset)
+			}
 			if slices.Contains(trainersForTopic, strings.ToLower(*node.BlockchainAddress)) {
 				node.JobQueue.Enqueue(utils.Job{
 					ID:       uuid.New().String(),
@@ -108,6 +110,10 @@ func EvaluationRequestListener(node *utils.PeerNode) {
 			eventUnpacked := utils.EvaluationRequestEvent{}
 			contractABI.UnpackIntoInterface(&eventUnpacked, "RequestForEvaluationSet", event.Data)
 			if common.HexToAddress(*node.BlockchainAddress) == eventUnpacked.Requestor {
+				if *node.LogMode {
+					log.Println(utils.Green + "Evaluation set has been requested" + utils.Reset)
+				}
+
 				// Requestor sends the evaluation request to smart contract
 				node.JobQueue.Enqueue(utils.Job{
 					ID:       uuid.New().String(),
@@ -146,6 +152,9 @@ func ModelValidationListener(node *utils.PeerNode) {
 			eventUnpacked := utils.ModelReadyToValidateEvent{}
 			contractABI.UnpackIntoInterface(&eventUnpacked, "ModelReadyToValidate", event.Data)
 			if IsValidatorForRequestorAndTopic(node, eventUnpacked.Requestor.String(), eventUnpacked.TopicName) {
+				if *node.LogMode {
+					log.Println(utils.Green + "Model is ready to be validated" + utils.Reset)
+				}
 				node.JobQueue.Enqueue(utils.Job{
 					ID:       uuid.New().String(),
 					Function: ModelValidationHandler,
@@ -211,13 +220,14 @@ func JobCompleteEventListener(node *utils.PeerNode) {
 			}
 
 			if node.PeerType == utils.PEER_REQUESTOR || node.PeerType == utils.PEER_TRAINER || node.PeerType == utils.PEER_VALIDATOR {
-
 				if *node.LogMode {
+					log.Println(utils.Green + "Training is Complete: Token supply is being updated" + utils.Reset)
 					UpdateTokenSupply(node)
+					log.Println(utils.Green + "Training is Complete: Log is being written to database" + utils.Reset)
 
 					balance, _ := new(big.Float).SetInt(GetScatterTokenBalance(node)).Float64()
-					timstamp := float64(time.Now().UnixMilli())
-					scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timstamp, balance, node)
+					timestamp := float64(time.Now().UnixMilli())
+					scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timestamp, balance, node)
 				}
 
 			}
@@ -288,7 +298,6 @@ func UpdateTokenSupply(node *utils.PeerNode) {
 	filter := bson.D{{"blockchainAddress", *node.BlockchainAddress}}
 	opts := options.FindOneAndUpdate().SetUpsert(true)
 	tokenSupply := GetScatterTokenBalance(node).Int64()
-	log.Printf("TOKEN BALANCE: %d", tokenSupply)
 	update := bson.D{{"$set", bson.D{{"tokenSupply", tokenSupply}}}}
 	var updatedDocument bson.M
 	client.Collection("protocolnodes").FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&updatedDocument)

@@ -5,6 +5,7 @@ import { urls } from "@/utils/urls";
 const nodeUrl = urls.baseUrl + urls.api.nodes.general;
 const singleNodeUrl = urls.baseUrl + urls.api.nodes.single;
 const resetUrl = urls.baseUrl + urls.api.nodes.reset;
+const blockchainWorkspaceUrl = urls.baseUrl + urls.api.nodes.addressWorkspace;
 
 export const getNodesForWorkspace = async (workspaceId: string) => {
     return internalRequest<ProtocolNode[]>({
@@ -61,6 +62,18 @@ export const resetProtocolNodesByWorkspace = async (workspaceId: string) => {
         url: resetUrl,
         method: HttpMethod.POST,
         body: {
+            workspaceId
+        }
+    })
+}
+
+
+export const getNodeByBlockchainAddressAndWorkspace = async (blockchainAddress: string, workspaceId: string) => {
+    return internalRequest<ProtocolNode>({
+        url: blockchainWorkspaceUrl,
+        method: HttpMethod.GET,
+        queryParams: {
+            blockchainAddress,
             workspaceId
         }
     })

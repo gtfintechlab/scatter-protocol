@@ -2,6 +2,8 @@ import { Types } from "mongoose";
 import { NextApiRequest } from "next";
 import { NextRequest, NextResponse } from "next/server";
 
+export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>;
+
 export enum ScreensURLs {
     HOME = "",
     ENVIRONMENT = "environment",

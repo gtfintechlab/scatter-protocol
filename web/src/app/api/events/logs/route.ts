@@ -1,11 +1,19 @@
 import APIWrapper from "server/utils/APIWrapper";
 import { APIWrapperType } from "@/utils/types"
-import { deleteAllLogEventsByWorkspace } from "server/mongodb/actions/LogEvent";
+import { deleteAllLogEventsByWorkspace, getEventsByWorkspace } from "server/mongodb/actions/LogEvent";
 
 interface DeleteEventsByWorkspaceIdRequest {
     workspaceId: string
 }
 const route: APIWrapperType = APIWrapper({
+    GET: {
+        config: {},
+        handler: async (req) => {
+            const workspaceId = req.nextUrl.searchParams.get("workspaceId") as string;
+            const events = await getEventsByWorkspace(workspaceId);
+            return events
+        }
+    },
     DELETE: {
         config: {
         },

@@ -1,4 +1,4 @@
-import { getNodesForWorkspace, getSingleNodeById } from "@/actions/ProtocolNode";
+import { getNodeByBlockchainAddressAndWorkspace, getNodesForWorkspace, getSingleNodeById } from "@/actions/ProtocolNode";
 import { ProtocolContext, StepContext } from "@/contexts/ProtocolContext";
 import { DEFAULT_STEP_OPTIONS, STEPS_CONFIG } from "@/utils/constants";
 import { PeerType, ProtocolNode, Step, StepTypes } from "@/utils/types";
@@ -19,7 +19,7 @@ export function TrainerAddTopic({ completionCallback }: { completionCallback: ()
     const [trainerNodes, setTrainerNodes] = useState<ProtocolNode[]>([]);
     const [requestorNodes, setRequestorNodes] = useState<ProtocolNode[]>([]);
     const { currentWorkspace } = useContext(ProtocolContext)
-    const { setStepUpdateKey, stepUpdateKey } = useContext(StepContext);
+    const { setStepUpdateKey, stepUpdateKey, editMode, setEditMode, stepInEdit, setStepInEdit } = useContext(StepContext);
 
     const setDefaultValues = () => {
         setTopicName(DEFAULT_STEP_OPTIONS.topicName)
@@ -62,6 +62,7 @@ export function TrainerAddTopic({ completionCallback }: { completionCallback: ()
             apiMethod,
             body: {
                 topicName,
+                requestorId: requestorNode._id.toString(),
                 requestorAddress: requestorNode.blockchainAddress,
                 stake: stake as number,
                 trainingDataPath: trainingDataPath,
@@ -101,21 +102,35 @@ export function TrainerAddTopic({ completionCallback }: { completionCallback: ()
 
     }, [selectedRequestor])
 
+    useEffect(() => {
+        const formSetter = async () => {
+            setTopicName(stepInEdit?.body.topicName as string)
+            setStake(stepInEdit?.body.stake as number)
+            setTrainingDataPath(stepInEdit?.body.trainingDataPath as string)
+            setSelectedTrainer(stepInEdit?.nodeId.toString() as string)
+            setSelectedRequestor(stepInEdit?.body.requestorId.toString() as string);
+        }
+
+        if (editMode) {
+            formSetter().then().catch()
+        }
+    }, [editMode])
+
     return (
         <div className="h-full flex flex-col justify-between overflow-y-scroll gap-y-3">
             <div className='flex flex-col gap-x-2 gap-y-3 w-full'>
                 <div className='flex flex-row gap-4 w-full items-center flex-1 flex-wrap'>
                     <div className='flex flex-col gap-2 shrink grow'>
                         <label className="text-black font-semibold text-sm">Choose a Node:</label>
-                        <NodeDropdown items={idToBlockchainAddress(trainerNodes)} selectedCallback={(nodeId: string) => setSelectedTrainer(nodeId)}></NodeDropdown>
+                        <NodeDropdown items={idToBlockchainAddress(trainerNodes)} selectedCallback={(nodeId: string) => setSelectedTrainer(nodeId)} initialValue={stepInEdit?.nodeId.toString() as string}></NodeDropdown>
                     </div>
                     <div className='flex flex-col gap-2 shrink grow'>
-                        <label className="text-black font-semibold text-sm">Select Rquestor Node:</label>
-                        <NodeDropdown items={idToBlockchainAddress(requestorNodes)} selectedCallback={(nodeId: string) => setSelectedRequestor(nodeId)}></NodeDropdown>
+                        <label className="text-black font-semibold text-sm">Select Requestor Node:</label>
+                        <NodeDropdown items={idToBlockchainAddress(requestorNodes)} selectedCallback={(nodeId: string) => setSelectedRequestor(nodeId)} initialValue={stepInEdit?.body.requestorId.toString()}></NodeDropdown>
                     </div>
                     <div className='flex flex-col gap-2 shrink grow'>
                         <label className="text-black font-semibold text-sm">Topic Name:</label>
-                        <GenericDropdownMenu items={requestorTopics} selectedCallback={(item: string) => { setTopicName(item) }}></GenericDropdownMenu>
+                        <GenericDropdownMenu items={requestorTopics} selectedCallback={(item: string) => { setTopicName(item) }} initialValue={stepInEdit?.body.topicName as string}></GenericDropdownMenu>
                     </div>
                     <div className='flex flex-col gap-2 shrink grow'>
                         <label className="text-black font-semibold text-sm">Training Job Path:</label>

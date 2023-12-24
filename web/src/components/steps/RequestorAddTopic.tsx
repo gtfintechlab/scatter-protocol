@@ -1,10 +1,10 @@
 import { getNodesForWorkspace, getSingleNodeById } from "@/actions/ProtocolNode";
 import { ProtocolContext, StepContext } from "@/contexts/ProtocolContext";
 import { DEFAULT_STEP_OPTIONS, STEPS_CONFIG } from "@/utils/constants";
-import { PeerType, ProtocolNode, Step, StepTypes } from "@/utils/types";
+import { Optional, PeerType, ProtocolNode, Step, StepTypes } from "@/utils/types";
 import { useContext, useEffect, useState } from "react"
 import NodeDropdown from "../NodeDropdown";
-import { createStep, getStepsByWorkspace } from "@/actions/Step";
+import { createStep, getStepsByWorkspace, updateStep } from "@/actions/Step";
 
 export function RequestorAddTopic({ completionCallback }: { completionCallback: () => void }) {
     const [topicName, setTopicName] = useState<string>("");
@@ -18,7 +18,7 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
     const [submitting, setSubmitting] = useState<boolean>(false);
     const [workspaceNodes, setWorkspacesNodes] = useState<ProtocolNode[]>([]);
     const { currentWorkspace } = useContext(ProtocolContext)
-    const { setStepUpdateKey, stepUpdateKey } = useContext(StepContext);
+    const { setStepUpdateKey, stepUpdateKey, stepInEdit, editMode, setEditMode, setStepInEdit } = useContext(StepContext);
 
     const setDefaultValues = () => {
         setTopicName(DEFAULT_STEP_OPTIONS.topicName)
@@ -50,13 +50,26 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
         workspaceNodeSetter().then().catch()
     }, [currentWorkspace])
 
+    useEffect(() => {
+        if (editMode) {
+            setTopicName(stepInEdit?.body.topicName as string)
+            setTrainingJobPath(stepInEdit?.body.trainingJobPath as string)
+            setReward(stepInEdit?.body.reward as number)
+            setValidationThreshold(stepInEdit?.body.validationThreshold as number)
+            setEvaluationJobDataPath(stepInEdit?.body.evaluationJobDataPath as string)
+            setEvaluationJobPath(stepInEdit?.body.evaluationJobPath as string)
+            setSelectedNode(stepInEdit?.nodeId.toString() as string)
+        }
+    }, [editMode])
+
+
     const { apiPath, apiMethod } = STEPS_CONFIG[StepTypes.REQUESTOR_ADD_TOPIC]
     const submitStep = async () => {
         setSubmitting(true);
         const steps = await getStepsByWorkspace(currentWorkspace._id?.toString() as string);
         const node = await getSingleNodeById(selectedNode);
 
-        const step: Omit<Step, "_id"> = {
+        const step: Optional<Step, "_id"> = {
             type: StepTypes.REQUESTOR_ADD_TOPIC,
             apiPath,
             apiMethod,
@@ -74,8 +87,14 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
             order: steps.length
         }
 
-        await createStep(step);
-        setSubmitting(false);
+        if (editMode) {
+            step._id = (stepInEdit as Step)._id
+            await updateStep(step);
+            setEditMode(false);
+            setStepInEdit(null);
+        } else {
+            await createStep(step);
+        }
 
         completionCallback();
         setStepUpdateKey(stepUpdateKey + 1)
@@ -87,7 +106,7 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
                 <div className='flex flex-row gap-4 w-full items-center flex-1 flex-wrap'>
                     <div className='flex flex-col gap-2 shrink grow'>
                         <label className="text-black font-semibold text-sm">Choose Node:</label>
-                        <NodeDropdown items={idToBlockchainAddress()} selectedCallback={(nodeId: string) => setSelectedNode(nodeId)}></NodeDropdown>
+                        <NodeDropdown items={idToBlockchainAddress()} selectedCallback={(nodeId: string) => setSelectedNode(nodeId)} initialValue={stepInEdit?.nodeId.toString()}></NodeDropdown>
                     </div>
                     <div className='flex flex-col gap-2 shrink grow'>
                         <label className="text-black font-semibold text-sm">Topic Name:</label>
@@ -123,6 +142,6 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
             </div>
             <button className={`bg-black self-end w-full p-2 rounded-md text-sm hover:bg-white border-2 border-black hover:text-black ${submitting ? "opacity-50" : ""}`} onClick={async () => {
                 await submitStep()
-            }} disabled={submitting}>Create Step</button>
+            }} disabled={submitting}>{editMode ? "Update Step" : "Create Step"}</button>
         </div>)
 }

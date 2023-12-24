@@ -44,3 +44,13 @@ export const getStepsByNode = async (nodeId: string) => {
         }
     })
 }
+
+export const updateStep = async (step: Step | Partial<Step>) => {
+    return internalRequest<Step>({
+        url: stepUrl,
+        method: HttpMethod.PATCH,
+        body: {
+            ...step
+        }
+    })
+}

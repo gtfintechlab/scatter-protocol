@@ -10,6 +10,7 @@ export const urls = {
             general: "/api/nodes",
             single: "/api/nodes/single",
             reset: "/api/nodes/reset",
+            addressWorkspace: "/api/nodes/address-workspace",
 
         },
         workspaces: {

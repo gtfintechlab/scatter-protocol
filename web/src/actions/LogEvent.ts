@@ -14,3 +14,14 @@ export const deleteLogEvents = async (workspaceId: string) => {
     })
 
 }
+
+export const getWorkspaceEvents = async (workspaceId: string) => {
+    return internalRequest<LogEvent[]>({
+        url: logsUrl,
+        method: HttpMethod.GET,
+        queryParams: {
+            workspaceId
+        }
+    })
+
+}

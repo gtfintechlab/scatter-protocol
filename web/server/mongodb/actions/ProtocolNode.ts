@@ -34,6 +34,12 @@ export const getNodeById = async (nodeId: string | Types.ObjectId) => {
     return node;
 }
 
+
+export const getNodeByBlockchainAndWorkspace = async (blockchainAddress: string, workspaceId: string | Types.ObjectId) => {
+    await dbConnect();
+    const node = await ProtocolNodeModel.findOne({ blockchainAddress, workspaceId })
+    return node;
+}
 export const resetNodeTokenSupply = async (workspaceId: string) => {
     await dbConnect();
     const nodes = await ProtocolNodeModel.find({ workspaceId: workspaceId });
