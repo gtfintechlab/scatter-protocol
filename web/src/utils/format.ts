@@ -1,3 +1,5 @@
+import { DEFAULT_STEP_OPTIONS } from "./constants";
+
 export function capitalizeWords(inputString: string | null) {
     if (!inputString) {
         return ""
@@ -23,6 +25,12 @@ export function copyBody(inputObject: InputObject): InputObject {
     const processedObject: InputObject = {};
 
     for (const [key, value] of Object.entries(inputObject)) {
+
+        if (key in DEFAULT_STEP_OPTIONS && typeof DEFAULT_STEP_OPTIONS[key] === 'function') {
+            processedObject[key] = DEFAULT_STEP_OPTIONS[key]();
+            continue
+        }
+
         // Object and Number
         if (typeof value === 'number' ||
             typeof value === 'object' ||
@@ -43,4 +51,13 @@ export function copyBody(inputObject: InputObject): InputObject {
     }
 
     return processedObject;
+}
+
+export function getRandomNumber(min: number, max: number): number {
+    if (min > max) {
+        [min, max] = [max, min];
+    }
+
+    const randomFraction = Math.random();
+    return Math.floor(randomFraction * (max - min + 1)) + min;
 }

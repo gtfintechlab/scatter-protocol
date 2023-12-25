@@ -3,9 +3,12 @@ package api
 import (
 	"encoding/json"
 	"log"
+	"math/big"
 	"net/http"
 	"os/exec"
+	"time"
 
+	scatterlogs "github.com/gtfintechlab/scatter-protocol/core/logs"
 	"github.com/gtfintechlab/scatter-protocol/core/networking"
 	"github.com/gtfintechlab/scatter-protocol/core/peers"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/core/peers/db"
@@ -50,7 +53,6 @@ func startNode() http.HandlerFunc {
 
 		Nodes[requestBody.BlockchainAddress] = node
 		go node.Start(node, requestBody.UseMdns)
-
 		networking.SendJson(response, map[string]interface{}{"success": true})
 	}
 
@@ -82,6 +84,14 @@ func initializeRoles() http.HandlerFunc {
 				protocol.InitRequestorNode(node)
 			} else if node.PeerType == utils.PEER_TRAINER {
 				protocol.InitTrainerNode(node)
+			}
+		}
+
+		for _, node := range Nodes {
+			if *node.LogMode {
+				balance, _ := new(big.Float).SetInt(protocol.GetScatterTokenBalance(node)).Float64()
+				timestamp := float64(time.Now().UnixMilli())
+				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timestamp, balance, node)
 			}
 		}
 		networking.SendJson(response, map[string]interface{}{"success": true})
@@ -154,6 +164,14 @@ func transferInitialSupply() http.HandlerFunc {
 				"ws://127.0.0.1:8545",
 				protocol.GetContractInfo().ScatterTokenContract,
 			)
+		}
+
+		for _, node := range Nodes {
+			if *node.LogMode {
+				balance, _ := new(big.Float).SetInt(protocol.GetScatterTokenBalance(node)).Float64()
+				timestamp := float64(time.Now().UnixMilli())
+				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timestamp, balance, node)
+			}
 		}
 		networking.SendJson(response, map[string]interface{}{"success": true})
 

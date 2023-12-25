@@ -285,13 +285,23 @@ contract ScatterProtocol is IScatterProtocol {
             distributeRewards ||
             (allModelsSubmitted && allModelsValidated);
 
-        // 2% towards lottery for challengers
+        // If the job is already complete or is currently distributing rewards, we do not distribute rewards again
+        distributeRewards =
+            distributeRewards &&
+            addressToFederatedJob[requestorAddress][topicName].status !=
+            FederatedJobStatus.Complete &&
+            addressToFederatedJob[requestorAddress][topicName].status !=
+            FederatedJobStatus.DistributingRewards;
+        // 10% towards lottery for challengers
         // Get Rogue Trainers - Slash 100% of what they staked --> lottery
         // Get Rogue Validators - Slash 10% of their stake --> lottery
         // Reward benevolent validators - reward should be proportional to their stake
         // Return trainer staked token to benevolent trainers
         // Reward benevolent trainers - reward should be proportional to their short-term stake & model score
         if (distributeRewards) {
+            addressToFederatedJob[requestorAddress][topicName]
+                .status = FederatedJobStatus.DistributingRewards;
+
             scatterTokenContract.donateToLottery(requestorAddress, topicName);
             scatterTokenContract.punishRogueTrainers(
                 requestorAddress,

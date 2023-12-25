@@ -21,12 +21,12 @@ export function RequestorAddTopic({ completionCallback }: { completionCallback: 
     const { setStepUpdateKey, stepUpdateKey, stepInEdit, editMode, setEditMode, setStepInEdit } = useContext(StepContext);
 
     const setDefaultValues = () => {
-        setTopicName(DEFAULT_STEP_OPTIONS.topicName)
-        setTrainingJobPath(DEFAULT_STEP_OPTIONS.trainingJobPath)
-        setReward(DEFAULT_STEP_OPTIONS.reward)
-        setValidationThreshold(DEFAULT_STEP_OPTIONS.validationThreshold)
-        setEvaluationJobPath(DEFAULT_STEP_OPTIONS.evaluationJobPath)
-        setEvaluationJobDataPath(DEFAULT_STEP_OPTIONS.evaluationJobDataPath)
+        setTopicName(DEFAULT_STEP_OPTIONS.topicName as string)
+        setTrainingJobPath(DEFAULT_STEP_OPTIONS.trainingJobPath as string)
+        setReward(DEFAULT_STEP_OPTIONS.reward())
+        setValidationThreshold(DEFAULT_STEP_OPTIONS.validationThreshold as number)
+        setEvaluationJobPath(DEFAULT_STEP_OPTIONS.evaluationJobPath as string)
+        setEvaluationJobDataPath(DEFAULT_STEP_OPTIONS.evaluationJobDataPath as string)
     }
 
     const idToBlockchainAddress = () => {

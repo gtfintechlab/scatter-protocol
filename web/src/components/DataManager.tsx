@@ -1,11 +1,13 @@
 import { getWorkspaceEvents } from "@/actions/LogEvent";
 import { ProtocolContext } from "@/contexts/ProtocolContext";
-import { LogEvent, Nodes, PeerType } from "@/utils/types";
+import { LogEvent, LogTypes, Nodes, PeerType } from "@/utils/types";
 import { useContext, useEffect, useState } from "react"
 import LineChart from "./LineChart";
 import { getNodeByBlockchainAddressAndWorkspace } from "@/actions/ProtocolNode";
 import { ROLE_TO_COLOR_MAPPING } from "@/utils/constants";
 import { capitalizeWords } from "@/utils/format";
+import TokenBalanceGraphs from "./TokenBalanceGraphs";
+import LotteryBalanceGraphs from "./LotteryBalanceGraphs";
 
 export default function DataManager({ className, blockchainAddress }: { blockchainAddress: string, className?: string }) {
     const { currentWorkspace } = useContext(ProtocolContext)
@@ -85,17 +87,20 @@ export default function DataManager({ className, blockchainAddress }: { blockcha
             {Object.entries(filteredEventData).map(([logType, dataPoints], index: number) => {
                 return (
                     <div className="flex flex-col" key={index}>
-                        {dataPoints.map((data: LogEvent[], index: number) => {
+                        {logType === LogTypes.TOKEN_BALANCE && <TokenBalanceGraphs dataPoints={dataPoints} addressToRole={addressToRole}></TokenBalanceGraphs>}
+                        {logType === LogTypes.LOTTERY_BALANCE && <LotteryBalanceGraphs dataPoints={dataPoints} ></LotteryBalanceGraphs>}
+
+                        {/* {dataPoints.map((data: LogEvent[], index: number) => {
                             return (
                                 <div key={index}>
                                     <div className="flex flex-row gap-2 items-center">
                                         <h1 className="text-black text-sm font-semibold">{logType}:</h1>
-                                        <h1 className="truncate text-black text-sm">{data.length ? data[0].blockchainAddress : ""}</h1>
-                                        <h1 className={`p-1 text-sm rounded-md bg-${ROLE_TO_COLOR_MAPPING[data.length ? addressToRole[data[0].blockchainAddress] : PeerType.NO_ROLE]}-500 text-white`}>{capitalizeWords(data.length ? addressToRole[data[0].blockchainAddress] : "")}</h1>
+                                        {logType == LogTypes.TOKEN_BALANCE && <h1 className="truncate text-black text-sm">{data.length ? data[0].blockchainAddress : ""}</h1>}
+                                        {logType == LogTypes.TOKEN_BALANCE && <h1 className={`p-1 text-sm rounded-md bg-${ROLE_TO_COLOR_MAPPING[data.length ? addressToRole[data[0].blockchainAddress] : PeerType.NO_ROLE]}-500 text-white`}>{capitalizeWords(data.length ? addressToRole[data[0].blockchainAddress] : "")}</h1>}
                                     </div>
                                     <LineChart data={data}></LineChart>
                                 </div>)
-                        })}
+                        })} */}
                     </div>
                 )
             })}

@@ -3,10 +3,13 @@ package peers
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
+	scatterlogs "github.com/gtfintechlab/scatter-protocol/core/logs"
 	networking "github.com/gtfintechlab/scatter-protocol/core/networking"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/core/peers/db"
 	protocol "github.com/gtfintechlab/scatter-protocol/core/protocol"
@@ -78,6 +81,13 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			networking.WriteBytesToFile(zippedEvaluationJobPath, zippedEvaluationFileBytes.Bytes())
 
 			trainingTopicCid, evaluationTopicCid, _ := protocol.AddTopicForRequestor(node, zippedTrainingJobPath, zippedEvaluationJobPath, requestBody.TopicName, *requestBody.Reward, *requestBody.ValidationThreshold)
+
+			if *node.LogMode {
+				balance, _ := new(big.Float).SetInt(protocol.GetScatterTokenBalance(node)).Float64()
+				timestamp := float64(time.Now().UnixMilli())
+				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timestamp, balance, node)
+			}
+
 			peerDatabase.AddTopicFromInfo(
 				node,
 				*node.BlockchainAddress,
@@ -107,6 +117,11 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 				return
 			}
 			protocol.AddTopicForTrainer(node, *requestBody.RequestorAddress, requestBody.TopicName, *requestBody.Stake)
+			if *node.LogMode {
+				balance, _ := new(big.Float).SetInt(protocol.GetScatterTokenBalance(node)).Float64()
+				timestamp := float64(time.Now().UnixMilli())
+				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timestamp, balance, node)
+			}
 			peerDatabase.AddTopicFromInfo(
 				node,
 				*requestBody.RequestorAddress,

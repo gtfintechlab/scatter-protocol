@@ -44,6 +44,7 @@ func initModelTokenContract() *modeltoken.Modeltoken {
 	return modelTokenContract
 }
 func InitRequestorNode(node *utils.PeerNode) {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -51,6 +52,7 @@ func InitRequestorNode(node *utils.PeerNode) {
 }
 
 func InitTrainerNode(node *utils.PeerNode) {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -58,6 +60,7 @@ func InitTrainerNode(node *utils.PeerNode) {
 }
 
 func InitValidatorNode(node *utils.PeerNode) {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -69,6 +72,7 @@ func InitValidatorNode(node *utils.PeerNode) {
 }
 
 func AddScatterTokenStake(node *utils.PeerNode, amount int64) {
+
 	var scatterTokenContract = initScatterTokenContract()
 
 	auth := getTransactor(node)
@@ -80,6 +84,7 @@ func AddScatterTokenStake(node *utils.PeerNode, amount int64) {
 }
 
 func GetScatterTokenStake(node *utils.PeerNode, account string) big.Int {
+
 	var scatterTokenContract = initScatterTokenContract()
 
 	auth := getTransactor(node)
@@ -93,6 +98,7 @@ func GetScatterTokenStake(node *utils.PeerNode, account string) big.Int {
 }
 
 func CanBecomeValidator(node *utils.PeerNode, account string) bool {
+
 	var scatterTokenContract = initScatterTokenContract()
 
 	auth := getTransactor(node)
@@ -106,6 +112,7 @@ func CanBecomeValidator(node *utils.PeerNode, account string) bool {
 }
 
 func GetProtocolRequestors(node *utils.PeerNode, skipAmount uint64) []string {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -118,6 +125,7 @@ func GetProtocolRequestors(node *utils.PeerNode, skipAmount uint64) []string {
 }
 
 func GetAllProtocolRequestors(node *utils.PeerNode) []string {
+
 	requestorList := []string{}
 	skipAmount := 0
 	currentRequestorList := GetProtocolRequestors(node, uint64(skipAmount))
@@ -133,6 +141,7 @@ func GetAllProtocolRequestors(node *utils.PeerNode) []string {
 }
 
 func GetTopicsByAddress(node *utils.PeerNode, address string, skipAmount uint64) []string {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -145,6 +154,7 @@ func GetTopicsByAddress(node *utils.PeerNode, address string, skipAmount uint64)
 }
 
 func GetTrainersByAddressAndTopic(node *utils.PeerNode, address string, topicName string, skipAmount uint64) []string {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -156,6 +166,7 @@ func GetTrainersByAddressAndTopic(node *utils.PeerNode, address string, topicNam
 }
 
 func GetAllTrainersByAddressAndTopic(node *utils.PeerNode, address string, topicName string) []string {
+
 	trainerList := []string{}
 	skipAmount := 0
 	currentTrainerList := GetTrainersByAddressAndTopic(node, address, topicName, uint64(skipAmount))
@@ -169,6 +180,7 @@ func GetAllTrainersByAddressAndTopic(node *utils.PeerNode, address string, topic
 }
 
 func CheckIfTopicExistsForRequestor(node *utils.PeerNode, address string, topicName string) bool {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -180,6 +192,7 @@ func CheckIfTopicExistsForRequestor(node *utils.PeerNode, address string, topicN
 }
 
 func GetAllTopicsByAddress(node *utils.PeerNode, address string) []string {
+
 	topicList := []string{}
 	skipAmount := 0
 	currentTopicList := GetTopicsByAddress(node, address, uint64(skipAmount))
@@ -193,6 +206,7 @@ func GetAllTopicsByAddress(node *utils.PeerNode, address string) []string {
 }
 
 func StartTraining(node *utils.PeerNode, topicName string) {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -203,6 +217,7 @@ func StartTraining(node *utils.PeerNode, topicName string) {
 }
 
 func GetRoleByAddress(node *utils.PeerNode, address string) string {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -214,6 +229,7 @@ func GetRoleByAddress(node *utils.PeerNode, address string) string {
 }
 
 func GetTrainingJobFromAddressAndTopic(node *utils.PeerNode, address string, topicName string) string {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -229,6 +245,7 @@ func GetTrainingJobFromAddressAndTopic(node *utils.PeerNode, address string, top
 }
 
 func AddTopicForRequestor(node *utils.PeerNode, trainingJobPath string, evaluationJobPath string, topicName string, reward int64, validationThreshold int64) (string, string, string) {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -238,12 +255,13 @@ func AddTopicForRequestor(node *utils.PeerNode, trainingJobPath string, evaluati
 		auth, trainingIpfsCid, evaluationIpfsCid, topicName, big.NewInt(reward), big.NewInt(validationThreshold))
 
 	if err != nil {
-		log.Fatal(err)
+		return AddTopicForRequestor(node, trainingJobPath, evaluationJobPath, topicName, reward, validationThreshold)
 	}
 	return trainingIpfsCid, evaluationIpfsCid, transaction.Hash().Hex()
 }
 
 func AddTopicForTrainer(node *utils.PeerNode, requestorAddress string, topicName string, stakeAmount int64) {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 	auth := getTransactor(node)
 
@@ -257,6 +275,7 @@ func AddTopicForTrainer(node *utils.PeerNode, requestorAddress string, topicName
 }
 
 func ChangeRoleToTrainer(node *utils.PeerNode) {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -264,6 +283,7 @@ func ChangeRoleToTrainer(node *utils.PeerNode) {
 }
 
 func ChangeRoleToRequestor(node *utils.PeerNode) {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -271,6 +291,7 @@ func ChangeRoleToRequestor(node *utils.PeerNode) {
 }
 
 func SetNodeId(node *utils.PeerNode, nodeId string) {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -278,6 +299,7 @@ func SetNodeId(node *utils.PeerNode, nodeId string) {
 }
 
 func GetNodeIdFromAddress(node *utils.PeerNode, blockchainAddress string) string {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -287,6 +309,7 @@ func GetNodeIdFromAddress(node *utils.PeerNode, blockchainAddress string) string
 }
 
 func IsValidatorForRequestorAndTopic(node *utils.PeerNode, requestorAddress string, topicName string) bool {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -300,6 +323,7 @@ func IsValidatorForRequestorAndTopic(node *utils.PeerNode, requestorAddress stri
 	return isValidator
 }
 func PublishEvaluationData(node *utils.PeerNode, evaluationDataPath string, topicName string) string {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -307,12 +331,14 @@ func PublishEvaluationData(node *utils.PeerNode, evaluationDataPath string, topi
 	_, err := scatterProtocolContract.SubmitEvaluationSet(auth, topicName, ipfsCid)
 
 	if err != nil {
-		log.Fatal(err)
+		// For some reason the nonce caculation always messes up here so I just do a recursive retry (lol.)
+		return PublishEvaluationData(node, evaluationDataPath, topicName)
 	}
 	return ipfsCid
 }
 
 func GetEvaluationJobFromAddressAndTopic(node *utils.PeerNode, requestorAddress string, topicName string) string {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -329,6 +355,7 @@ func GetEvaluationJobFromAddressAndTopic(node *utils.PeerNode, requestorAddress 
 }
 
 func GetEvaluationDataFromAddressAndTopic(node *utils.PeerNode, requestorAddress string, topicName string) string {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -343,6 +370,7 @@ func GetEvaluationDataFromAddressAndTopic(node *utils.PeerNode, requestorAddress
 }
 
 func SubmitEvaluationScore(node *utils.PeerNode, requestorAddress string, topicName string, trainerAddress string, score *big.Int) {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -355,6 +383,7 @@ func SubmitEvaluationScore(node *utils.PeerNode, requestorAddress string, topicN
 }
 
 func PublishModel(node *utils.PeerNode, modelPath string, requestorAddress string, topicName string) {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -366,11 +395,14 @@ func PublishModel(node *utils.PeerNode, modelPath string, requestorAddress strin
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		// For some reason the nonce caculation always messes up here so I just do a recursive retry (lol.)
+		PublishModel(node, modelPath, requestorAddress, topicName)
+		// log.Fatal(err)
 	}
 }
 
 func GetModelCidByTrainer(node *utils.PeerNode, requestorAddress string, topicName string, trainerAddress string) string {
+
 	var modelTokenContract = initModelTokenContract()
 	auth := getTransactor(node)
 
@@ -385,6 +417,7 @@ func GetModelCidByTrainer(node *utils.PeerNode, requestorAddress string, topicNa
 }
 
 func GetScatterTokenBalance(node *utils.PeerNode) *big.Int {
+
 	var scatterTokenContract = initScatterTokenContract()
 
 	auth := getTransactor(node)
@@ -398,6 +431,7 @@ func GetScatterTokenBalance(node *utils.PeerNode) *big.Int {
 }
 
 func GetPooledRewardByAddressAndTopic(node *utils.PeerNode, address string, topicName string) big.Int {
+
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
@@ -409,7 +443,21 @@ func GetPooledRewardByAddressAndTopic(node *utils.PeerNode, address string, topi
 	return *trainingJobInfo.PooledReward
 }
 
+func GetLotteryBalance(node *utils.PeerNode) *big.Int {
+	var scatterTokenContract = initScatterTokenContract()
+	auth := getTransactor(node)
+
+	lottery, err := scatterTokenContract.GetLotteryPool(&bind.CallOpts{From: auth.From})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return lottery
+
+}
+
 func getTransactor(node *utils.PeerNode) *bind.TransactOpts {
+
 	var CHAIN_ID, _ = strconv.Atoi(os.Getenv("CHAIN_ID"))
 	var CHAIN = big.NewInt(int64(CHAIN_ID))
 
@@ -421,8 +469,14 @@ func getTransactor(node *utils.PeerNode) *bind.TransactOpts {
 	auth, _ := bind.NewKeyedTransactorWithChainID(privateKey, CHAIN)
 	auth.Value = big.NewInt(0)
 	gas, _ := ethereumClient.SuggestGasPrice(context.Background())
-	auth.GasPrice = new(big.Int).Mul(gas, big.NewInt(1000))
+	gasTip, _ := ethereumClient.SuggestGasTipCap(context.Background())
 
+	auth.GasPrice = new(big.Int).Mul(gas, big.NewInt(500))
+	auth.GasLimit = uint64(2000000)
+	auth.GasTipCap = gasTip
+
+	nonce, _ := ethereumClient.PendingNonceAt(context.Background(), auth.From)
+	auth.Nonce = big.NewInt(int64(nonce))
 	return auth
 }
 

@@ -18,6 +18,7 @@ enum Checkpoints {
 enum FederatedJobStatus {
     NotStarted,
     InProgress,
+    DistributingRewards,
     Complete
 }
 

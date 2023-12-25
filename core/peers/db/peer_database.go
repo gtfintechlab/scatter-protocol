@@ -82,8 +82,6 @@ func GetEvaluationJobDataFromAddressAndTopic(node *utils.PeerNode, nodeAddress s
 }
 
 func AddTopicFromInfo(node *utils.PeerNode, nodeAddress string, ipfsCid string, topicName string, dataPath *string, evaluationJob *string, evaluationJobData *string) {
-	// node.DatastoreLock.Lock()
-	// defer node.DatastoreLock.Unlock()
 	statement, err := node.DataStore.Prepare(`
 		INSERT INTO topic_mappings (node_address, ipfs_id, topic_name, data_path, evaluation_job, evaluation_job_data)
 		VALUES ($1, $2, $3, $4, $5, $6);

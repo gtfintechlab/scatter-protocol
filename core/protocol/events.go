@@ -18,6 +18,7 @@ import (
 	"github.com/gtfintechlab/scatter-protocol/core/networking"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/core/peers/db"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	scatterprotocol "github.com/gtfintechlab/scatter-protocol/core/protocol/scatter-protocol"
@@ -218,17 +219,21 @@ func JobCompleteEventListener(node *utils.PeerNode) {
 			if !(*node.LogMode) {
 				return
 			}
+			if *node.LogMode {
 
-			if node.PeerType == utils.PEER_REQUESTOR || node.PeerType == utils.PEER_TRAINER || node.PeerType == utils.PEER_VALIDATOR {
-				if *node.LogMode {
-					log.Println(utils.Green + "Training is Complete: Token supply is being updated" + utils.Reset)
-					UpdateTokenSupply(node)
+				if node.PeerType == utils.PEER_TRAINER || node.PeerType == utils.PEER_VALIDATOR {
 					log.Println(utils.Green + "Training is Complete: Log is being written to database" + utils.Reset)
-
 					balance, _ := new(big.Float).SetInt(GetScatterTokenBalance(node)).Float64()
 					timestamp := float64(time.Now().UnixMilli())
 					scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timestamp, balance, node)
 				}
+
+				log.Println(utils.Green + "Training is Complete: Token supply is being updated" + utils.Reset)
+				UpdateTokenSupply(node)
+
+				lotteryBalance, _ := new(big.Float).SetInt(GetLotteryBalance(node)).Float64()
+				timestamp := float64(time.Now().UnixMilli())
+				scatterlogs.CreateLogEvent(utils.LOTTERY_BALANCE, timestamp, lotteryBalance, node)
 
 			}
 
@@ -272,7 +277,7 @@ func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topic
 	if *node.DummyLoad {
 		trainers := GetAllTrainersByAddressAndTopic(node, requestorAddress, topicName)
 		for _, trainer := range trainers {
-			score := big.NewInt(75)
+			score := big.NewInt(utils.GetRandomNumber(40, 100))
 			SubmitEvaluationScore(node, requestorAddress, topicName, trainer, score)
 		}
 		return
@@ -295,7 +300,11 @@ func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topic
 
 func UpdateTokenSupply(node *utils.PeerNode) {
 	client, _ := utils.DbConnect()
-	filter := bson.D{{"blockchainAddress", *node.BlockchainAddress}}
+	workspaceId, _ := primitive.ObjectIDFromHex(*node.WorkspaceId)
+	filter := bson.D{
+		{Key: "workspaceId", Value: workspaceId},
+		{Key: "blockchainAddress", Value: *node.BlockchainAddress},
+	}
 	opts := options.FindOneAndUpdate().SetUpsert(true)
 	tokenSupply := GetScatterTokenBalance(node).Int64()
 	update := bson.D{{"$set", bson.D{{"tokenSupply", tokenSupply}}}}

@@ -4,7 +4,10 @@ module.exports = {
   networks: {
     hardhat: {
       accounts: {
-        count: 100
+        count: 100,
+        mining: {
+          auto: true,
+        }
       }
     }
   }

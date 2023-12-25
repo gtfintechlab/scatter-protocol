@@ -60,6 +60,7 @@ const (
 
 const (
 	LOG_EVENT_TOKEN_BALANCE = "Token Balance"
+	LOTTERY_BALANCE         = "Lottery Balance"
 )
 
 const (
@@ -88,7 +89,7 @@ type PeerNode struct {
 	NodeId               peer.ID                     // ID of Node
 	Start                func(*PeerNode, bool)       // Start Function for node
 	DataStore            *sql.DB                     // DataStore to store information
-	DatastoreLock        *sync.Mutex                 // Mutex Lock for datastore
+	TransactorLock       *sync.Mutex                 // Mutex Lock for transactor
 	ExternalServer       *http.Server                // Http Server to communicate with node
 	PeerToPeerServer     *host.Host                  // Peer2Peer server to communicate with network
 	DistributedHashTable *dht.IpfsDHT                // Distributed hash table for peer discovery

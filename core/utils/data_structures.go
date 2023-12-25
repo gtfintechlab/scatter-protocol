@@ -1,6 +1,10 @@
 package utils
 
-import "strings"
+import (
+	"math/rand"
+	"strings"
+	"time"
+)
 
 func DeleteEmptyElements(source []string) []string {
 	var result []string
@@ -10,4 +14,9 @@ func DeleteEmptyElements(source []string) []string {
 		}
 	}
 	return result
+}
+
+func GetRandomNumber(min, max int) int64 {
+	rand.Seed(time.Now().UnixNano())
+	return int64(rand.Intn(max-min+1) + min)
 }

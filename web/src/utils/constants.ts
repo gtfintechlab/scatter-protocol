@@ -1,5 +1,5 @@
 import { HttpMethod, PeerType, ScreensURLs, StepTypes } from "@/utils/types";
-import { enumToDictionary } from "./format";
+import { enumToDictionary, getRandomNumber } from "./format";
 
 // Home page for steps the simulations go through
 // Environment to configure blockchain env
@@ -39,15 +39,19 @@ export const DEFAULT_NODE_OPTIONS = {
     }
 }
 
-export const DEFAULT_STEP_OPTIONS = {
+export const DEFAULT_STEP_OPTIONS: { [key: string]: any } = {
     topicName: "cats and dogs",
     trainingJobPath: "training/requestor/train",
-    reward: 1000,
+    reward: (): number => {
+        return getRandomNumber(1000, 2000)
+    },
     validationThreshold: 40,
     evaluationJobPath: "training/requestor/validate",
     evaluationJobDataPath: "training/data/requestor/validate",
     trainingDataPath: "training/data/trainer/example",
-    stake: 500
+    stake: (): number => {
+        return getRandomNumber(500, 1500)
+    },
 }
 export const STEPS_DICTIONARY = enumToDictionary(StepTypes);
 

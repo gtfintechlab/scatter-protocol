@@ -31,7 +31,7 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
 
     // Lottery for challenges who prove a validator wrong
     uint256 lotteryPool = 0;
-    uint256 lotteryPercentage = 2;
+    uint256 lotteryPercentage = 10;
 
     // Punishment constants
     uint256 validatorPunishmentPercentage = 10;
@@ -297,6 +297,10 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
 
             _mint(trainers[i], tokenTransferred);
         }
+    }
+
+    function getLotteryPool() public view returns (uint256) {
+        return lotteryPool;
     }
 
     modifier onlyScatterProtocolContract() {
