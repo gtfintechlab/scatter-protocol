@@ -51,6 +51,8 @@ services:
     image: hardhat-network:latest
     volumes: 
       - ./core/hardhat.config.js:/app/hardhat.config.js
+      - ./core/package.json:/app/package.json
+      - ./core/package-lock.json:/app/package-lock.json
     ports:
       - "8545:8545"
   
