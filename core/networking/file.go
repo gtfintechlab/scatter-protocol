@@ -108,7 +108,7 @@ func UnzipFolder(zipBytes []byte, destPath string) error {
 
 		if file.FileInfo().IsDir() {
 			// Create directories if they don't exist
-			os.MkdirAll(fullPath, file.Mode())
+			os.MkdirAll(fullPath, 0777)
 			continue
 		}
 

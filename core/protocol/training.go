@@ -34,20 +34,27 @@ func buildTrainingImage(requestorId string, ipfsCid string, dataPath string) {
 	requestorIdLower := strings.ToLower(requestorId)
 	ipfsCidLower := strings.ToLower(ipfsCid)
 
-	os.MkdirAll(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/output",
+	err := os.MkdirAll(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/output",
 		basePath,
 		requestorIdLower,
 		ipfsCidLower,
 	),
 		0777,
 	)
-	os.MkdirAll(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/data",
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.MkdirAll(fmt.Sprintf("%s/training/trainer/jobs/%s/%s/data",
 		basePath,
 		requestorIdLower,
 		ipfsCidLower,
 	),
 		0777,
 	)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	exec.Command("cp", "--recursive", dataPath,
 		fmt.Sprintf("%s/training/trainer/jobs/%s/%s/data/",
@@ -66,7 +73,7 @@ func buildTrainingImage(requestorId string, ipfsCid string, dataPath string) {
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	err := cmd.Run()
+	err = cmd.Run()
 
 	if err != nil {
 		log.Fatal("An error occurred when building the image ", err)

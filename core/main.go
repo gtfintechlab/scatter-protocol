@@ -8,7 +8,7 @@ import (
 
 	api "github.com/gtfintechlab/scatter-protocol/core/api"
 	bootstrap "github.com/gtfintechlab/scatter-protocol/core/bootstrap"
-	peer "github.com/gtfintechlab/scatter-protocol/core/peers"
+	peers "github.com/gtfintechlab/scatter-protocol/core/peers"
 	peerDatabase "github.com/gtfintechlab/scatter-protocol/core/peers/db"
 	"github.com/gtfintechlab/scatter-protocol/core/simulation"
 	utils "github.com/gtfintechlab/scatter-protocol/core/utils"
@@ -74,15 +74,15 @@ func main() {
 		} else {
 			dbPort = 8702
 		}
-		peerNode := peer.InitPeerNode(peerType, apiPort, "postgres", "postgres", dbPort,
-			os.Getenv("BLOCKCHAIN_ADDRESS"), os.Getenv("PRIVATE_KEY"), dummyLoadBool, false, nil)
+		peerNode := peers.InitPeerNode(peerType, apiPort, "postgres", "postgres", dbPort,
+			os.Getenv("BLOCKCHAIN_ADDRESS"), os.Getenv("PRIVATE_KEY"), dummyLoadBool, false, nil, nil,
+		)
 		peerNode.Start(peerNode, mdnsProtocol)
 	}
 
 	if util == utils.UTIL_GENERATE_KEYS {
 		utils.GenerateKeys()
 	} else if util == utils.UTIL_DEBUG_MODE {
-		log.Println("Debug Mode")
 	} else if util == utils.UTIL_PEER_DATABASE_MIGRATION {
 		var dbPort int
 		if peerType == utils.PEER_REQUESTOR {

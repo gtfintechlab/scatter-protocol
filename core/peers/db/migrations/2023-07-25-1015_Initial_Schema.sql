@@ -16,6 +16,18 @@ CREATE TABLE
 
 );
 
+CREATE TABLE
+    IF NOT EXISTS public.decryption_keys (
+        id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+        trainer_address TEXT,
+        requestor_address TEXT,
+        topic_name TEXT,
+        private_key BYTEA
+
+);
+
 -- Down
 
 DROP TABLE IF EXISTS public.topic_mappings;
+
+DROP TABLE IF EXISTS public.decryption_keys;

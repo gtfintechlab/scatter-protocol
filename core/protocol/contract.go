@@ -290,21 +290,29 @@ func ChangeRoleToRequestor(node *utils.PeerNode) {
 	scatterProtocolContract.InitRequestorNode(auth)
 }
 
-func SetNodeId(node *utils.PeerNode, nodeId string) {
+func SetNodeId(node *utils.PeerNode) {
 
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
-	scatterProtocolContract.SetNodeId(auth, nodeId)
+	_, err := scatterProtocolContract.SetNodeId(auth, (*node).NodeId.String())
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func GetNodeIdFromAddress(node *utils.PeerNode, blockchainAddress string) string {
 
 	var scatterProtocolContract = initScatterProtocolContract()
-
+	blockchainAddress = utils.RemoveHexPrefix(blockchainAddress)
 	auth := getTransactor(node)
-	nodeId, _ := scatterProtocolContract.AddressToNodeId(&bind.CallOpts{From: auth.From}, common.HexToAddress(blockchainAddress))
+	nodeId, err := scatterProtocolContract.AddressToNodeId(&bind.CallOpts{From: auth.From},
+		common.HexToAddress(blockchainAddress))
 
+	if err != nil {
+		log.Fatal(err)
+	}
 	return nodeId
 }
 
@@ -322,6 +330,22 @@ func IsValidatorForRequestorAndTopic(node *utils.PeerNode, requestorAddress stri
 
 	return isValidator
 }
+
+func IsValidatorForRequestorAndTopicExternal(node *utils.PeerNode, requestorAddress string, topicName string, blockchainAddress string) bool {
+
+	var scatterProtocolContract = initScatterProtocolContract()
+
+	auth := getTransactor(node)
+	isValidator, _ := scatterProtocolContract.ValidatorTrainingMap(
+		&bind.CallOpts{From: auth.From},
+		common.HexToAddress(requestorAddress),
+		topicName,
+		common.HexToAddress(blockchainAddress),
+	)
+
+	return isValidator
+}
+
 func PublishEvaluationData(node *utils.PeerNode, evaluationDataPath string, topicName string) string {
 
 	var scatterProtocolContract = initScatterProtocolContract()
@@ -387,7 +411,7 @@ func PublishModel(node *utils.PeerNode, modelPath string, requestorAddress strin
 	var scatterProtocolContract = initScatterProtocolContract()
 
 	auth := getTransactor(node)
-	modelIpfsCid := utils.UploadFileToIpfs(modelPath)
+	modelIpfsCid := utils.UploadEncryptedFileToIpfs(modelPath, node)
 	_, err := scatterProtocolContract.PublishModelToProtocol(auth,
 		modelIpfsCid,
 		common.HexToAddress(requestorAddress),
@@ -456,6 +480,17 @@ func GetLotteryBalance(node *utils.PeerNode) *big.Int {
 
 }
 
+func GetBlockchainAddressByNodeId(node *utils.PeerNode, nodeId string) string {
+	var scatterProtocolContract = initScatterProtocolContract()
+	auth := getTransactor(node)
+
+	blockchainAddress, err := scatterProtocolContract.NodeIdToAddress(&bind.CallOpts{From: auth.From}, nodeId)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return blockchainAddress.Hex()
+}
 func getTransactor(node *utils.PeerNode) *bind.TransactOpts {
 
 	var CHAIN_ID, _ = strconv.Atoi(os.Getenv("CHAIN_ID"))

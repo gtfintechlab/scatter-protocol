@@ -294,6 +294,7 @@ func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topic
 		downloadTrainerModel(node, requestorAddress, topicName, evaluationJobCid, trainer)
 		buildEvaluationImage(requestorAddress, evaluationJobCid)
 		score := runEvaluationContainer(requestorAddress, evaluationJobCid)
+		fmt.Println("SCORE:", score)
 		SubmitEvaluationScore(node, requestorAddress, topicName, trainer, score)
 	}
 }

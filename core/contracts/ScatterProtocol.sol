@@ -11,6 +11,7 @@ import "./IReputationManager.sol";
 import "./IScatterProtocol.sol";
 import "./IVoteManager.sol";
 import "./Shared.sol";
+import "hardhat/console.col";
 
 // Model Validator: 10,000 Scatter Token Staked
 contract ScatterProtocol is IScatterProtocol {
@@ -74,6 +75,7 @@ contract ScatterProtocol is IScatterProtocol {
 
     // Information for P2P communication
     mapping(address => string) public addressToNodeId;
+    mapping(string => address) public nodeIdToAddress;
 
     /*
         Example trainerTrainingMap & validatorTrainingMap Mapping:
@@ -149,8 +151,9 @@ contract ScatterProtocol is IScatterProtocol {
      *  @dev maps the address to a p2p node id
      *  @param nodeId Node id to set the value to
      */
-    function setNodeId(string memory nodeId) external {
+    function setNodeId(string memory nodeId) public {
         addressToNodeId[msg.sender] = nodeId;
+        nodeIdToAddress[nodeId] = msg.sender;
     }
 
     /**
@@ -259,6 +262,7 @@ contract ScatterProtocol is IScatterProtocol {
         address requestorAddress,
         string memory topicName
     ) public {
+        console.log("HERE 2");
         bool distributeRewards = false;
         // First we must check if the job's time limit is up
         uint256 terminationTime = addressToFederatedJob[requestorAddress][
@@ -268,7 +272,7 @@ contract ScatterProtocol is IScatterProtocol {
         if (block.timestamp >= terminationTime && terminationTime != 0) {
             distributeRewards = true;
         }
-
+        console.log("HERE 3");
         // Next we must check if all of the trainers have submitted their models
         bool allModelsSubmitted = _checkTrainerModelSubmissions(
             requestorAddress,
@@ -292,6 +296,8 @@ contract ScatterProtocol is IScatterProtocol {
             FederatedJobStatus.Complete &&
             addressToFederatedJob[requestorAddress][topicName].status !=
             FederatedJobStatus.DistributingRewards;
+        console.log("HERE 4");
+
         // 10% towards lottery for challengers
         // Get Rogue Trainers - Slash 100% of what they staked --> lottery
         // Get Rogue Validators - Slash 10% of their stake --> lottery
@@ -299,6 +305,7 @@ contract ScatterProtocol is IScatterProtocol {
         // Return trainer staked token to benevolent trainers
         // Reward benevolent trainers - reward should be proportional to their short-term stake & model score
         if (distributeRewards) {
+            console.log("HERE 5");
             addressToFederatedJob[requestorAddress][topicName]
                 .status = FederatedJobStatus.DistributingRewards;
 
@@ -319,6 +326,7 @@ contract ScatterProtocol is IScatterProtocol {
                 requestorAddress,
                 topicName
             );
+            console.log("HERE 6");
             // Return staked tokens to trainers for a specific training job
             // Change status to complete
             this.federatedJobCleanUp(requestorAddress, topicName);
@@ -329,14 +337,17 @@ contract ScatterProtocol is IScatterProtocol {
         address requestorAddress,
         string memory topicName
     ) external {
+        console.log("HERE 7");
         scatterTokenContract.returnTokensToTrainers(
             requestorAddress,
             topicName
         );
+        console.log("HERE 8");
         addressToFederatedJob[requestorAddress][topicName]
             .status = FederatedJobStatus.Complete;
 
         emit JobComplete(requestorAddress, topicName);
+        console.log("HERE 9");
     }
 
     /**
@@ -725,7 +736,7 @@ contract ScatterProtocol is IScatterProtocol {
         );
         addressToFederatedJob[requestorAddress][topicName]
             .validatorValidationCount += 1;
-
+        console.log("HERE 1");
         rewardDistributor(requestorAddress, topicName);
     }
 
@@ -901,7 +912,7 @@ contract ScatterProtocol is IScatterProtocol {
             uint(
                 keccak256(
                     abi.encodePacked(
-                        block.prevrandao,
+                        block.difficulty,
                         block.timestamp,
                         networkValidators,
                         randomNonce

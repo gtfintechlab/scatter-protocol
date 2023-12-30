@@ -84,6 +84,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				*environment.DummyLoad,
 				false,
 				nil,
+				nil,
 			)
 			transferToken(
 				*environment.ProtocolOwnerPrivateKey,
@@ -114,6 +115,7 @@ func initializeAllNodes(nodeList []utils.NodeConfig, environment utils.Environme
 				*node.PrivateKey,
 				*environment.DummyLoad,
 				false,
+				nil,
 				nil,
 			)
 			transferToken(

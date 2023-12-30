@@ -5,7 +5,7 @@ pragma solidity >=0.8.17;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 import "./Shared.sol";
 import "./Math.sol";
@@ -15,7 +15,12 @@ import "./IScatterToken.sol";
 import "./IReputationManager.sol";
 import "./IEvaluationJobToken.sol";
 
-contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
+contract ScatterToken is
+    ERC20Capped,
+    ERC20Burnable,
+    IScatterToken,
+    ReentrancyGuard
+{
     uint256 public requiredModelValidatorStake;
     address payable public owner;
 
@@ -31,14 +36,14 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
 
     // Lottery for challenges who prove a validator wrong
     uint256 lotteryPool = 0;
+
+    // Reward Factors - should add up to 100
     uint256 lotteryPercentage = 10;
+    uint256 trainerRewardProportion = 70;
+    uint256 validatorRewardProportion = 20;
 
     // Punishment constants
     uint256 validatorPunishmentPercentage = 10;
-
-    // Reward Factors
-    uint256 trainerRewardProportion = 80;
-    uint256 validatorRewardProportion = 20;
 
     IScatterProtocol scatterProtocolContract;
     IReputationManager reputationManagerContract;
@@ -53,7 +58,7 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
         owner = payable(msg.sender);
         _mint(owner, cap * (10 ** decimals()));
 
-        requiredModelValidatorStake = 10000;
+        requiredModelValidatorStake = 25000;
     }
 
     function setScatterProtocolAddress(address newAddress) public onlyOwner {
@@ -115,7 +120,7 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
         ] += amount;
     }
 
-    function stakeToken(uint256 amount) public {
+    function stakeToken(uint256 amount) public nonReentrant {
         require(
             amount <= this.balanceOf(msg.sender),
             "Cannot stake more tokens than you own"
@@ -128,7 +133,7 @@ contract ScatterToken is ERC20Capped, ERC20Burnable, IScatterToken {
         emit TokensStaked(msg.sender, amount);
     }
 
-    function removeStake(uint256 amount) public {
+    function removeStake(uint256 amount) public nonReentrant {
         require(
             addressToStakeTime[msg.sender] >= block.timestamp,
             "You must wait before being able to unstake Scatter Token"

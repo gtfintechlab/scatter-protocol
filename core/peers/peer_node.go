@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"sync"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -18,13 +17,12 @@ import (
 	protocol "github.com/gtfintechlab/scatter-protocol/core/protocol"
 	utils "github.com/gtfintechlab/scatter-protocol/core/utils"
 	libp2p "github.com/libp2p/go-libp2p"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	network "github.com/libp2p/go-libp2p/core/network"
 )
 
 func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 	databasePassword string, databasePort int, blockchainAddress string,
-	privateKey string, dummyLoad bool, logMode bool, workspaceId *string) *utils.PeerNode {
+	privateKey string, dummyLoad bool, logMode bool, workspaceId *string, aesKeyFile *string) *utils.PeerNode {
 	// Create a new libp2p host for the new node
 	node, _ := libp2p.New()
 	table, _ := networking.NewDHT(context.Background(), node)
@@ -34,7 +32,6 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 	table.Bootstrap(context.Background())
 	log.Println("Peer Node:", node.ID())
 
-	ps, _ := pubsub.NewGossipSub(context.Background(), node)
 	var database *sql.DB
 	if databasePort != 0 {
 		database = peerDatabase.ConnectToPostgres(peerType, databaseUsername, databasePassword, databasePort)
@@ -44,6 +41,13 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 	jq := utils.NewJobProcessor(1)
 	jq.StartWorkers(1)
 
+	var aesPrivate []byte
+	if aesKeyFile == nil {
+		aesPrivate, _ = utils.GenerateAESKey(256)
+	} else {
+		aesPrivate, _ = utils.LoadAESKeyFromFile(*aesKeyFile)
+	}
+	aesChannelMap := make(map[string]map[string]map[string]chan bool)
 	peerNode := utils.PeerNode{
 		PeerType:          peerType,
 		Start:             StartPeer,
@@ -55,10 +59,7 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 		},
 		PeerToPeerServer:     &node,
 		DistributedHashTable: table,
-		PubSubService:        ps,
 		DataStore:            database,
-		PubSubTopics:         &map[string]*pubsub.Topic{},
-		TransactorLock:       &sync.Mutex{},
 		TrainingLock:         &map[string]map[string]bool{},
 		JobQueue:             jq,
 		DummyLoad:            &dummyLoad,
@@ -66,9 +67,11 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 		WorkspaceId:          workspaceId,
 		Subscriptions:        &utils.SubscriptionManager{},
 		Subscribe:            Subscribe,
+		AESKey:               &aesPrivate,
+		AESChannels:          &aesChannelMap,
 	}
 
-	protocol.SetNodeId(&peerNode, node.ID().String())
+	protocol.SetNodeId(&peerNode)
 
 	go protocol.TrainingEventListener(&peerNode)
 	go protocol.EvaluationRequestListener(&peerNode)
@@ -135,6 +138,11 @@ func peerStreamHandler(node *utils.PeerNode) network.StreamHandler {
 	return func(stream network.Stream) {
 		message := networking.DecodeMessage(&stream)
 		switch messageType := message.MessageType; messageType {
+		case utils.REQUEST_DECRYPTION_KEY:
+			go requestDecryptionKeyHandler(node, &stream, message)
+		case utils.AWKNOWLEDGE_DECRYPTION_KEY_REQUEST:
+			go awknowledgeDecryptionKeyRequestHandler(node, &stream, message)
+
 		}
 	}
 }

@@ -50,6 +50,13 @@ contract VoteManager is Ownable, IVoteManager {
     mapping(address => mapping(string => mapping(address => bool))) voteResult;
     mapping(address => mapping(string => mapping(address => bool))) modelIsValidated;
 
+    // A validator can refrain from joining a trianing job if the evaluation job is deemed to be malicious
+    // If this happens, they put a portion of their stake on the line
+    // If a quorum of the validators agree, then the validator will still be rewarded and the requester will lose its reward
+    // If they disagree, then the validator loses a portion of its stake
+    // requestor address --> topicName --> validator address --> true/false
+    mapping(address => mapping(string => mapping(address => bool))) maliciousEvaluations;
+
     event ModelAccepted(
         address requestorAddress,
         string topicName,
@@ -85,6 +92,23 @@ contract VoteManager is Ownable, IVoteManager {
         );
     }
 
+    function refrainFromValidation(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress
+    ) external onlyScatterProtocol {
+        require(
+            validatorHasVoted[requestorAddress][topicName][validatorAddress][
+                address(0x0)
+            ] == false,
+            "Validator cannot mark a job as malicious after having submitted a score for it"
+        );
+
+        maliciousEvaluations[requestorAddress][topicName][
+            validatorAddress
+        ] = true;
+    }
+
     function submitScoreVote(
         address requestorAddress,
         string memory topicName,
@@ -97,6 +121,10 @@ contract VoteManager is Ownable, IVoteManager {
             ] == false,
             "Validator cannot vote twice for a single model on a validation proposal"
         );
+        validatorHasVoted[requestorAddress][topicName][validatorAddress][
+            address(0x0)
+        ] = true;
+
         validatorHasVoted[requestorAddress][topicName][validatorAddress][
             trainerAddress
         ] = true;

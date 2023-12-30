@@ -36,7 +36,9 @@ func startNode() http.HandlerFunc {
 			requestBody.DummyLoad,
 			true,
 			requestBody.WorkspaceId,
+			nil,
 		)
+
 		if int(requestBody.DatabasePort) != 0 {
 			simulation.ClearDatabase(node.DataStore)
 			peerDatabase.MigratePeerDB(
@@ -77,6 +79,7 @@ func addTopic() http.HandlerFunc {
 func initializeRoles() http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		for _, node := range Nodes {
+			protocol.SetNodeId(node)
 			if node.PeerType == utils.PEER_VALIDATOR {
 				protocol.AddScatterTokenStake(node, utils.VALIDATOR_STAKE)
 				protocol.InitValidatorNode(node)

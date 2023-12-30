@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/rsa"
 	"database/sql"
 	"math/big"
 	"net/http"
@@ -9,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	dht "github.com/libp2p/go-libp2p-kad-dht"
-	pubsub "github.com/libp2p/go-libp2p-pubsub"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
@@ -21,6 +21,11 @@ var BOOTSTRAP_NODE_MULTIADDR string = "/ip4/127.0.0.1/tcp/7001/p2p/QmSgdAwbFv5W1
 const (
 	NODE_BOOTSTRAP = "bootstrap"
 	NODE_PEER      = "peer"
+)
+
+const (
+	REQUEST_DECRYPTION_KEY             = "request_decryption_key"
+	AWKNOWLEDGE_DECRYPTION_KEY_REQUEST = "awknowledge_decryption_key_request"
 )
 
 var UTIL_GENERATE_KEYS = "keygen"
@@ -68,7 +73,7 @@ const (
 	SEPOLIA = 11155111
 )
 
-const VALIDATOR_STAKE = 10000
+const VALIDATOR_STAKE = 25000
 
 const (
 	Reset  = "\033[0m"
@@ -89,19 +94,19 @@ type PeerNode struct {
 	NodeId               peer.ID                     // ID of Node
 	Start                func(*PeerNode, bool)       // Start Function for node
 	DataStore            *sql.DB                     // DataStore to store information
-	TransactorLock       *sync.Mutex                 // Mutex Lock for transactor
 	ExternalServer       *http.Server                // Http Server to communicate with node
 	PeerToPeerServer     *host.Host                  // Peer2Peer server to communicate with network
 	DistributedHashTable *dht.IpfsDHT                // Distributed hash table for peer discovery
-	PubSubService        *pubsub.PubSub              // PubSub Service for the node
-	PubSubTopics         *map[string]*pubsub.Topic   // PubSub Topics for topics we have subscribed to
 	TrainingLock         *map[string]map[string]bool // A training lock to ensure subsequent fired emits don't cause extra training
 	JobQueue             *JobProcessor               // Asynchrnous job queue to process training requests
 	DummyLoad            *bool                       // Use dummy data to make simulations go faster
 	LogMode              *bool                       // Log mode to keep track of metrics during simulations
 	WorkspaceId          *string                     // For debugging and simulation purposes
-	Subscriptions        *SubscriptionManager
-	Subscribe            func(*PeerNode)
+	Subscriptions        *SubscriptionManager        // Subscription manager for all event listeners
+	Subscribe            func(*PeerNode)             // Function to subscribe to all event listeners
+	AESKey               *[]byte                     // Private key for RSA
+	RSAPublicKey         *rsa.PublicKey              // Public Key for RSA
+	AESChannels          *map[string]map[string]map[string](chan bool)
 }
 
 type SubscriptionManager struct {
@@ -134,9 +139,17 @@ type ValidatorNode struct {
 	DistributedHashTable *dht.IpfsDHT
 }
 
-type TrainingInfoFromRequestor struct {
-	Files []byte `json:"files"`
-	Topic string `json:"topic"`
+type DecryptionKeyRequest struct {
+	RequestorAddress string `json:"requestorAddress"`
+	TopicName        string `json:"topicName"`
+}
+
+type AwknowledgeDecryptionKeyRequest struct {
+	TrainerAddress   string `json:"trainerAddress"`
+	RequestorAddress string `json:"requestorAddress"`
+	TopicName        string `json:"topicName"`
+	PublicKey        []byte `json:"publicKey"`
+	PrivateKey       []byte `json:"privateKey"`
 }
 
 type AddTopicRequestBody struct {

@@ -99,6 +99,51 @@ func AddTopicFromInfo(node *utils.PeerNode, nodeAddress string, ipfsCid string, 
 
 }
 
+func WriteDecryptionKey(node *utils.PeerNode, trainerAddress string, privateKey []byte, topicName string, requestorAddress string) {
+	trainerAddress = strings.ToLower(trainerAddress)
+	requestorAddress = strings.ToLower(requestorAddress)
+
+	statement, err := node.DataStore.Prepare(`
+		INSERT INTO decryption_keys (trainer_address, requestor_address, topic_name, private_key)
+		VALUES ($1, $2, $3, $4);
+	`)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer statement.Close()
+
+	statement.Exec(trainerAddress, requestorAddress, topicName, privateKey)
+
+}
+
+func RetrieveDecryptionKey(node *utils.PeerNode, trainerAddress string, topicName string, requestorAddress string) []byte {
+	trainerAddress = strings.ToLower(trainerAddress)
+	requestorAddress = strings.ToLower(requestorAddress)
+
+	rows, err := node.DataStore.Query(`
+		SELECT private_key FROM decryption_keys
+		WHERE (trainer_address = $1) AND (topic_name = $2) AND (requestor_address = $3);
+	`, trainerAddress, topicName, requestorAddress)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	keys := [][]byte{}
+	for rows.Next() {
+		var key []byte
+		rows.Scan(&key)
+		keys = append(keys, key)
+	}
+
+	if len(keys) == 0 {
+		return []byte{}
+	}
+
+	return keys[0]
+}
+
 func ConnectToPostgres(peerType string, username string, password string, port int) *sql.DB {
 	connStr := fmt.Sprintf(
 		"user=%s password=%s host=localhost port=%d dbname=postgres sslmode=disable",

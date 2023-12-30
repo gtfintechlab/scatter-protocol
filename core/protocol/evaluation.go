@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log"
@@ -12,7 +13,9 @@ import (
 	"strings"
 
 	"github.com/gtfintechlab/scatter-protocol/core/networking"
+	peerDatabase "github.com/gtfintechlab/scatter-protocol/core/peers/db"
 	"github.com/gtfintechlab/scatter-protocol/core/utils"
+	"github.com/libp2p/go-libp2p/core/peer"
 )
 
 func downloadEvaluationJob(requestorAddress string, ipfsCid string) {
@@ -37,7 +40,7 @@ func buildEvaluationImage(requestorId string, ipfsCid string) {
 		requestorIdLower,
 		ipfsCidLower,
 	),
-		0700,
+		0777,
 	)
 
 	cmd := exec.Command(
@@ -91,8 +94,56 @@ func downloadTrainerModel(node *utils.PeerNode, requestorAddress string, topicNa
 
 	modelCid := GetModelCidByTrainer(node, requestorAddress, topicName, trainerAddress)
 	modelBytes, _ := utils.GetFileBytesFromIPFS(modelCid)
-	err := networking.WriteBytesToFile(modelPath, modelBytes)
+
+	nodeId := GetNodeIdFromAddress(node, trainerAddress)
+	// Get Decryption key
+	peerId, err := peer.Decode(nodeId)
+
 	if err != nil {
-		log.Fatalf("Failed to download model from ipfs with error: %s", err)
+		log.Fatal(err)
+	}
+	stream, err := (*node.PeerToPeerServer).NewStream(
+		context.Background(),
+		peerId,
+		utils.PROTOCOL_IDENTIFIER,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create the boolean channel
+	aesChannel := make(chan bool)
+	// Initialize the structure
+	if _, ok := (*node.AESChannels)[strings.ToLower(requestorAddress)]; !ok {
+		(*node.AESChannels)[strings.ToLower(requestorAddress)] = make(map[string]map[string]chan bool)
+	}
+	if _, ok := (*node.AESChannels)[strings.ToLower(requestorAddress)][topicName]; !ok {
+		(*node.AESChannels)[strings.ToLower(requestorAddress)][topicName] = make(map[string]chan bool)
+	}
+	if _, ok := (*node.AESChannels)[strings.ToLower(requestorAddress)][topicName][strings.ToLower(trainerAddress)]; !ok {
+		(*node.AESChannels)[strings.ToLower(requestorAddress)][topicName][strings.ToLower(trainerAddress)] = aesChannel
+	}
+	networking.SendMessage(&stream, utils.Message{
+		MessageType: utils.REQUEST_DECRYPTION_KEY,
+		Payload: map[string]interface{}{
+			"requestorAddress": requestorAddress,
+			"topicName":        topicName,
+		},
+	})
+
+	select {
+	case <-(*node.AESChannels)[strings.ToLower(requestorAddress)][topicName][strings.ToLower(trainerAddress)]:
+		privateKeyBytes := peerDatabase.RetrieveDecryptionKey(node, trainerAddress, topicName, requestorAddress)
+		modelBytes, err = utils.DecryptData(modelBytes, privateKeyBytes)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = networking.WriteBytesToFile(modelPath, modelBytes)
+		if err != nil {
+			log.Fatalf("Failed to download model from ipfs with error: %s", err)
+		}
+		close((*node.AESChannels)[strings.ToLower(requestorAddress)][topicName][strings.ToLower(trainerAddress)])
+		return
 	}
 }
