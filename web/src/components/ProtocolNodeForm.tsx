@@ -22,6 +22,7 @@ const ProtocolNodeForm = ({ node, nodeCreationCallback }: { node: ProtocolNode |
     const [useDummyData, setUseDummyData] = useState<boolean>(true)
     const [useMdns, setUseMdns] = useState<boolean>(true)
     const [isProtocolOwner, setIsProtocolOwner] = useState<boolean>(true)
+    const [isMalicious, setIsMalicious] = useState<boolean>(false)
     const [settingValues, setSettingValues] = useState<boolean>(false);
 
     const setDefaultValues = async () => {
@@ -95,6 +96,7 @@ const ProtocolNodeForm = ({ node, nodeCreationCallback }: { node: ProtocolNode |
             useMdns,
             state: ProtocolNodeState.STOPPED,
             isProtocolOwner,
+            isMalicious,
             workspaceId: currentWorkspace._id as Types.ObjectId
         }
 
@@ -129,6 +131,7 @@ const ProtocolNodeForm = ({ node, nodeCreationCallback }: { node: ProtocolNode |
             useMdns,
             state: ProtocolNodeState.STOPPED,
             isProtocolOwner,
+            isMalicious,
             workspaceId: currentWorkspace._id as Types.ObjectId
         }
 
@@ -143,7 +146,7 @@ const ProtocolNodeForm = ({ node, nodeCreationCallback }: { node: ProtocolNode |
 
     const setPreexistingValues = () => {
         const { apiPort, peerType, postgresPassword, postgresUsername, databasePort, initialTokenSupply, blockchainAddress, privateKey, dummyLoad, useMdns,
-            isProtocolOwner,
+            isProtocolOwner, isMalicious
         } = node as ProtocolNode
 
         setApiPort(apiPort);
@@ -156,6 +159,7 @@ const ProtocolNodeForm = ({ node, nodeCreationCallback }: { node: ProtocolNode |
         setPrivateKey(privateKey);
         setUseDummyData(dummyLoad)
         setUseMdns(useMdns);
+        setIsMalicious(isMalicious);
         setIsProtocolOwner(isProtocolOwner);
     }
 
@@ -239,6 +243,11 @@ const ProtocolNodeForm = ({ node, nodeCreationCallback }: { node: ProtocolNode |
                         <label className="text-black font-semibold">Is Protocol Owner?</label>
                         <input type="checkbox" checked={isProtocolOwner} onChange={() => setIsProtocolOwner(!isProtocolOwner)} disabled={settingValues}></input>
                     </div>
+                    <div className='flex flex-row gap-2 shrink grow'>
+                        <label className="text-black font-semibold">Is Malicious?</label>
+                        <input type="checkbox" checked={isMalicious} onChange={() => setIsMalicious(!isMalicious)} disabled={settingValues}></input>
+                    </div>
+
                 </div>
             </div>
             <div className='flex flex-col gap-2'>

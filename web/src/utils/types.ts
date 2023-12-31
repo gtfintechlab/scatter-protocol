@@ -44,6 +44,7 @@ export interface ProtocolNode {
     tokenSupply: number;
     initialTokenSupply: number;
     isProtocolOwner: boolean;
+    isMalicious: boolean;
     state: ProtocolNodeState;
     workspaceId: Types.ObjectId;
 }

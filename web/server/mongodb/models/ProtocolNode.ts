@@ -55,6 +55,10 @@ const ProtocolNodeSchema = new Schema<ProtocolNode>(
             type: Boolean,
             required: true,
         },
+        isMalicious: {
+            type: Boolean,
+            required: false,
+        },
         state: {
             type: String,
             required: true,

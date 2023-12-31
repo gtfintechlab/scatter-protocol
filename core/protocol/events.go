@@ -229,7 +229,6 @@ func JobCompleteEventListener(node *utils.PeerNode) {
 		case <-subscription.Err():
 			return
 		case event := <-logs:
-			log.Println(utils.Red + "I HEAR TRAINING COMPLETE" + utils.Reset)
 			eventUnpacked := utils.JobCompleteEvent{}
 			contractABI.UnpackIntoInterface(&eventUnpacked, "JobComplete", event.Data)
 			if *node.LogMode {
@@ -291,6 +290,11 @@ func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topic
 		trainers := GetAllTrainersByAddressAndTopic(node, requestorAddress, topicName)
 		for _, trainer := range trainers {
 			score := big.NewInt(utils.GetRandomNumber(40, 100))
+
+			if scatterlogs.IsNodeMalicious(node, trainer) {
+				score = big.NewInt(utils.GetRandomNumber(0, 39))
+			}
+
 			SubmitEvaluationScore(node, requestorAddress, topicName, trainer, score)
 		}
 		return

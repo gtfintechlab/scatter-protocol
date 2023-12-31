@@ -279,7 +279,27 @@ type SimulationStartNodeRequest struct {
 	DummyLoad         bool    `json:"dummyLoad"`
 	UseMdns           bool    `json:"useMdns"`
 	IsProtocolOwner   bool    `json:"isProtocolOwner"`
+	IsMalicious       bool    `json:"isMalicious"`
 	WorkspaceId       *string `json:"workspaceId,omitempty"`
+}
+
+type LoggedSimulationNode struct {
+	ID                 primitive.ObjectID `bson:"_id"`
+	PeerType           string             `bson:"peerType"`
+	APIPort            int                `bson:"apiPort"`
+	PostgresUsername   string             `bson:"postgresUsername"`
+	PostgresPassword   string             `bson:"postgresPassword"`
+	DatabasePort       int                `bson:"databasePort"`
+	BlockchainAddress  string             `bson:"blockchainAddress"`
+	PrivateKey         string             `bson:"privateKey"`
+	DummyLoad          bool               `bson:"dummyLoad"`
+	UseMdns            bool               `bson:"useMdns"`
+	TokenSupply        int                `bson:"tokenSupply"`
+	InitialTokenSupply int                `bson:"initialTokenSupply"`
+	IsProtocolOwner    bool               `bson:"isProtocolOwner"`
+	IsMalicious        bool               `bson:"isMalicious"`
+	State              string             `bson:"state"`
+	WorkspaceID        primitive.ObjectID `bson:"workspaceId"`
 }
 
 type SimulationAppTopicRequest struct {

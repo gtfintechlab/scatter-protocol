@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.17;
 
-library Math {
+library ScatterMath {
     function floorSqrt(uint256 n) internal pure returns (uint256) {
         unchecked {
             if (n > 0) {

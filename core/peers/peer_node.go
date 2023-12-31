@@ -49,7 +49,7 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 		aesPrivate, _ = utils.LoadAESKeyFromFile(*aesKeyFile)
 	}
 	aesChannelMap := make(map[string]map[string]map[string]chan bool)
-	cronJobRunner := utils.NewCronJobRunner(time.Second * 30)
+	cronJobRunner := utils.NewCronJobRunner(time.Minute * 2)
 	peerNode := utils.PeerNode{
 		PeerType:          peerType,
 		Start:             StartPeer,

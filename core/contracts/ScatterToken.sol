@@ -6,9 +6,10 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 import "./Shared.sol";
-import "./Math.sol";
+import "./ScatterMath.sol";
 
 import "./IScatterProtocol.sol";
 import "./IScatterToken.sol";
@@ -43,7 +44,9 @@ contract ScatterToken is
     uint256 validatorRewardProportion = 20;
 
     // Punishment constants
-    uint256 validatorPunishmentPercentage = 10;
+    uint256 validatorBasePenalty = 200;
+    uint256 validatorPenaltyMultiplier = 2;
+    mapping(address => uint256) validatorPenaltyCount;
 
     IScatterProtocol scatterProtocolContract;
     IReputationManager reputationManagerContract;
@@ -52,11 +55,9 @@ contract ScatterToken is
     event TokensStaked(address from, uint256 amount);
     event TokensUnstaked(address to, uint256 amount);
 
-    constructor(
-        uint256 cap
-    ) ERC20("ScatterToken", "ST") ERC20Capped(cap * (10 ** decimals())) {
+    constructor(uint256 cap) ERC20("ScatterToken", "ST") ERC20Capped(cap) {
         owner = payable(msg.sender);
-        _mint(owner, cap * (10 ** decimals()));
+        _mint(owner, cap);
 
         requiredModelValidatorStake = 25000;
     }
@@ -208,11 +209,18 @@ contract ScatterToken is
             .getMalevolentValidators(requestorAddress, topicName);
 
         for (uint i = 0; i < validators.length; i++) {
-            uint256 punishmentAmount = (addressToStake[validators[i]] *
-                validatorPunishmentPercentage) / 100;
+            uint256 calculatedPenalty = validatorBasePenalty *
+                (validatorPenaltyMultiplier **
+                    validatorPenaltyCount[validators[i]]);
+
+            uint256 punishmentAmount = Math.min(
+                addressToStake[validators[i]],
+                calculatedPenalty
+            );
             lotteryPool += punishmentAmount;
 
             addressToStake[validators[i]] -= punishmentAmount;
+            validatorPenaltyCount[validators[i]] += 1;
         }
     }
 
@@ -240,7 +248,7 @@ contract ScatterToken is
                 requestorAddress
             ][topicName][trainers[i]];
 
-            uint stakeWeight = Math.floorSqrt(stakedToken);
+            uint stakeWeight = ScatterMath.floorSqrt(stakedToken);
 
             totalWeight += performanceWeight * stakeWeight;
         }
@@ -257,11 +265,15 @@ contract ScatterToken is
                 requestorAddress
             ][topicName][trainers[i]];
 
-            uint256 stakeWeight = Math.floorSqrt(stakedToken);
+            uint256 stakeWeight = ScatterMath.floorSqrt(stakedToken);
 
             uint256 tokenTransferred = (performanceWeight *
                 stakeWeight *
                 totalRewardPool) / totalWeight;
+
+            if (trainers[i] == address(0)) {
+                continue;
+            }
             _mint(trainers[i], tokenTransferred);
         }
     }
@@ -284,6 +296,10 @@ contract ScatterToken is
         for (uint i = 0; i < validators.length; i++) {
             uint256 tokenTransferred = (addressToStake[validators[i]] *
                 totalRewardPool) / totalStaked;
+
+            if (validators[i] == address(0)) {
+                continue;
+            }
             _mint(validators[i], tokenTransferred);
         }
     }
@@ -300,6 +316,9 @@ contract ScatterToken is
                 requestorAddress
             ][topicName][trainers[i]];
 
+            if (trainers[i] == address(0)) {
+                continue;
+            }
             _mint(trainers[i], tokenTransferred);
         }
     }
