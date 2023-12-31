@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IScatterProtocol.sol";
 import "./IVoteManager.sol";
 import "./IEvaluationJobToken.sol";
+import "hardhat/console.sol";
 
 contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
     using Counters for Counters.Counter;

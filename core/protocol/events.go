@@ -39,13 +39,16 @@ func TrainingEventListener(node *utils.PeerNode) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if node.Subscriptions.TrainingInitialized != nil {
+		(*node.Subscriptions.TrainingInitialized).Unsubscribe()
+	}
 	node.Subscriptions.TrainingInitialized = &subscription
-	defer subscription.Unsubscribe()
+	// defer subscription.Unsubscribe()
 
 	for {
 		select {
-		case err := <-subscription.Err():
-			log.Printf("Subscription Closed %s", err)
+		case <-subscription.Err():
 			return
 		case event := <-logs:
 			eventUnpacked := utils.TrainingInitializedEvent{}
@@ -96,16 +99,19 @@ func EvaluationRequestListener(node *utils.PeerNode) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer subscription.Unsubscribe()
+	if node.Subscriptions.RequestForEvaluationSet != nil {
+		(*node.Subscriptions.RequestForEvaluationSet).Unsubscribe()
+	}
+	node.Subscriptions.RequestForEvaluationSet = &subscription
+	// defer subscription.Unsubscribe()
 
 	for {
 		select {
-		case err := <-subscription.Err():
-			log.Printf("Subscription Closed %s", err)
+		case <-subscription.Err():
 			return
 		case event := <-logs:
 			if GetRoleByAddress(node, *node.BlockchainAddress) != utils.PEER_REQUESTOR {
-				return
+				continue
 			}
 
 			eventUnpacked := utils.EvaluationRequestEvent{}
@@ -139,16 +145,19 @@ func ModelValidationListener(node *utils.PeerNode) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer subscription.Unsubscribe()
+	if node.Subscriptions.ModelReadyToValidate != nil {
+		(*node.Subscriptions.ModelReadyToValidate).Unsubscribe()
+	}
+	node.Subscriptions.ModelReadyToValidate = &subscription
+	// defer subscription.Unsubscribe()
 
 	for {
 		select {
-		case err := <-subscription.Err():
-			log.Printf("Subscription Closed %s", err)
+		case <-subscription.Err():
 			return
 		case event := <-logs:
 			if GetRoleByAddress(node, *node.BlockchainAddress) != utils.PEER_VALIDATOR {
-				return
+				continue
 			}
 			eventUnpacked := utils.ModelReadyToValidateEvent{}
 			contractABI.UnpackIntoInterface(&eventUnpacked, "ModelReadyToValidate", event.Data)
@@ -179,12 +188,15 @@ func DebugEventListener(node *utils.PeerNode) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer subscription.Unsubscribe()
+	if node.Subscriptions.DebugEvent != nil {
+		(*node.Subscriptions.DebugEvent).Unsubscribe()
+	}
+	node.Subscriptions.DebugEvent = &subscription
+	// defer subscription.Unsubscribe()
 
 	for {
 		select {
-		case err := <-subscription.Err():
-			log.Printf("Subscription Closed %s", err)
+		case <-subscription.Err():
 			return
 		case event := <-logs:
 			eventUnpacked := utils.DebugEvent{}
@@ -206,19 +218,20 @@ func JobCompleteEventListener(node *utils.PeerNode) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer subscription.Unsubscribe()
+	if node.Subscriptions.JobComplete != nil {
+		(*node.Subscriptions.JobComplete).Unsubscribe()
+	}
+	node.Subscriptions.JobComplete = &subscription
+	// defer subscription.Unsubscribe()
 
 	for {
 		select {
-		case err := <-subscription.Err():
-			log.Printf("Subscription Closed %s", err)
+		case <-subscription.Err():
 			return
 		case event := <-logs:
+			log.Println(utils.Red + "I HEAR TRAINING COMPLETE" + utils.Reset)
 			eventUnpacked := utils.JobCompleteEvent{}
 			contractABI.UnpackIntoInterface(&eventUnpacked, "JobComplete", event.Data)
-			if !(*node.LogMode) {
-				return
-			}
 			if *node.LogMode {
 
 				if node.PeerType == utils.PEER_TRAINER || node.PeerType == utils.PEER_VALIDATOR {
@@ -294,7 +307,6 @@ func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topic
 		downloadTrainerModel(node, requestorAddress, topicName, evaluationJobCid, trainer)
 		buildEvaluationImage(requestorAddress, evaluationJobCid)
 		score := runEvaluationContainer(requestorAddress, evaluationJobCid)
-		fmt.Println("SCORE:", score)
 		SubmitEvaluationScore(node, requestorAddress, topicName, trainer, score)
 	}
 }

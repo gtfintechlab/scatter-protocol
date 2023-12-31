@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -99,6 +100,7 @@ type PeerNode struct {
 	DistributedHashTable *dht.IpfsDHT                // Distributed hash table for peer discovery
 	TrainingLock         *map[string]map[string]bool // A training lock to ensure subsequent fired emits don't cause extra training
 	JobQueue             *JobProcessor               // Asynchrnous job queue to process training requests
+	CronJobRunner        *CronJobRunner              // Cron job runner to keep subscriptions alive
 	DummyLoad            *bool                       // Use dummy data to make simulations go faster
 	LogMode              *bool                       // Log mode to keep track of metrics during simulations
 	WorkspaceId          *string                     // For debugging and simulation purposes
@@ -107,6 +109,13 @@ type PeerNode struct {
 	AESKey               *[]byte                     // Private key for RSA
 	RSAPublicKey         *rsa.PublicKey              // Public Key for RSA
 	AESChannels          *map[string]map[string]map[string](chan bool)
+}
+
+type CronJobRunner struct {
+	interval time.Duration
+	jobs     []func()
+	stop     chan struct{}
+	wg       sync.WaitGroup
 }
 
 type SubscriptionManager struct {

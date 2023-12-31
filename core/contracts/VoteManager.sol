@@ -124,15 +124,12 @@ contract VoteManager is Ownable, IVoteManager {
         validatorHasVoted[requestorAddress][topicName][validatorAddress][
             address(0x0)
         ] = true;
-
         validatorHasVoted[requestorAddress][topicName][validatorAddress][
             trainerAddress
         ] = true;
-
         ValidationProposal memory proposal = validationProposals[
             requestorAddress
         ][topicName];
-
         voteCounter[requestorAddress][topicName][trainerAddress] += 1;
 
         uint voteCount = voteCounter[requestorAddress][topicName][

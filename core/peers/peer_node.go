@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -48,6 +49,7 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 		aesPrivate, _ = utils.LoadAESKeyFromFile(*aesKeyFile)
 	}
 	aesChannelMap := make(map[string]map[string]map[string]chan bool)
+	cronJobRunner := utils.NewCronJobRunner(time.Second * 30)
 	peerNode := utils.PeerNode{
 		PeerType:          peerType,
 		Start:             StartPeer,
@@ -62,6 +64,7 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 		DataStore:            database,
 		TrainingLock:         &map[string]map[string]bool{},
 		JobQueue:             jq,
+		CronJobRunner:        cronJobRunner,
 		DummyLoad:            &dummyLoad,
 		LogMode:              &logMode,
 		WorkspaceId:          workspaceId,
@@ -73,11 +76,18 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 
 	protocol.SetNodeId(&peerNode)
 
+	// Keep subscriptions from timing out
+	peerNode.CronJobRunner.AddJob(func() {
+		peerNode.Subscribe(&peerNode)
+	})
+
 	go protocol.TrainingEventListener(&peerNode)
 	go protocol.EvaluationRequestListener(&peerNode)
 	go protocol.ModelValidationListener(&peerNode)
 	go protocol.DebugEventListener(&peerNode)
 	go protocol.JobCompleteEventListener(&peerNode)
+
+	go peerNode.CronJobRunner.Start()
 
 	if protocol.GetRoleByAddress(&peerNode, *peerNode.BlockchainAddress) == utils.PEER_NO_ROLE {
 		switch peerType {
