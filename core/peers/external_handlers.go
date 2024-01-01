@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	scatterlogs "github.com/gtfintechlab/scatter-protocol/core/logs"
 	networking "github.com/gtfintechlab/scatter-protocol/core/networking"
@@ -84,8 +83,8 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 
 			if *node.LogMode {
 				balance, _ := new(big.Float).SetInt(protocol.GetScatterTokenBalance(node)).Float64()
-				timestamp := float64(time.Now().UnixMilli())
-				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timestamp, balance, node)
+				blockNum := protocol.GetBlockNumber()
+				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, blockNum, balance, node)
 			}
 
 			peerDatabase.AddTopicFromInfo(
@@ -119,8 +118,8 @@ func addTopic(node *utils.PeerNode) http.HandlerFunc {
 			protocol.AddTopicForTrainer(node, *requestBody.RequestorAddress, requestBody.TopicName, *requestBody.Stake)
 			if *node.LogMode {
 				balance, _ := new(big.Float).SetInt(protocol.GetScatterTokenBalance(node)).Float64()
-				timestamp := float64(time.Now().UnixMilli())
-				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timestamp, balance, node)
+				blockNum := protocol.GetBlockNumber()
+				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, blockNum, balance, node)
 			}
 			peerDatabase.AddTopicFromInfo(
 				node,

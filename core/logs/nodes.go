@@ -9,7 +9,11 @@ import (
 )
 
 func IsNodeMalicious(node *utils.PeerNode, blockchainAddress string) bool {
-	client, _ := utils.DbConnect()
+	client, err := utils.DbConnect()
+	for client == nil || err != nil {
+		client, err = utils.DbConnect()
+	}
+	defer client.Client().Disconnect(context.Background())
 	workspaceId, _ := primitive.ObjectIDFromHex(*node.WorkspaceId)
 	filter := bson.M{
 		"workspaceId":       workspaceId,

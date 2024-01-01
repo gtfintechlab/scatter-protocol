@@ -545,7 +545,11 @@ func VerifyDigitalSignature(address string, data map[string]interface{}, signatu
 }
 
 func GetContractInfo() utils.Contracts {
-	client, _ := utils.DbConnect()
+	client, err := utils.DbConnect()
+	for client == nil || err != nil {
+		client, err = utils.DbConnect()
+	}
+	defer client.Client().Disconnect(context.Background())
 	contractsCollection := client.Collection("contracts")
 	singleResult := contractsCollection.FindOne(context.Background(), bson.D{})
 	var contracts utils.Contracts
@@ -553,4 +557,10 @@ func GetContractInfo() utils.Contracts {
 		return utils.Contracts{}
 	}
 	return contracts
+}
+
+func GetBlockNumber() float64 {
+	header, _ := ethereumClient.HeaderByNumber(context.Background(), nil)
+	block, _ := new(big.Float).SetInt(header.Number).Float64()
+	return block
 }

@@ -10,7 +10,11 @@ import (
 )
 
 func CreateLogEvent(logType string, x float64, y float64, node *utils.PeerNode) {
-	client, _ := utils.DbConnect()
+	client, err := utils.DbConnect()
+	for client == nil || err != nil {
+		client, err = utils.DbConnect()
+	}
+	defer client.Client().Disconnect(context.Background())
 	workspaceId, _ := primitive.ObjectIDFromHex(*node.WorkspaceId)
 
 	logEvent := utils.LogEvent{
@@ -23,7 +27,7 @@ func CreateLogEvent(logType string, x float64, y float64, node *utils.PeerNode) 
 	}
 
 	logEventsCollection := client.Collection("logevents")
-	_, err := logEventsCollection.InsertOne(context.Background(), logEvent)
+	_, err = logEventsCollection.InsertOne(context.Background(), logEvent)
 
 	if err != nil {
 		log.Fatal(err)

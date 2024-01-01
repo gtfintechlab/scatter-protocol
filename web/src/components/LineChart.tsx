@@ -12,14 +12,7 @@ import {
 
 const accessors = {
     xAccessor: (data: LogEvent) => {
-        const date = new Date(data.xDataPoint);
-        const year = date.getFullYear();
-        const month = date.getMonth() + 1; // Month is zero-based, so add 1
-        const day = date.getDate();
-        const hours = date.getHours();
-        const minutes = date.getMinutes();
-        const seconds = date.getSeconds();
-        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+        return data.xDataPoint
     },
     yAccessor: (data: LogEvent) => data.yDataPoint,
 };

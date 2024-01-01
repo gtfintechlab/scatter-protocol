@@ -16,8 +16,6 @@ contract VoteManager is Ownable, IVoteManager {
     IScatterToken scatterTokenContract;
     IEvaluationJobToken evaluationTokenContract;
 
-    uint counterQuorum = 1;
-
     struct ValidationProposal {
         address requestorAddress;
         string topicName;
@@ -135,6 +133,13 @@ contract VoteManager is Ownable, IVoteManager {
         uint voteCount = voteCounter[requestorAddress][topicName][
             trainerAddress
         ];
+        // We will go ahead and use 100% of validators
+        uint counterQuorum = (
+            scatterProtocolContract.getValidatorsForFederatedJob(
+                requestorAddress,
+                topicName
+            )
+        ).length;
 
         if (voteCount == counterQuorum) {
             uint averageScore = evaluationTokenContract

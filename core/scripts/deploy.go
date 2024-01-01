@@ -230,6 +230,7 @@ func deployScatterProtocol(privateKey string) {
 
 func UpdateContractInfo(contracts utils.Contracts) {
 	client, _ := utils.DbConnect()
+	defer client.Client().Disconnect(context.Background())
 	contractsCollection := client.Collection("contracts")
 	contractsCollection.DeleteMany(context.Background(), bson.D{})
 	contractsCollection.InsertOne(context.Background(), contracts)
@@ -238,6 +239,7 @@ func UpdateContractInfo(contracts utils.Contracts) {
 
 func GetContractInfo() utils.Contracts {
 	client, _ := utils.DbConnect()
+	defer client.Client().Disconnect(context.Background())
 	contractsCollection := client.Collection("contracts")
 	singleResult := contractsCollection.FindOne(context.Background(), bson.D{})
 	var contracts utils.Contracts

@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -236,16 +235,16 @@ func JobCompleteEventListener(node *utils.PeerNode) {
 				if node.PeerType == utils.PEER_TRAINER || node.PeerType == utils.PEER_VALIDATOR {
 					log.Println(utils.Green + "Training is Complete: Log is being written to database" + utils.Reset)
 					balance, _ := new(big.Float).SetInt(GetScatterTokenBalance(node)).Float64()
-					timestamp := float64(time.Now().UnixMilli())
-					scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timestamp, balance, node)
+					blockNum := GetBlockNumber()
+					scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, blockNum, balance, node)
 				}
 
 				log.Println(utils.Green + "Training is Complete: Token supply is being updated" + utils.Reset)
 				UpdateTokenSupply(node)
 
 				lotteryBalance, _ := new(big.Float).SetInt(GetLotteryBalance(node)).Float64()
-				timestamp := float64(time.Now().UnixMilli())
-				scatterlogs.CreateLogEvent(utils.LOTTERY_BALANCE, timestamp, lotteryBalance, node)
+				blockNum := GetBlockNumber()
+				scatterlogs.CreateLogEvent(utils.LOTTERY_BALANCE, blockNum, lotteryBalance, node)
 
 			}
 
@@ -316,7 +315,11 @@ func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topic
 }
 
 func UpdateTokenSupply(node *utils.PeerNode) {
-	client, _ := utils.DbConnect()
+	client, err := utils.DbConnect()
+	for client == nil || err != nil {
+		client, err = utils.DbConnect()
+	}
+	defer client.Client().Disconnect(context.Background())
 	workspaceId, _ := primitive.ObjectIDFromHex(*node.WorkspaceId)
 	filter := bson.D{
 		{Key: "workspaceId", Value: workspaceId},

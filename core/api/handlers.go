@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"net/http"
 	"os/exec"
-	"time"
 
 	scatterlogs "github.com/gtfintechlab/scatter-protocol/core/logs"
 	"github.com/gtfintechlab/scatter-protocol/core/networking"
@@ -93,8 +92,8 @@ func initializeRoles() http.HandlerFunc {
 		for _, node := range Nodes {
 			if *node.LogMode {
 				balance, _ := new(big.Float).SetInt(protocol.GetScatterTokenBalance(node)).Float64()
-				timestamp := float64(time.Now().UnixMilli())
-				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timestamp, balance, node)
+				blockNum := protocol.GetBlockNumber()
+				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, blockNum, balance, node)
 			}
 		}
 		networking.SendJson(response, map[string]interface{}{"success": true})
@@ -172,8 +171,8 @@ func transferInitialSupply() http.HandlerFunc {
 		for _, node := range Nodes {
 			if *node.LogMode {
 				balance, _ := new(big.Float).SetInt(protocol.GetScatterTokenBalance(node)).Float64()
-				timestamp := float64(time.Now().UnixMilli())
-				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, timestamp, balance, node)
+				blockNum := protocol.GetBlockNumber()
+				scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, blockNum, balance, node)
 			}
 		}
 		networking.SendJson(response, map[string]interface{}{"success": true})
