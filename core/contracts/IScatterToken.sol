@@ -5,6 +5,8 @@ pragma solidity >=0.8.17;
 interface IScatterToken {
     function canBecomeValidator(address account) external returns (bool);
 
+    function canBecomeChallenger(address account) external returns (bool);
+
     function requestorLockToken(
         address requestorAddress,
         string memory topicName,
@@ -47,4 +49,11 @@ interface IScatterToken {
         address requestorAddress,
         string memory topicName
     ) external;
+
+    function rewardChallengers(
+        address requestorAddress,
+        string memory topicName
+    ) external;
+
+    function getLotteryPoolExternal() external view returns (uint256);
 }

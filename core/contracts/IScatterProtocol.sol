@@ -30,4 +30,12 @@ interface IScatterProtocol {
         address requestorAddress,
         string memory topicName
     ) external view returns (bool);
+
+    function getChallengeOwner(
+        address requestorAddress,
+        string memory topicName,
+        address nodeAddress
+    ) external view returns (address);
+
+    function getChallengers() external view returns (address[] memory);
 }

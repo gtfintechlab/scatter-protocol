@@ -8,6 +8,7 @@ import { ROLE_TO_COLOR_MAPPING } from "@/utils/constants";
 import { capitalizeWords } from "@/utils/format";
 import TokenBalanceGraphs from "./TokenBalanceGraphs";
 import LotteryBalanceGraphs from "./LotteryBalanceGraphs";
+import StakeBalanceGraphs from "./StakeBalanceGraphs";
 
 export default function DataManager({ className, blockchainAddress }: { blockchainAddress: string, className?: string }) {
     const { currentWorkspace } = useContext(ProtocolContext)
@@ -89,18 +90,7 @@ export default function DataManager({ className, blockchainAddress }: { blockcha
                     <div className="flex flex-col" key={index}>
                         {logType === LogTypes.TOKEN_BALANCE && <TokenBalanceGraphs dataPoints={dataPoints} addressToRole={addressToRole}></TokenBalanceGraphs>}
                         {logType === LogTypes.LOTTERY_BALANCE && <LotteryBalanceGraphs dataPoints={dataPoints} ></LotteryBalanceGraphs>}
-
-                        {/* {dataPoints.map((data: LogEvent[], index: number) => {
-                            return (
-                                <div key={index}>
-                                    <div className="flex flex-row gap-2 items-center">
-                                        <h1 className="text-black text-sm font-semibold">{logType}:</h1>
-                                        {logType == LogTypes.TOKEN_BALANCE && <h1 className="truncate text-black text-sm">{data.length ? data[0].blockchainAddress : ""}</h1>}
-                                        {logType == LogTypes.TOKEN_BALANCE && <h1 className={`p-1 text-sm rounded-md bg-${ROLE_TO_COLOR_MAPPING[data.length ? addressToRole[data[0].blockchainAddress] : PeerType.NO_ROLE]}-500 text-white`}>{capitalizeWords(data.length ? addressToRole[data[0].blockchainAddress] : "")}</h1>}
-                                    </div>
-                                    <LineChart data={data}></LineChart>
-                                </div>)
-                        })} */}
+                        {logType === LogTypes.STAKE_BALANCE && <StakeBalanceGraphs dataPoints={dataPoints} ></StakeBalanceGraphs>}
                     </div>
                 )
             })}

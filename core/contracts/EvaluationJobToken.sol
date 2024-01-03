@@ -135,12 +135,14 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
         address validatorAddress,
         uint256 score
     ) external onlyScatterProtocolContract {
-        require(
-            !evaluationScoreSet[requestorAddress][topicName][validatorAddress][
+        if (
+            evaluationScoreSet[requestorAddress][topicName][validatorAddress][
                 trainerAddress
-            ],
-            "Cannot resubmit a score for a trainer that has previously been submitted"
-        );
+            ]
+        ) {
+            return;
+        }
+
         require(score >= 0 && score <= 100, "Score must be between 0 and 100");
         require(
             scatterProtocolContract.isValidatorForTrainingJob(

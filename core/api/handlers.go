@@ -86,6 +86,9 @@ func initializeRoles() http.HandlerFunc {
 				protocol.InitRequestorNode(node)
 			} else if node.PeerType == utils.PEER_TRAINER {
 				protocol.InitTrainerNode(node)
+			} else if node.PeerType == utils.PEER_CHALLENGER{
+				protocol.AddScatterTokenStake(node, utils.CHALLENGER_STAKE)
+				protocol.InitChallengerNode(node)
 			}
 		}
 

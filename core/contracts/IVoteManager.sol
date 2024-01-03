@@ -23,4 +23,39 @@ interface IVoteManager {
         string memory topicName,
         address trainerAddress
     ) external view returns (ValidationStatus);
+
+    function submitValidatorChallenge(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress,
+        bool isMalicious,
+        address challengerAddress
+    ) external;
+
+    function submitTrainerChallenge(
+        address requestorAddress,
+        string memory topicName,
+        address trainerAddress,
+        bool isMalicious,
+        address challengerAddress
+    ) external;
+
+    function isChallengeSuccessfulValidator(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress
+    ) external view returns (bool);
+
+    function isChallengeSuccessfulTrainer(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress
+    ) external view returns (bool);
+
+    function hasChallengedNode(
+        address requestorAddress,
+        string memory topicName,
+        address nodeToChallenge,
+        address challengerAddress
+    ) external view returns (bool);
 }

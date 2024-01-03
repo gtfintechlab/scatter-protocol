@@ -55,6 +55,15 @@ contract VoteManager is Ownable, IVoteManager {
     // requestor address --> topicName --> validator address --> true/false
     mapping(address => mapping(string => mapping(address => bool))) maliciousEvaluations;
 
+    // A place for challengers to challenge the maliciousness of specific nodes
+    mapping(address => mapping(string => mapping(address => mapping(address => bool)))) validatorChallenge;
+    mapping(address => mapping(string => mapping(address => uint256))) validatorChallengeMaliceCount;
+    mapping(address => mapping(string => mapping(address => uint256))) validatorChallengeTotalCount;
+
+    mapping(address => mapping(string => mapping(address => mapping(address => bool)))) trainerChallenge;
+    mapping(address => mapping(string => mapping(address => uint256))) trainerChallengeMaliceCount;
+    mapping(address => mapping(string => mapping(address => uint256))) trainerChallengeTotalCount;
+
     event ModelAccepted(
         address requestorAddress,
         string topicName,
@@ -105,6 +114,143 @@ contract VoteManager is Ownable, IVoteManager {
         maliciousEvaluations[requestorAddress][topicName][
             validatorAddress
         ] = true;
+
+        address[] memory trainers = scatterProtocolContract
+            .getTrainersForFederatedJob(requestorAddress, topicName);
+        for (uint256 i = 0; i < trainers.length; i++) {
+            address trainerAddress = trainers[i];
+            validatorHasVoted[requestorAddress][topicName][validatorAddress][
+                trainerAddress
+            ] = true;
+            voteCounter[requestorAddress][topicName][trainerAddress] += 1;
+        }
+    }
+
+    function isMaliciousValidationJob(
+        address requestorAddress,
+        string memory topicName
+    ) internal view returns (bool) {
+        address[] memory validators = scatterProtocolContract
+            .getValidatorsForFederatedJob(requestorAddress, topicName);
+
+        uint maliceCounter = 0;
+        for (uint256 i = 0; i < validators.length; i++) {
+            address validatorAddress = validators[i];
+
+            if (
+                maliciousEvaluations[requestorAddress][topicName][
+                    validatorAddress
+                ]
+            ) {
+                maliceCounter += 1;
+            }
+        }
+
+        // If 2/3 of validators agree that it is a malicious job, then return true
+        return maliceCounter >= (2 * validators.length) / 3;
+    }
+
+    function hasChallengedNode(
+        address requestorAddress,
+        string memory topicName,
+        address nodeToChallenge,
+        address challengerAddress
+    ) external view returns (bool) {
+        return
+            validatorChallenge[requestorAddress][topicName][nodeToChallenge][
+                challengerAddress
+            ] ||
+            trainerChallenge[requestorAddress][topicName][nodeToChallenge][
+                challengerAddress
+            ];
+    }
+
+    function submitValidatorChallenge(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress,
+        bool isMalicious,
+        address challengerAddress
+    ) external onlyScatterProtocol {
+        if (
+            validatorChallenge[requestorAddress][topicName][validatorAddress][
+                challengerAddress
+            ]
+        ) {
+            return;
+        }
+        validatorChallenge[requestorAddress][topicName][validatorAddress][
+            challengerAddress
+        ] = true;
+
+        if (isMalicious) {
+            validatorChallengeMaliceCount[requestorAddress][topicName][
+                validatorAddress
+            ] += 1;
+        }
+        validatorChallengeTotalCount[requestorAddress][topicName][
+            validatorAddress
+        ] += 1;
+    }
+
+    function submitTrainerChallenge(
+        address requestorAddress,
+        string memory topicName,
+        address trainerAddress,
+        bool isMalicious,
+        address challengerAddress
+    ) external onlyScatterProtocol {
+        if (
+            trainerChallenge[requestorAddress][topicName][trainerAddress][
+                challengerAddress
+            ]
+        ) {
+            return;
+        }
+
+        trainerChallenge[requestorAddress][topicName][trainerAddress][
+            challengerAddress
+        ] = true;
+
+        if (isMalicious) {
+            trainerChallengeMaliceCount[requestorAddress][topicName][
+                trainerAddress
+            ] += 1;
+        }
+        trainerChallengeTotalCount[requestorAddress][topicName][
+            trainerAddress
+        ] += 1;
+    }
+
+    function isChallengeSuccessfulValidator(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress
+    ) external view returns (bool) {
+        uint256 malicious = validatorChallengeMaliceCount[requestorAddress][
+            topicName
+        ][validatorAddress];
+
+        uint256 total = validatorChallengeTotalCount[requestorAddress][
+            topicName
+        ][validatorAddress];
+
+        return malicious != 0 && malicious >= (total * 2) / 3;
+    }
+
+    function isChallengeSuccessfulTrainer(
+        address requestorAddress,
+        string memory topicName,
+        address trainerAddress
+    ) external view returns (bool) {
+        uint256 malicious = trainerChallengeMaliceCount[requestorAddress][
+            topicName
+        ][trainerAddress];
+
+        uint256 total = trainerChallengeTotalCount[requestorAddress][topicName][
+            trainerAddress
+        ];
+        return malicious != 0 && malicious >= (total * 2) / 3;
     }
 
     function submitScoreVote(
@@ -119,6 +265,13 @@ contract VoteManager is Ownable, IVoteManager {
             ] == false,
             "Validator cannot vote twice for a single model on a validation proposal"
         );
+        require(
+            maliciousEvaluations[requestorAddress][topicName][
+                validatorAddress
+            ] == false,
+            "Cannot evaluate a validation proposal after marking it false"
+        );
+
         validatorHasVoted[requestorAddress][topicName][validatorAddress][
             address(0x0)
         ] = true;
@@ -153,7 +306,11 @@ contract VoteManager is Ownable, IVoteManager {
                 trainerAddress
             ] = true;
 
-            if (averageScore >= proposal.validationThreshold) {
+            // If it is a malicious validation job, then we can just accept the model
+            if (
+                averageScore >= proposal.validationThreshold ||
+                isMaliciousValidationJob(requestorAddress, topicName)
+            ) {
                 emit ModelAccepted(requestorAddress, topicName, trainerAddress);
                 voteResult[requestorAddress][topicName][trainerAddress] = true;
             } else {

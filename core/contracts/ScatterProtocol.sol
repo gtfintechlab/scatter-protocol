@@ -18,6 +18,7 @@ contract ScatterProtocol is IScatterProtocol {
     struct FederatedJob {
         string trainingJobCid;
         address[] trainers;
+        address[] validators;
         uint256 publishedTrainerCount;
         uint256 pooledReward;
         string evaluationJobCid;
@@ -26,6 +27,7 @@ contract ScatterProtocol is IScatterProtocol {
         uint256 validatorValidationCount;
         uint256 jobStartDate;
         uint validationThresholdScore;
+        uint256 challengersCompletedCount;
         FederatedJobStatus status;
     }
 
@@ -73,6 +75,11 @@ contract ScatterProtocol is IScatterProtocol {
     mapping(address => uint256) internal networkValidatorOrder;
     address[] public networkValidators;
 
+    // Challenger Information
+    // We specifically do order and not index because default value of a mapping is 0
+    mapping(address => uint256) internal networkChallengerOrder;
+    address[] public networkChallengers;
+
     // Information for P2P communication
     mapping(address => string) public addressToNodeId;
     mapping(string => address) public nodeIdToAddress;
@@ -99,6 +106,9 @@ contract ScatterProtocol is IScatterProtocol {
         public validatorTrainingMap;
     mapping(address => mapping(string => address[])) validatorTrainingMapKeys;
 
+    mapping(address => mapping(string => mapping(address => bool))) challengersComplete;
+    mapping(address => mapping(string => mapping(address => address))) challengeOwner;
+
     // Random nonce to generate pseudorandom number
     uint randomNonce = 1;
 
@@ -116,6 +126,16 @@ contract ScatterProtocol is IScatterProtocol {
 
     // An event used for debugging purposes
     event DebugEvent(string message);
+
+    event RequestForChallenges(address requestorAddress, string topicName);
+
+    event ChallengeStarted(
+        address requestorAddress,
+        string topicName,
+        address nodeAddress
+    );
+
+    event RecordLogs(uint256 lotteryAmount);
 
     // An event used to signify a job is complete
     event JobComplete(address requestor, string topicName);
@@ -201,6 +221,13 @@ contract ScatterProtocol is IScatterProtocol {
             networkValidatorOrder,
             msg.sender
         );
+
+        _removeFromOrderedArray(
+            networkChallengers,
+            networkChallengerOrder,
+            msg.sender
+        );
+
         addressToRoles[msg.sender] = roles.Requestor;
         _addToOrderedArray(
             networkRequestors,
@@ -224,6 +251,12 @@ contract ScatterProtocol is IScatterProtocol {
             networkRequestorOrder,
             msg.sender
         );
+        _removeFromOrderedArray(
+            networkChallengers,
+            networkChallengerOrder,
+            msg.sender
+        );
+
         addressToRoles[msg.sender] = roles.Trainer;
         _addToOrderedArray(networkTrainers, networkTrainerOrder, msg.sender);
     }
@@ -250,12 +283,144 @@ contract ScatterProtocol is IScatterProtocol {
             networkTrainerOrder,
             msg.sender
         );
+        _removeFromOrderedArray(
+            networkChallengers,
+            networkChallengerOrder,
+            msg.sender
+        );
+
         addressToRoles[msg.sender] = roles.Validator;
         _addToOrderedArray(
             networkValidators,
             networkValidatorOrder,
             msg.sender
         );
+    }
+
+    /**
+     *  @dev Set the current user role to be a trainer
+     */
+    function initChallengerNode() public {
+        bool canBePromoted = scatterTokenContract.canBecomeChallenger(
+            msg.sender
+        );
+
+        require(
+            canBePromoted,
+            "Your node is not eligible to become a model challenger"
+        );
+        _removeFromOrderedArray(
+            networkRequestors,
+            networkRequestorOrder,
+            msg.sender
+        );
+        _removeFromOrderedArray(
+            networkTrainers,
+            networkTrainerOrder,
+            msg.sender
+        );
+        _removeFromOrderedArray(
+            networkValidators,
+            networkValidatorOrder,
+            msg.sender
+        );
+
+        addressToRoles[msg.sender] = roles.Challenger;
+        _addToOrderedArray(
+            networkChallengers,
+            networkChallengerOrder,
+            msg.sender
+        );
+    }
+
+    function challengeNode(
+        address requestorAddress,
+        string memory topicName,
+        address nodeToChallenge,
+        bool isMalicious
+    ) public isChallenger {
+        if (
+            voteManagerContract.hasChallengedNode(
+                requestorAddress,
+                topicName,
+                nodeToChallenge,
+                msg.sender
+            )
+        ) {
+            return;
+        }
+        if (addressToRoles[nodeToChallenge] == roles.Validator) {
+            voteManagerContract.submitValidatorChallenge(
+                requestorAddress,
+                topicName,
+                nodeToChallenge,
+                isMalicious,
+                msg.sender
+            );
+
+            if (
+                isMalicious &&
+                challengeOwner[requestorAddress][topicName][nodeToChallenge] ==
+                address(0x0)
+            ) {
+                challengeOwner[requestorAddress][topicName][
+                    nodeToChallenge
+                ] = msg.sender;
+                emit ChallengeStarted(
+                    requestorAddress,
+                    topicName,
+                    nodeToChallenge
+                );
+            }
+        } else if (addressToRoles[nodeToChallenge] == roles.Trainer) {
+            voteManagerContract.submitTrainerChallenge(
+                requestorAddress,
+                topicName,
+                nodeToChallenge,
+                isMalicious,
+                msg.sender
+            );
+            if (
+                isMalicious &&
+                challengeOwner[requestorAddress][topicName][nodeToChallenge] ==
+                address(0x0)
+            ) {
+                challengeOwner[requestorAddress][topicName][
+                    nodeToChallenge
+                ] = msg.sender;
+                emit ChallengeStarted(
+                    requestorAddress,
+                    topicName,
+                    nodeToChallenge
+                );
+            }
+        }
+    }
+
+    function getChallengeOwner(
+        address requestorAddress,
+        string memory topicName,
+        address nodeAddress
+    ) external view returns (address) {
+        return challengeOwner[requestorAddress][topicName][nodeAddress];
+    }
+
+    function getChallengers() external view returns (address[] memory) {
+        return networkChallengers;
+    }
+
+    function completeChallengeForJob(
+        address requestorAddress,
+        string memory topicName
+    ) public isChallenger {
+        if (challengersComplete[requestorAddress][topicName][msg.sender]) {
+            return;
+        }
+        challengersComplete[requestorAddress][topicName][msg.sender] = true;
+        addressToFederatedJob[requestorAddress][topicName]
+            .challengersCompletedCount += 1;
+
+        rewardDistributor(requestorAddress, topicName);
     }
 
     function rewardDistributor(
@@ -282,10 +447,16 @@ contract ScatterProtocol is IScatterProtocol {
             requestorAddress,
             topicName
         );
+
+        bool challengersChallenged = _checkChallengerChallenges(
+            requestorAddress,
+            topicName
+        );
+
         // We distribute rewards when all models are validated and submitted or the job is over time
         distributeRewards =
             distributeRewards ||
-            (allModelsSubmitted && allModelsValidated);
+            (allModelsSubmitted && allModelsValidated && challengersChallenged);
 
         // If the job is already complete or is currently distributing rewards, we do not distribute rewards again
         distributeRewards =
@@ -301,27 +472,34 @@ contract ScatterProtocol is IScatterProtocol {
         // Reward benevolent validators - reward should be proportional to their stake
         // Return trainer staked token to benevolent trainers
         // Reward benevolent trainers - reward should be proportional to their short-term stake & model score
+        emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
         if (distributeRewards) {
             addressToFederatedJob[requestorAddress][topicName]
                 .status = FederatedJobStatus.DistributingRewards;
-
+            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
             scatterTokenContract.donateToLottery(requestorAddress, topicName);
             scatterTokenContract.punishRogueTrainers(
                 requestorAddress,
                 topicName
             );
+            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
             scatterTokenContract.punishRogueValidators(
                 requestorAddress,
                 topicName
             );
+            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
             scatterTokenContract.rewardBenevolentTrainers(
                 requestorAddress,
                 topicName
             );
+            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
             scatterTokenContract.rewardBenevolentValidators(
                 requestorAddress,
                 topicName
             );
+            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
+            scatterTokenContract.rewardChallengers(requestorAddress, topicName);
+            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
             // Return staked tokens to trainers for a specific training job
             // Change status to complete
             this.federatedJobCleanUp(requestorAddress, topicName);
@@ -336,6 +514,7 @@ contract ScatterProtocol is IScatterProtocol {
             requestorAddress,
             topicName
         );
+        emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
         addressToFederatedJob[requestorAddress][topicName]
             .status = FederatedJobStatus.Complete;
 
@@ -372,7 +551,8 @@ contract ScatterProtocol is IScatterProtocol {
 
         addressToFederatedJob[msg.sender][topicName].status = FederatedJobStatus
             .InProgress;
-
+        addressToFederatedJob[msg.sender][topicName]
+            .validators = chosenValidators;
         emit TrainingInitialized(msg.sender, topicName);
     }
 
@@ -418,7 +598,7 @@ contract ScatterProtocol is IScatterProtocol {
         }
 
         if (addressToRoles[addressToFind] == roles.Challenger) {
-            return "challenge";
+            return "challenger";
         }
 
         return "no role";
@@ -450,6 +630,7 @@ contract ScatterProtocol is IScatterProtocol {
         FederatedJob memory trainingInfo = FederatedJob(
             trainingTokenURI,
             emptyAddressArray,
+            emptyAddressArray,
             0,
             pooledReward,
             evaluationTokenURI, // evaluation job does not include the evaluation data --> just the job itself
@@ -459,6 +640,7 @@ contract ScatterProtocol is IScatterProtocol {
             0,
             block.timestamp,
             validationThresholdScore,
+            0,
             FederatedJobStatus.NotStarted
         );
         addressToFederatedJob[msg.sender][topicName] = trainingInfo;
@@ -527,6 +709,38 @@ contract ScatterProtocol is IScatterProtocol {
         return
             bytes(addressToFederatedJob[nodeAddress][topicName].trainingJobCid)
                 .length > 0;
+    }
+
+    function getValidatorsByAddressAndTopic(
+        address requestorAddress,
+        string memory topicName,
+        int256 skip
+    ) external view returns (string memory) {
+        string memory validatorList = "";
+        FederatedJob storage trainingInfo = addressToFederatedJob[
+            requestorAddress
+        ][topicName];
+        int256 minIndex = int256(trainingInfo.validators.length) < skip + 10
+            ? int256(trainingInfo.validators.length)
+            : skip + 10;
+
+        for (int256 i = skip; i < int256(minIndex); i++) {
+            if (trainingInfo.validators[uint256(i)] == address(0)) {
+                continue;
+            }
+
+            validatorList = string.concat(
+                validatorList,
+                Strings.toHexString(
+                    uint256(uint160(trainingInfo.validators[uint256(i)])),
+                    20
+                )
+            );
+
+            validatorList = string.concat(validatorList, "\n");
+        }
+
+        return validatorList;
     }
 
     /**
@@ -728,7 +942,16 @@ contract ScatterProtocol is IScatterProtocol {
         );
         addressToFederatedJob[requestorAddress][topicName]
             .validatorValidationCount += 1;
-        rewardDistributor(requestorAddress, topicName);
+
+        if (
+            _checkValidatorModelValidations(requestorAddress, topicName) ||
+            block.timestamp >=
+            addressToFederatedJob[requestorAddress][topicName].jobStartDate +
+                15 days
+        ) {
+            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
+            emit RequestForChallenges(requestorAddress, topicName);
+        }
     }
 
     /**
@@ -850,6 +1073,18 @@ contract ScatterProtocol is IScatterProtocol {
         return
             validatorValidationCount ==
             (validatorList.length * trainerList.length);
+    }
+
+    function _checkChallengerChallenges(
+        address requestorAddress,
+        string memory topicName
+    ) private view returns (bool) {
+        uint256 totalChallengers = networkChallengers.length;
+        uint256 completedChallengers = addressToFederatedJob[requestorAddress][
+            topicName
+        ].challengersCompletedCount;
+
+        return completedChallengers == totalChallengers;
     }
 
     /**

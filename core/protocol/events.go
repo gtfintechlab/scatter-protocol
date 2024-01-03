@@ -205,6 +205,107 @@ func DebugEventListener(node *utils.PeerNode) {
 	}
 }
 
+func RequestForChallengesEventListener(node *utils.PeerNode) {
+	contractABI, _ := abi.JSON(strings.NewReader(string(scatterprotocol.ScatterprotocolABI)))
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{common.HexToAddress(GetContractInfo().ScatterProtocolContract)},
+		Topics:    [][]common.Hash{{contractABI.Events["RequestForChallenges"].ID}},
+	}
+
+	logs := make(chan types.Log)
+	subscription, err := ethereumClient.SubscribeFilterLogs(context.Background(), query, logs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if node.Subscriptions.RequestForChallenges != nil {
+		(*node.Subscriptions.RequestForChallenges).Unsubscribe()
+	}
+	node.Subscriptions.RequestForChallenges = &subscription
+	// defer subscription.Unsubscribe()
+
+	for {
+		select {
+		case <-subscription.Err():
+			return
+		case event := <-logs:
+			eventUnpacked := utils.RequestForChallengesEvent{}
+			contractABI.UnpackIntoInterface(&eventUnpacked, "RequestForChallenges", event.Data)
+			node.JobQueue.Enqueue(utils.Job{
+				ID:       uuid.New().String(),
+				Function: RequestForChallengesHandler,
+				Args:     []interface{}{node, eventUnpacked},
+			})
+
+		}
+	}
+}
+
+func ChallengeStartedEventListener(node *utils.PeerNode) {
+	contractABI, _ := abi.JSON(strings.NewReader(string(scatterprotocol.ScatterprotocolABI)))
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{common.HexToAddress(GetContractInfo().ScatterProtocolContract)},
+		Topics:    [][]common.Hash{{contractABI.Events["ChallengeStarted"].ID}},
+	}
+
+	logs := make(chan types.Log)
+	subscription, err := ethereumClient.SubscribeFilterLogs(context.Background(), query, logs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if node.Subscriptions.ChallengeStarted != nil {
+		(*node.Subscriptions.ChallengeStarted).Unsubscribe()
+	}
+	node.Subscriptions.ChallengeStarted = &subscription
+	// defer subscription.Unsubscribe()
+
+	for {
+		select {
+		case <-subscription.Err():
+			return
+		case event := <-logs:
+			eventUnpacked := utils.ChallengeStartedEvent{}
+			contractABI.UnpackIntoInterface(&eventUnpacked, "ChallengeStarted", event.Data)
+			node.JobQueue.Enqueue(utils.Job{
+				ID:       uuid.New().String(),
+				Function: ChallengeStartedHandler,
+				Args:     []interface{}{node, eventUnpacked},
+			})
+
+		}
+	}
+}
+
+func RecordLogsEventListener(node *utils.PeerNode) {
+	contractABI, _ := abi.JSON(strings.NewReader(string(scatterprotocol.ScatterprotocolABI)))
+	query := ethereum.FilterQuery{
+		Addresses: []common.Address{common.HexToAddress(GetContractInfo().ScatterProtocolContract)},
+		Topics:    [][]common.Hash{{contractABI.Events["RecordLogs"].ID}},
+	}
+
+	logs := make(chan types.Log)
+	subscription, err := ethereumClient.SubscribeFilterLogs(context.Background(), query, logs)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if node.Subscriptions.RecordLogs != nil {
+		(*node.Subscriptions.RecordLogs).Unsubscribe()
+	}
+	node.Subscriptions.RecordLogs = &subscription
+	// defer subscription.Unsubscribe()
+
+	for {
+		select {
+		case <-subscription.Err():
+			return
+		case event := <-logs:
+			eventUnpacked := utils.RecordLogsEvent{}
+			contractABI.UnpackIntoInterface(&eventUnpacked, "RecordLogs", event.Data)
+			log.Println(utils.Red + "LOTTERY AMOUNT: " + eventUnpacked.LotteryAmount.String() + utils.Reset)
+			RecordLogsHandler(node, eventUnpacked)
+		}
+	}
+}
+
 func JobCompleteEventListener(node *utils.PeerNode) {
 	contractABI, _ := abi.JSON(strings.NewReader(string(scatterprotocol.ScatterprotocolABI)))
 	query := ethereum.FilterQuery{
@@ -230,23 +331,11 @@ func JobCompleteEventListener(node *utils.PeerNode) {
 		case event := <-logs:
 			eventUnpacked := utils.JobCompleteEvent{}
 			contractABI.UnpackIntoInterface(&eventUnpacked, "JobComplete", event.Data)
-			if *node.LogMode {
-
-				if node.PeerType == utils.PEER_TRAINER || node.PeerType == utils.PEER_VALIDATOR {
-					log.Println(utils.Green + "Training is Complete: Log is being written to database" + utils.Reset)
-					balance, _ := new(big.Float).SetInt(GetScatterTokenBalance(node)).Float64()
-					blockNum := GetBlockNumber()
-					scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, blockNum, balance, node)
-				}
-
-				log.Println(utils.Green + "Training is Complete: Token supply is being updated" + utils.Reset)
-				UpdateTokenSupply(node)
-
-				lotteryBalance, _ := new(big.Float).SetInt(GetLotteryBalance(node)).Float64()
-				blockNum := GetBlockNumber()
-				scatterlogs.CreateLogEvent(utils.LOTTERY_BALANCE, blockNum, lotteryBalance, node)
-
-			}
+			node.JobQueue.Enqueue(utils.Job{
+				ID:       uuid.New().String(),
+				Function: JobCompleteHandler,
+				Args:     []interface{}{node, eventUnpacked},
+			})
 
 		}
 	}
@@ -330,4 +419,100 @@ func UpdateTokenSupply(node *utils.PeerNode) {
 	update := bson.D{{"$set", bson.D{{"tokenSupply", tokenSupply}}}}
 	var updatedDocument bson.M
 	client.Collection("protocolnodes").FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&updatedDocument)
+}
+
+func RequestForChallengesHandler(node *utils.PeerNode, eventUnpacked utils.RequestForChallengesEvent) {
+	_, subMapExists := (*node.ChallengeLock)[eventUnpacked.RequestorAddress.String()]
+	if subMapExists && (*node.ChallengeLock)[eventUnpacked.RequestorAddress.String()][eventUnpacked.TopicName] {
+		return
+	}
+
+	if subMapExists {
+		(*node.ChallengeLock)[eventUnpacked.RequestorAddress.String()][eventUnpacked.TopicName] = true
+	} else {
+		(*node.ChallengeLock)[eventUnpacked.RequestorAddress.String()] = map[string]bool{
+			eventUnpacked.TopicName: true,
+		}
+	}
+
+	if GetRoleByAddress(node, *node.BlockchainAddress) == utils.PEER_CHALLENGER {
+		trainers := GetAllTrainersByAddressAndTopic(node, eventUnpacked.RequestorAddress.String(), eventUnpacked.TopicName)
+		validators := GetAllValidatorsByAddressAndTopic(node, eventUnpacked.RequestorAddress.String(), eventUnpacked.TopicName)
+		combined := append(trainers, validators...)
+
+		if *node.LogMode {
+			lotteryBalance, _ := new(big.Float).SetInt(GetLotteryBalance(node)).Float64()
+			blockNum := GetBlockNumber()
+			scatterlogs.CreateLogEvent(utils.LOTTERY_BALANCE, blockNum, lotteryBalance, node)
+
+			log.Println(utils.Green + "Now Challenging Nodes" + utils.Reset)
+			for _, nodeAddress := range combined {
+				if scatterlogs.IsNodeMalicious(node, nodeAddress) {
+					ChallengeNode(node, eventUnpacked.RequestorAddress.String(), eventUnpacked.TopicName, nodeAddress, true)
+				} else {
+					ChallengeNode(node, eventUnpacked.RequestorAddress.String(), eventUnpacked.TopicName, nodeAddress, false)
+				}
+			}
+		}
+
+		ChallengeComplete(node, eventUnpacked.RequestorAddress.String(), eventUnpacked.TopicName)
+	}
+}
+
+func ChallengeStartedHandler(node *utils.PeerNode, eventUnpacked utils.ChallengeStartedEvent) {
+	if GetRoleByAddress(node, *node.BlockchainAddress) == utils.PEER_CHALLENGER {
+
+		if *node.LogMode {
+			log.Println(utils.Green + "Now Challenging Singular Node" + utils.Reset)
+			if scatterlogs.IsNodeMalicious(node, eventUnpacked.NodeAddress.String()) {
+				ChallengeNode(node, eventUnpacked.RequestorAddress.String(), eventUnpacked.TopicName, eventUnpacked.NodeAddress.String(), true)
+			} else {
+				ChallengeNode(node, eventUnpacked.RequestorAddress.String(), eventUnpacked.TopicName, eventUnpacked.NodeAddress.String(), false)
+			}
+		}
+
+		ChallengeComplete(node, eventUnpacked.RequestorAddress.String(), eventUnpacked.TopicName)
+	}
+
+}
+
+func RecordLogsHandler(node *utils.PeerNode, eventUnpacked utils.RecordLogsEvent) {
+	balance, _ := new(big.Float).SetInt(GetScatterTokenBalance(node)).Float64()
+	blockNum := GetBlockNumber()
+	scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, blockNum, balance, node)
+
+	blockNum = GetBlockNumber()
+	lottery, _ := new(big.Float).SetInt(eventUnpacked.LotteryAmount).Float64()
+	scatterlogs.CreateLogEvent(utils.LOTTERY_BALANCE, blockNum, lottery, node)
+
+	if node.PeerType == utils.PEER_VALIDATOR {
+		blockNum = GetBlockNumber()
+		stake, _ := new(big.Float).SetInt(GetScatterTokenStake(node, *node.BlockchainAddress)).Float64()
+		scatterlogs.CreateLogEvent(utils.STAKE_BALANCE, blockNum, stake, node)
+	}
+}
+
+func JobCompleteHandler(node *utils.PeerNode, eventUnpacked utils.JobCompleteEvent) {
+	if *node.LogMode {
+
+		log.Println(utils.Green + "Training is Complete: Log is being written to database" + utils.Reset)
+		balance, _ := new(big.Float).SetInt(GetScatterTokenBalance(node)).Float64()
+		blockNum := GetBlockNumber()
+		scatterlogs.CreateLogEvent(utils.LOG_EVENT_TOKEN_BALANCE, blockNum, balance, node)
+
+		log.Println(utils.Green + "Training is Complete: Token supply is being updated" + utils.Reset)
+		UpdateTokenSupply(node)
+
+		lotteryBalance, _ := new(big.Float).SetInt(GetLotteryBalance(node)).Float64()
+		blockNum = GetBlockNumber()
+		scatterlogs.CreateLogEvent(utils.LOTTERY_BALANCE, blockNum, lotteryBalance, node)
+
+		if node.PeerType == utils.PEER_VALIDATOR {
+			blockNum = GetBlockNumber()
+			stake, _ := new(big.Float).SetInt(GetScatterTokenStake(node, *node.BlockchainAddress)).Float64()
+			scatterlogs.CreateLogEvent(utils.STAKE_BALANCE, blockNum, stake, node)
+		}
+
+	}
+
 }

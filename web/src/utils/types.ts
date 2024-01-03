@@ -121,7 +121,8 @@ export interface LogEvent {
 
 export enum LogTypes {
     TOKEN_BALANCE = "Token Balance",
-    LOTTERY_BALANCE = "Lottery Balance"
+    LOTTERY_BALANCE = "Lottery Balance",
+    STAKE_BALANCE = "Stake Balance"
 }
 export enum Nodes {
     ALL = "all"

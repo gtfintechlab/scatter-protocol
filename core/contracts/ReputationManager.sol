@@ -8,6 +8,7 @@ import "./IEvaluationJobToken.sol";
 import "./IReputationManager.sol";
 import "./IVoteManager.sol";
 import "./Shared.sol";
+import "hardhat/console.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -61,7 +62,12 @@ contract ReputationManager is IReputationManager, Ownable {
             trainerAddress
         );
 
-        return modelIsInvalid || modelNotSubmitted;
+        bool isChallenged = voteManagerContract.isChallengeSuccessfulTrainer(
+            requestorAddress,
+            topicName,
+            trainerAddress
+        );
+        return modelIsInvalid || modelNotSubmitted || isChallenged;
     }
 
     function trainerModelNotSubmitted(
@@ -116,9 +122,32 @@ contract ReputationManager is IReputationManager, Ownable {
                 this.trainerIsRogue(requestorAddress, topicName, allTrainers[i])
             ) {
                 malevolentTrainers[numMalevolent] = allTrainers[i];
+                numMalevolent += 1;
             }
         }
         return malevolentTrainers;
+    }
+
+    function validatorIsRogue(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress,
+        address trainerAddress
+    ) external view returns (bool) {
+        bool evalScoreSubmit = evaluationJobTokenContract.isEvaluationScoreSet(
+            requestorAddress,
+            topicName,
+            validatorAddress,
+            trainerAddress
+        );
+
+        bool isChallenged = voteManagerContract.isChallengeSuccessfulValidator(
+            requestorAddress,
+            topicName,
+            validatorAddress
+        );
+
+        return !evalScoreSubmit || isChallenged;
     }
 
     function getBenevolentValidators(
@@ -152,13 +181,12 @@ contract ReputationManager is IReputationManager, Ownable {
                 // Mark them as rogue if not
                 allTrainersEvaluated =
                     allTrainersEvaluated &&
-                    evaluationJobTokenContract.isEvaluationScoreSet(
+                    !this.validatorIsRogue(
                         requestorAddress,
                         topicName,
                         validatorList[i],
                         trainerList[j]
                     );
-
                 if (!allTrainersEvaluated) {
                     break;
                 }
@@ -168,6 +196,7 @@ contract ReputationManager is IReputationManager, Ownable {
                 numBenevolent += 1;
             }
         }
+
         return benevolentValidators;
     }
 
@@ -200,7 +229,7 @@ contract ReputationManager is IReputationManager, Ownable {
                 // For a non-rogue trainer, check if their evaluation scores have been set
                 // Mark them as rogue if not
                 if (
-                    !evaluationJobTokenContract.isEvaluationScoreSet(
+                    this.validatorIsRogue(
                         requestorAddress,
                         topicName,
                         validatorList[i],

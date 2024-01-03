@@ -71,6 +71,18 @@ func InitValidatorNode(node *utils.PeerNode) {
 	}
 }
 
+func InitChallengerNode(node *utils.PeerNode) {
+
+	var scatterProtocolContract = initScatterProtocolContract()
+
+	auth := getTransactor(node)
+	_, err := scatterProtocolContract.InitChallengerNode(auth)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func AddScatterTokenStake(node *utils.PeerNode, amount int64) {
 
 	var scatterTokenContract = initScatterTokenContract()
@@ -83,7 +95,7 @@ func AddScatterTokenStake(node *utils.PeerNode, amount int64) {
 	}
 }
 
-func GetScatterTokenStake(node *utils.PeerNode, account string) big.Int {
+func GetScatterTokenStake(node *utils.PeerNode, account string) *big.Int {
 
 	var scatterTokenContract = initScatterTokenContract()
 
@@ -94,7 +106,7 @@ func GetScatterTokenStake(node *utils.PeerNode, account string) big.Int {
 		log.Fatal(err)
 	}
 
-	return *stake
+	return stake
 }
 
 func CanBecomeValidator(node *utils.PeerNode, account string) bool {
@@ -179,6 +191,56 @@ func GetAllTrainersByAddressAndTopic(node *utils.PeerNode, address string, topic
 	return trainerList
 }
 
+func GetValidatorsByAddressAndTopic(node *utils.PeerNode, address string, topicName string, skipAmount uint64) []string {
+
+	var scatterProtocolContract = initScatterProtocolContract()
+
+	auth := getTransactor(node)
+	skip := big.NewInt(int64(skipAmount))
+	validators, _ := scatterProtocolContract.GetValidatorsByAddressAndTopic(&bind.CallOpts{
+		From: auth.From,
+	}, common.HexToAddress(address), topicName, skip)
+	return utils.DeleteEmptyElements(strings.Split(strings.Trim(validators, " "), "\n"))
+}
+
+func ChallengeNode(node *utils.PeerNode, requestorAddress string, topicName string, nodeToChallenge string, isMalicious bool) {
+	scatterProtocolContract := initScatterProtocolContract()
+	auth := getTransactor(node)
+
+	_, err := scatterProtocolContract.ChallengeNode(auth, common.HexToAddress(requestorAddress), topicName, common.HexToAddress(nodeToChallenge), isMalicious)
+
+	if err != nil {
+		ChallengeNode(node, requestorAddress, topicName, nodeToChallenge, isMalicious)
+		// log.Fatal(err)
+	}
+}
+
+func ChallengeComplete(node *utils.PeerNode, requestorAddress string, topicName string) {
+	scatterProtocolContract := initScatterProtocolContract()
+	auth := getTransactor(node)
+
+	_, err := scatterProtocolContract.CompleteChallengeForJob(auth, common.HexToAddress(requestorAddress), topicName)
+
+	if err != nil {
+		ChallengeComplete(node, requestorAddress, topicName)
+		// log.Fatal(err)
+	}
+}
+
+func GetAllValidatorsByAddressAndTopic(node *utils.PeerNode, address string, topicName string) []string {
+
+	validatorList := []string{}
+	skipAmount := 0
+	currentValidatorList := GetValidatorsByAddressAndTopic(node, address, topicName, uint64(skipAmount))
+	for len(currentValidatorList) != 0 {
+		validatorList = append(validatorList, currentValidatorList...)
+		skipAmount += 10
+		currentValidatorList = GetValidatorsByAddressAndTopic(node, address, topicName, uint64(skipAmount))
+	}
+
+	return validatorList
+}
+
 func CheckIfTopicExistsForRequestor(node *utils.PeerNode, address string, topicName string) bool {
 
 	var scatterProtocolContract = initScatterProtocolContract()
@@ -212,7 +274,8 @@ func StartTraining(node *utils.PeerNode, topicName string) {
 	auth := getTransactor(node)
 	_, err := scatterProtocolContract.StartTraining(auth, topicName)
 	if err != nil {
-		log.Fatal(err)
+		StartTraining(node, topicName)
+		// log.Fatal(err)
 	}
 }
 
@@ -269,7 +332,8 @@ func AddTopicForTrainer(node *utils.PeerNode, requestorAddress string, topicName
 		auth, common.HexToAddress(requestorAddress), topicName, big.NewInt(stakeAmount))
 
 	if err != nil {
-		log.Fatal(err)
+		AddTopicForTrainer(node, requestorAddress, topicName, stakeAmount)
+		// log.Fatal(err)
 	}
 
 }
@@ -402,7 +466,7 @@ func SubmitEvaluationScore(node *utils.PeerNode, requestorAddress string, topicN
 	_, err := scatterProtocolContract.SubmitEvaluationScore(auth, common.HexToAddress(requestorAddress), topicName, common.HexToAddress(trainerAddress), score)
 
 	if err != nil {
-		log.Fatal(err)
+		SubmitEvaluationScore(node, requestorAddress, topicName, trainerAddress, score)
 	}
 }
 

@@ -72,6 +72,7 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 		Subscribe:            Subscribe,
 		AESKey:               &aesPrivate,
 		AESChannels:          &aesChannelMap,
+		ChallengeLock:        &map[string]map[string]bool{},
 	}
 
 	protocol.SetNodeId(&peerNode)
@@ -86,6 +87,9 @@ func InitPeerNode(peerType string, apiPort int, databaseUsername string,
 	go protocol.ModelValidationListener(&peerNode)
 	go protocol.DebugEventListener(&peerNode)
 	go protocol.JobCompleteEventListener(&peerNode)
+	go protocol.RequestForChallengesEventListener(&peerNode)
+	go protocol.ChallengeStartedEventListener(&peerNode)
+	go protocol.RecordLogsEventListener(&peerNode)
 
 	go peerNode.CronJobRunner.Start()
 
@@ -109,6 +113,9 @@ func Subscribe(node *utils.PeerNode) {
 	go protocol.ModelValidationListener(node)
 	go protocol.DebugEventListener(node)
 	go protocol.JobCompleteEventListener(node)
+	go protocol.RequestForChallengesEventListener(node)
+	go protocol.ChallengeStartedEventListener(node)
+	go protocol.RecordLogsEventListener(node)
 }
 
 func StartPeer(node *utils.PeerNode, useMdns bool) {

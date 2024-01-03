@@ -67,6 +67,7 @@ const (
 const (
 	LOG_EVENT_TOKEN_BALANCE = "Token Balance"
 	LOTTERY_BALANCE         = "Lottery Balance"
+	STAKE_BALANCE           = "Stake Balance"
 )
 
 const (
@@ -74,7 +75,10 @@ const (
 	SEPOLIA = 11155111
 )
 
-const VALIDATOR_STAKE = 25000
+const (
+	VALIDATOR_STAKE  = 25000
+	CHALLENGER_STAKE = 20000
+)
 
 const (
 	Reset  = "\033[0m"
@@ -109,6 +113,7 @@ type PeerNode struct {
 	AESKey               *[]byte                     // Private key for RSA
 	RSAPublicKey         *rsa.PublicKey              // Public Key for RSA
 	AESChannels          *map[string]map[string]map[string](chan bool)
+	ChallengeLock        *map[string]map[string]bool
 }
 
 type CronJobRunner struct {
@@ -123,6 +128,9 @@ type SubscriptionManager struct {
 	RequestForEvaluationSet *ethereum.Subscription
 	ModelReadyToValidate    *ethereum.Subscription
 	DebugEvent              *ethereum.Subscription
+	ChallengeStarted        *ethereum.Subscription
+	RequestForChallenges    *ethereum.Subscription
+	RecordLogs              *ethereum.Subscription
 	JobComplete             *ethereum.Subscription
 }
 
@@ -263,6 +271,20 @@ type DebugEvent struct {
 	Message string
 }
 
+type RequestForChallengesEvent struct {
+	RequestorAddress common.Address
+	TopicName        string
+}
+
+type ChallengeStartedEvent struct {
+	RequestorAddress common.Address
+	TopicName        string
+	NodeAddress      common.Address
+}
+
+type RecordLogsEvent struct {
+	LotteryAmount *big.Int
+}
 type JobCompleteEvent struct {
 	Requestor common.Address
 	TopicName string
