@@ -135,7 +135,7 @@ contract ScatterProtocol is IScatterProtocol {
         address nodeAddress
     );
 
-    event RecordLogs(uint256 lotteryAmount);
+    event RecordLogs(uint256 lotteryAmount, uint256 blockNumber);
 
     // An event used to signify a job is complete
     event JobComplete(address requestor, string topicName);
@@ -472,34 +472,47 @@ contract ScatterProtocol is IScatterProtocol {
         // Reward benevolent validators - reward should be proportional to their stake
         // Return trainer staked token to benevolent trainers
         // Reward benevolent trainers - reward should be proportional to their short-term stake & model score
-        emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
         if (distributeRewards) {
             addressToFederatedJob[requestorAddress][topicName]
                 .status = FederatedJobStatus.DistributingRewards;
-            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
+            emit RecordLogs(
+                scatterTokenContract.getLotteryPoolExternal(),
+                block.number
+            );
             scatterTokenContract.donateToLottery(requestorAddress, topicName);
             scatterTokenContract.punishRogueTrainers(
                 requestorAddress,
                 topicName
             );
-            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
+            emit RecordLogs(
+                scatterTokenContract.getLotteryPoolExternal(),
+                block.number
+            );
             scatterTokenContract.punishRogueValidators(
                 requestorAddress,
                 topicName
             );
-            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
+            emit RecordLogs(
+                scatterTokenContract.getLotteryPoolExternal(),
+                block.number
+            );
             scatterTokenContract.rewardBenevolentTrainers(
                 requestorAddress,
                 topicName
             );
-            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
             scatterTokenContract.rewardBenevolentValidators(
                 requestorAddress,
                 topicName
             );
-            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
             scatterTokenContract.rewardChallengers(requestorAddress, topicName);
-            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
+            scatterTokenContract.returnTokensToRequestor(
+                requestorAddress,
+                topicName
+            );
+            emit RecordLogs(
+                scatterTokenContract.getLotteryPoolExternal(),
+                block.number
+            );
             // Return staked tokens to trainers for a specific training job
             // Change status to complete
             this.federatedJobCleanUp(requestorAddress, topicName);
@@ -514,7 +527,10 @@ contract ScatterProtocol is IScatterProtocol {
             requestorAddress,
             topicName
         );
-        emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
+        emit RecordLogs(
+            scatterTokenContract.getLotteryPoolExternal(),
+            block.number
+        );
         addressToFederatedJob[requestorAddress][topicName]
             .status = FederatedJobStatus.Complete;
 
@@ -949,7 +965,10 @@ contract ScatterProtocol is IScatterProtocol {
             addressToFederatedJob[requestorAddress][topicName].jobStartDate +
                 15 days
         ) {
-            emit RecordLogs(scatterTokenContract.getLotteryPoolExternal());
+            emit RecordLogs(
+                scatterTokenContract.getLotteryPoolExternal(),
+                block.number
+            );
             emit RequestForChallenges(requestorAddress, topicName);
         }
     }

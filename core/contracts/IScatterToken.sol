@@ -56,4 +56,9 @@ interface IScatterToken {
     ) external;
 
     function getLotteryPoolExternal() external view returns (uint256);
+
+    function returnTokensToRequestor(
+        address requestorAddress,
+        string memory topicName
+    ) external;
 }

@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IScatterProtocol.sol";
 import "./IVoteManager.sol";
 import "./IEvaluationJobToken.sol";
+import "./IReputationManager.sol";
 import "hardhat/console.sol";
 
 contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
@@ -19,6 +20,7 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
     address payable public protocolDeployer;
     IScatterProtocol public scatterProtocolContract;
     IVoteManager public voteManagerContract;
+    IReputationManager public reputationManagerContract;
 
     Counters.Counter private _tokenIds;
 
@@ -65,6 +67,12 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
 
     function setVoteManagerContract(address contractAddress) public onlyOwner {
         voteManagerContract = IVoteManager(contractAddress);
+    }
+
+    function setReputationManagerContract(
+        address contractAddress
+    ) public onlyOwner {
+        reputationManagerContract = IReputationManager(contractAddress);
     }
 
     function publishEvaluationJob(
@@ -193,16 +201,20 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
         uint[] memory trainerScores = trainerScoresForJob[requestorAddress][
             topicName
         ][trainerAddress];
+
         uint summedScore = 0;
         for (uint i = 0; i < trainerScores.length; i++) {
             summedScore += trainerScores[i];
         }
 
+        // Avoid divide by zero error
+        // If all validators are malicious, we shouldn't punish the trainer
+        // Instead give the model a full score
         if (trainerScores.length == 0) {
-            return 0;
+            return 100;
         }
 
-        return summedScore / trainerScores.length;
+        return (summedScore) / (trainerScores.length);
     }
 
     modifier onlyScatterProtocolContract() {

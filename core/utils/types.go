@@ -284,6 +284,7 @@ type ChallengeStartedEvent struct {
 
 type RecordLogsEvent struct {
 	LotteryAmount *big.Int
+	BlockNumber   *big.Int
 }
 type JobCompleteEvent struct {
 	Requestor common.Address

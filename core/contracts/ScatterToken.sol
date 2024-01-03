@@ -193,9 +193,6 @@ contract ScatterToken is
 
         uint256 toLottery = (requestorPooledReward * lotteryPercentage) / 100;
         lotteryPool += toLottery;
-        // requestorLockedTokenForTrainingJob[requestorAddress][
-        //     topicName
-        // ] -= toLottery;
     }
 
     function punishRogueTrainers(
@@ -209,13 +206,6 @@ contract ScatterToken is
             if (trainers[i] == address(0x0)) {
                 break;
             }
-            console.log(
-                "BURNING (TRAINERS) %s for %s",
-                trainerLockedTokenForTrainingJob[requestorAddress][topicName][
-                    trainers[i]
-                ],
-                trainers[i]
-            );
 
             lotteryPool += trainerLockedTokenForTrainingJob[requestorAddress][
                 topicName
@@ -247,12 +237,6 @@ contract ScatterToken is
             );
 
             lotteryPool += punishmentAmount;
-            console.log(
-                "BURNING (VALIDATORS) %s for %s",
-                punishmentAmount,
-                validators[i]
-            );
-
             addressToStake[validators[i]] -= punishmentAmount;
             validatorPenaltyCount[validators[i]] += 1;
 
@@ -314,17 +298,12 @@ contract ScatterToken is
 
             uint256 tokenTransferred = (performanceWeight *
                 stakeWeight *
-                totalRewardPool) / totalWeight;
+                totalRewardPool) / (totalWeight);
 
             if (trainers[i] == address(0)) {
                 continue;
             }
 
-            console.log(
-                "MINTING (TRAINERS) %s for %s",
-                tokenTransferred,
-                trainers[i]
-            );
             _mint(trainers[i], tokenTransferred);
         }
     }
@@ -335,7 +314,6 @@ contract ScatterToken is
     ) external onlyScatterProtocolContract {
         address[] memory validators = reputationManagerContract
             .getBenevolentValidators(requestorAddress, topicName);
-
         uint totalStaked = 0;
         for (uint i = 0; i < validators.length; i++) {
             if (validators[i] == address(0)) {
@@ -346,7 +324,6 @@ contract ScatterToken is
         uint totalRewardPool = (requestorLockedTokenForTrainingJob[
             requestorAddress
         ][topicName] * validatorRewardProportion) / 100;
-
         for (uint i = 0; i < validators.length; i++) {
             if (validators[i] == address(0)) {
                 continue;
@@ -354,11 +331,6 @@ contract ScatterToken is
             uint256 tokenTransferred = (addressToStake[validators[i]] *
                 totalRewardPool) / (totalStaked + 1);
 
-            console.log(
-                "MINTING (VALIDATORS) %s for %s",
-                tokenTransferred,
-                validators[i]
-            );
             _mint(validators[i], tokenTransferred);
         }
     }
@@ -429,11 +401,6 @@ contract ScatterToken is
         }
 
         for (uint256 k = 0; k < numChallengers; k++) {
-            console.log(
-                "MINTING (CHALLENGERS) %s for %s",
-                lotteryPool / numChallengers,
-                rewardedChallengers[k]
-            );
             _mint(rewardedChallengers[k], lotteryPool / numChallengers);
         }
         lotteryPool = 0;
@@ -454,15 +421,56 @@ contract ScatterToken is
             if (trainers[i] == address(0)) {
                 continue;
             }
-            console.log(
-                "RETURNING (TRAINERS) %s for %s",
-                tokenTransferred,
-                trainers[i]
-            );
             _mint(trainers[i], tokenTransferred);
             trainerLockedTokenForTrainingJob[requestorAddress][topicName][
                 trainers[i]
             ] = 0;
+        }
+    }
+
+    function returnTokensToRequestor(
+        address requestorAddress,
+        string memory topicName
+    ) external onlyScatterProtocolContract {
+        address[] memory benevolentTrainers = reputationManagerContract
+            .getBenevolentTrainers(requestorAddress, topicName);
+        address[] memory benevolentValidators = reputationManagerContract
+            .getBenevolentValidators(requestorAddress, topicName);
+
+        uint numBenevolentTrainers = 0;
+        uint numBenevolentValidators = 0;
+        for (uint i = 0; i < benevolentTrainers.length; i++) {
+            if (benevolentTrainers[i] == address(0x0)) {
+                break;
+            }
+            numBenevolentTrainers += 1;
+        }
+
+        for (uint i = 0; i < benevolentValidators.length; i++) {
+            if (benevolentValidators[i] == address(0x0)) {
+                break;
+            }
+            numBenevolentValidators += 1;
+        }
+
+        if (numBenevolentTrainers == 0) {
+            _mint(
+                requestorAddress,
+                (trainerRewardProportion *
+                    requestorLockedTokenForTrainingJob[requestorAddress][
+                        topicName
+                    ]) / 100
+            );
+        }
+
+        if (numBenevolentValidators == 0) {
+            _mint(
+                requestorAddress,
+                (validatorRewardProportion *
+                    requestorLockedTokenForTrainingJob[requestorAddress][
+                        topicName
+                    ]) / 100
+            );
         }
     }
 
@@ -471,7 +479,6 @@ contract ScatterToken is
     }
 
     function getLotteryPoolExternal() external view returns (uint256) {
-        console.log("LOTTERY BALANCE: %s", lotteryPool);
         return lotteryPool;
     }
 

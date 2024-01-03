@@ -6,22 +6,22 @@ interface IReputationManager {
     function getBenevolentTrainers(
         address requestorAddress,
         string memory topicName
-    ) external returns (address[] memory);
+    ) external view returns (address[] memory);
 
     function getMalevolentTrainers(
         address requestorAddress,
         string memory topicName
-    ) external returns (address[] memory);
+    ) external view returns (address[] memory);
 
     function getBenevolentValidators(
         address requestorAddress,
         string memory topicName
-    ) external returns (address[] memory);
+    ) external view returns (address[] memory);
 
     function getMalevolentValidators(
         address requestorAddress,
         string memory topicName
-    ) external returns (address[] memory);
+    ) external view returns (address[] memory);
 
     function trainerIsRogue(
         address requestorAddress,

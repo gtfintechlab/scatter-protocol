@@ -172,6 +172,7 @@ func deployAllContracts(privateKey string) {
 	reputationManagerInstance.SetVoteManagerContract(auth, common.HexToAddress(voteManagerAddress.Hash().Hex()))
 
 	evaluationInstance.SetVoteManagerContract(auth, common.HexToAddress(voteManagerAddress.Hash().Hex()))
+	evaluationInstance.SetReputationManagerContract(auth, common.HexToAddress(reputationManagerAddress.Hash().Hex()))
 
 	voteManagerInstance.SetEvaluationJobTokenContract(auth, common.HexToAddress(evaluationAddress.Hash().Hex()))
 

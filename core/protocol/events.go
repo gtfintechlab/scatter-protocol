@@ -300,7 +300,6 @@ func RecordLogsEventListener(node *utils.PeerNode) {
 		case event := <-logs:
 			eventUnpacked := utils.RecordLogsEvent{}
 			contractABI.UnpackIntoInterface(&eventUnpacked, "RecordLogs", event.Data)
-			log.Println(utils.Red + "LOTTERY AMOUNT: " + eventUnpacked.LotteryAmount.String() + utils.Reset)
 			RecordLogsHandler(node, eventUnpacked)
 		}
 	}
@@ -377,10 +376,23 @@ func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topic
 	if *node.DummyLoad {
 		trainers := GetAllTrainersByAddressAndTopic(node, requestorAddress, topicName)
 		for _, trainer := range trainers {
-			score := big.NewInt(utils.GetRandomNumber(40, 100))
-
+			var score *big.Int
 			if scatterlogs.IsNodeMalicious(node, trainer) {
-				score = big.NewInt(utils.GetRandomNumber(0, 39))
+				// If validator is malicious, submit good score for bad trainer
+				if scatterlogs.IsNodeMalicious(node, *node.BlockchainAddress) {
+					score = big.NewInt(utils.GetRandomNumber(40, 100))
+
+				} else {
+					score = big.NewInt(utils.GetRandomNumber(0, 39))
+				}
+			} else {
+				// If validator is malicious, submit bad score for good trainer
+				if scatterlogs.IsNodeMalicious(node, *node.BlockchainAddress) {
+					score = big.NewInt(utils.GetRandomNumber(30, 39))
+
+				} else {
+					score = big.NewInt(utils.GetRandomNumber(80, 100))
+				}
 			}
 
 			SubmitEvaluationScore(node, requestorAddress, topicName, trainer, score)
@@ -486,8 +498,8 @@ func RecordLogsHandler(node *utils.PeerNode, eventUnpacked utils.RecordLogsEvent
 	scatterlogs.CreateLogEvent(utils.LOTTERY_BALANCE, blockNum, lottery, node)
 
 	if node.PeerType == utils.PEER_VALIDATOR {
-		blockNum = GetBlockNumber()
 		stake, _ := new(big.Float).SetInt(GetScatterTokenStake(node, *node.BlockchainAddress)).Float64()
+		blockNum, _ = new(big.Float).SetInt(eventUnpacked.BlockNumber).Float64()
 		scatterlogs.CreateLogEvent(utils.STAKE_BALANCE, blockNum, stake, node)
 	}
 }
