@@ -533,7 +533,6 @@ contract ScatterProtocol is IScatterProtocol {
         );
         addressToFederatedJob[requestorAddress][topicName]
             .status = FederatedJobStatus.Complete;
-
         emit JobComplete(requestorAddress, topicName);
     }
 
@@ -941,6 +940,34 @@ contract ScatterProtocol is IScatterProtocol {
     ) external view returns (bool) {
         return
             validatorTrainingMap[requestorAddress][topicName][validatorAddress];
+    }
+
+    function refrainFromValidation(
+        address requestorAddress,
+        string memory topicName
+    ) public isValidator {
+        voteManagerContract.refrainFromValidation(
+            requestorAddress,
+            topicName,
+            msg.sender
+        );
+        addressToFederatedJob[requestorAddress][topicName]
+            .validatorValidationCount += addressToFederatedJob[
+            requestorAddress
+        ][topicName].trainers.length;
+
+        if (
+            _checkValidatorModelValidations(requestorAddress, topicName) ||
+            block.timestamp >=
+            addressToFederatedJob[requestorAddress][topicName].jobStartDate +
+                15 days
+        ) {
+            emit RecordLogs(
+                scatterTokenContract.getLotteryPoolExternal(),
+                block.number
+            );
+            emit RequestForChallenges(requestorAddress, topicName);
+        }
     }
 
     function submitEvaluationScore(

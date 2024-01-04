@@ -65,6 +65,7 @@ func runEvaluationContainer(requestorId string, ipfsCid string) *big.Int {
 	ipfsCidLower := strings.ToLower(ipfsCid)
 	cmd := exec.Command(
 		"docker", "run",
+		"--runtime=runsc",
 		fmt.Sprintf("%s:%s", requestorIdLower, ipfsCidLower),
 	)
 	var dataBuffer bytes.Buffer

@@ -312,8 +312,34 @@ contract ScatterToken is
         address requestorAddress,
         string memory topicName
     ) external onlyScatterProtocolContract {
-        address[] memory validators = reputationManagerContract
+        address[] memory benevolentValidators = reputationManagerContract
             .getBenevolentValidators(requestorAddress, topicName);
+        address[] memory validators = new address[](
+            benevolentValidators.length
+        );
+        bool validationJobIsMalicious = voteManagerContract
+            .isMaliciousValidationJob(requestorAddress, topicName);
+
+        // If validation job is malicious, all benevolent validators are rewarded
+        if (validationJobIsMalicious) {
+            for (uint a = 0; a < benevolentValidators.length; a++) {
+                validators[a] = benevolentValidators[a];
+            }
+        } else {
+            // if its not malicious, only validators who
+            for (uint a = 0; a < benevolentValidators.length; a++) {
+                if (
+                    !voteManagerContract.isRefrainingFromValidation(
+                        requestorAddress,
+                        topicName,
+                        benevolentValidators[a]
+                    )
+                ) {
+                    validators[a] = benevolentValidators[a];
+                }
+            }
+        }
+
         uint totalStaked = 0;
         for (uint i = 0; i < validators.length; i++) {
             if (validators[i] == address(0)) {
@@ -414,17 +440,19 @@ contract ScatterToken is
             .getBenevolentTrainers(requestorAddress, topicName);
 
         for (uint i = 0; i < trainers.length; i++) {
+            if (trainers[i] == address(0)) {
+                break;
+            }
             uint tokenTransferred = trainerLockedTokenForTrainingJob[
                 requestorAddress
             ][topicName][trainers[i]];
-
-            if (trainers[i] == address(0)) {
-                continue;
+            if (ERC20.totalSupply() + tokenTransferred > cap()) {
+                _burn(owner, ERC20.totalSupply() + tokenTransferred - cap());
             }
             _mint(trainers[i], tokenTransferred);
-            trainerLockedTokenForTrainingJob[requestorAddress][topicName][
-                trainers[i]
-            ] = 0;
+            delete trainerLockedTokenForTrainingJob[requestorAddress][
+                topicName
+            ][trainers[i]];
         }
     }
 
@@ -432,6 +460,15 @@ contract ScatterToken is
         address requestorAddress,
         string memory topicName
     ) external onlyScatterProtocolContract {
+        // Publishing a malicious validation job = no token return allowed!
+        if (
+            voteManagerContract.isMaliciousValidationJob(
+                requestorAddress,
+                topicName
+            )
+        ) {
+            return;
+        }
         address[] memory benevolentTrainers = reputationManagerContract
             .getBenevolentTrainers(requestorAddress, topicName);
         address[] memory benevolentValidators = reputationManagerContract

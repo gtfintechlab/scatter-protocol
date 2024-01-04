@@ -24,7 +24,7 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
 
     Counters.Counter private _tokenIds;
 
-    // Mappings used to keep track of evaluaation metrics
+    // Mappings used to keep track of evaluation metrics
     /*
         Example evaluationScore Mapping:
         {
@@ -181,6 +181,17 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
         );
     }
 
+    function overrideEvaluationScore(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress,
+        address trainerAddress
+    ) external onlyVoteManagerContract {
+        evaluationScoreSet[requestorAddress][topicName][validatorAddress][
+            trainerAddress
+        ] = true;
+    }
+
     function isEvaluationScoreSet(
         address requestorAddress,
         string memory topicName,
@@ -202,6 +213,22 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
             topicName
         ][trainerAddress];
 
+        address[] memory malevolentValidators = reputationManagerContract
+            .getMalevolentValidators(requestorAddress, topicName);
+
+        uint malevolentScore = 0;
+        uint numMalevolent = 0;
+        for (uint a = 0; a < malevolentValidators.length; a++) {
+            if (malevolentValidators[a] == address(0)) {
+                break;
+            }
+            malevolentScore += evaluationScore[requestorAddress][topicName][
+                malevolentValidators[a]
+            ][trainerAddress];
+
+            numMalevolent += 1;
+        }
+
         uint summedScore = 0;
         for (uint i = 0; i < trainerScores.length; i++) {
             summedScore += trainerScores[i];
@@ -210,17 +237,27 @@ contract EvaluationJobToken is ERC721URIStorage, Ownable, IEvaluationJobToken {
         // Avoid divide by zero error
         // If all validators are malicious, we shouldn't punish the trainer
         // Instead give the model a full score
-        if (trainerScores.length == 0) {
+        if (trainerScores.length - numMalevolent <= 0) {
             return 100;
         }
 
-        return (summedScore) / (trainerScores.length);
+        return
+            (summedScore - malevolentScore) /
+            (trainerScores.length - numMalevolent);
     }
 
     modifier onlyScatterProtocolContract() {
         require(
             msg.sender == address(scatterProtocolContract),
             "This method can only be called by the scatter protocol contract"
+        );
+        _;
+    }
+
+    modifier onlyVoteManagerContract() {
+        require(
+            msg.sender == address(voteManagerContract),
+            "This method can only be called by the vote manager contract"
         );
         _;
     }

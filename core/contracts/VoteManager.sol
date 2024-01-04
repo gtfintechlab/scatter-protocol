@@ -111,6 +111,12 @@ contract VoteManager is Ownable, IVoteManager {
             "Validator cannot mark a job as malicious after having submitted a score for it"
         );
 
+        if (
+            maliciousEvaluations[requestorAddress][topicName][validatorAddress]
+        ) {
+            return;
+        }
+
         maliciousEvaluations[requestorAddress][topicName][
             validatorAddress
         ] = true;
@@ -119,6 +125,17 @@ contract VoteManager is Ownable, IVoteManager {
             .getTrainersForFederatedJob(requestorAddress, topicName);
         for (uint256 i = 0; i < trainers.length; i++) {
             address trainerAddress = trainers[i];
+            if (trainerAddress == address(0x0)) {
+                break;
+            }
+
+            evaluationTokenContract.overrideEvaluationScore(
+                requestorAddress,
+                topicName,
+                validatorAddress,
+                trainerAddress
+            );
+
             validatorHasVoted[requestorAddress][topicName][validatorAddress][
                 trainerAddress
             ] = true;
@@ -129,7 +146,7 @@ contract VoteManager is Ownable, IVoteManager {
     function isMaliciousValidationJob(
         address requestorAddress,
         string memory topicName
-    ) internal view returns (bool) {
+    ) external view returns (bool) {
         address[] memory validators = scatterProtocolContract
             .getValidatorsForFederatedJob(requestorAddress, topicName);
 
@@ -148,6 +165,15 @@ contract VoteManager is Ownable, IVoteManager {
 
         // If 2/3 of validators agree that it is a malicious job, then return true
         return maliceCounter >= (2 * validators.length) / 3;
+    }
+
+    function isRefrainingFromValidation(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress
+    ) external view returns (bool) {
+        return
+            maliciousEvaluations[requestorAddress][topicName][validatorAddress];
     }
 
     function hasChallengedNode(
@@ -309,7 +335,7 @@ contract VoteManager is Ownable, IVoteManager {
             // If it is a malicious validation job, then we can just accept the model
             if (
                 averageScore >= proposal.validationThreshold ||
-                isMaliciousValidationJob(requestorAddress, topicName)
+                this.isMaliciousValidationJob(requestorAddress, topicName)
             ) {
                 emit ModelAccepted(requestorAddress, topicName, trainerAddress);
                 voteResult[requestorAddress][topicName][trainerAddress] = true;

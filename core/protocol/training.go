@@ -87,6 +87,7 @@ func runTrainingContainer(requestorId string, ipfsCid string) {
 	basePath, _ := os.Getwd()
 	cmd := exec.Command(
 		"docker", "run",
+		"--runtime=runsc",
 		"-v", fmt.Sprintf("%s/training/trainer/jobs/%s/%s/output:/tmp/output/",
 			basePath,
 			requestorIdLower, ipfsCidLower),

@@ -1,6 +1,10 @@
 import numpy as np
 from pymongo import MongoClient
 import os
+import matplotlib
+
+matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 
 
@@ -316,6 +320,7 @@ def scenario_one_figures():
     trainer_data = get_trainer_token_data("Paper: Scenario 1")
     validator_data = get_validator_token_data("Paper: Scenario 1")
     challenger_data = get_challenger_token_data("Paper: Scenario 1")
+    requestor_data = get_requestor_token_data("Paper: Scenario 1")
 
     # Trainer Token Graphs
     create_separated_graph(
@@ -369,7 +374,7 @@ def scenario_one_figures():
 
     # Trainer Token Graphs
     create_separated_graph(
-        data={**trainer_data, **validator_data, **challenger_data},
+        data={**trainer_data, **validator_data, **challenger_data, **requestor_data},
         output_file="combined/scenario-1-seperated.png",
         num_cols=3,
         num_rows=4,
@@ -382,7 +387,7 @@ def scenario_one_figures():
         base_line_label="Initial Token Supply",
     )
     create_overlayed_graph(
-        data={**trainer_data, **validator_data, **challenger_data},
+        data={**trainer_data, **validator_data, **challenger_data, **requestor_data},
         output_file="combined/scenario-1-overlayed.png",
         x_axis_label="Time (Block Number)",
         y_axis_label="Scatter Token Supply",
@@ -399,6 +404,7 @@ def scenario_two_figures():
     trainer_data = get_trainer_token_data("Paper: Scenario 2")
     validator_data = get_validator_token_data("Paper: Scenario 2")
     challenger_data = get_challenger_token_data("Paper: Scenario 2")
+    requestor_data = get_requestor_token_data("Paper: Scenario 2")
 
     # Trainer Token Graphs
     create_separated_graph(
@@ -452,7 +458,7 @@ def scenario_two_figures():
 
     # Trainer Token Graphs
     create_separated_graph(
-        data={**trainer_data, **validator_data, **challenger_data},
+        data={**trainer_data, **validator_data, **challenger_data, **requestor_data},
         output_file="combined/scenario-2-seperated.png",
         num_cols=3,
         num_rows=4,
@@ -465,7 +471,7 @@ def scenario_two_figures():
         base_line_label="Initial Token Supply",
     )
     create_overlayed_graph(
-        data={**trainer_data, **validator_data, **challenger_data},
+        data={**trainer_data, **validator_data, **challenger_data, **requestor_data},
         output_file="combined/scenario-2-overlayed.png",
         x_axis_label="Time (Block Number)",
         y_axis_label="Scatter Token Supply",
@@ -482,6 +488,7 @@ def scenario_three_figures():
     trainer_data = get_trainer_token_data("Paper: Scenario 3")
     validator_data = get_validator_token_data("Paper: Scenario 3")
     challenger_data = get_challenger_token_data("Paper: Scenario 3")
+    requestor_data = get_requestor_token_data("Paper: Scenario 3")
     validator_stake_data = get_validator_stake_data("Paper: Scenario 3")
     lottery_data = get_lottery_data("Paper: Scenario 3")
 
@@ -537,7 +544,7 @@ def scenario_three_figures():
 
     # Trainer Token Graphs
     create_separated_graph(
-        data={**trainer_data, **validator_data, **challenger_data},
+        data={**trainer_data, **validator_data, **challenger_data, **requestor_data},
         output_file="combined/scenario-3-seperated.png",
         num_cols=3,
         num_rows=4,
@@ -550,7 +557,7 @@ def scenario_three_figures():
         base_line_label="Initial Token Supply",
     )
     create_overlayed_graph(
-        data={**trainer_data, **validator_data, **challenger_data},
+        data={**trainer_data, **validator_data, **challenger_data, **requestor_data},
         output_file="combined/scenario-3-overlayed.png",
         x_axis_label="Time (Block Number)",
         y_axis_label="Scatter Token Supply",
@@ -674,8 +681,93 @@ def scenario_four_figures():
     )
 
 
+def scenario_five_figures():
+    trainer_data = get_trainer_token_data("Paper: Scenario 5")
+    validator_data = get_validator_token_data("Paper: Scenario 5")
+    challenger_data = get_challenger_token_data("Paper: Scenario 5")
+    requestor_data = get_requestor_token_data("Paper: Scenario 5")
+
+    # Trainer Token Graphs
+    create_separated_graph(
+        data=trainer_data,
+        output_file="trainer/scenario-5-seperated.png",
+        num_cols=3,
+        num_rows=2,
+        x_axis_label="Time (Block Number)",
+        y_axis_label="Scatter Token Supply",
+        base_line=100000,
+        base_line_label="Initial Token Supply",
+        fig_size=(12, 8),
+        title="Trainer Token Supply",
+        subtitle_suffix="Token Supply",
+    )
+    create_overlayed_graph(
+        data=trainer_data,
+        output_file="trainer/scenario-5-overlayed.png",
+        x_axis_label="Time (Block Number)",
+        y_axis_label="Scatter Token Supply",
+        base_line=100000,
+        base_line_label="Initial Token Supply",
+        fig_size=(8, 6),
+        title="Trainer Token Supply",
+    )
+
+    # Validator Token Graphs
+    create_separated_graph(
+        data=validator_data,
+        output_file="validator/scenario-5-seperated.png",
+        num_cols=3,
+        num_rows=1,
+        x_axis_label="Time (Block Number)",
+        y_axis_label="Scatter Token Supply",
+        base_line=75000,
+        base_line_label="Initial Token Supply (After Stake)",
+        fig_size=(12, 4),
+        title="Validator Token Supply",
+        subtitle_suffix="Token Supply",
+    )
+    create_overlayed_graph(
+        data=validator_data,
+        output_file="validator/scenario-5-overlayed.png",
+        x_axis_label="Time (Block Number)",
+        y_axis_label="Scatter Token Supply",
+        base_line=75000,
+        base_line_label="Initial Token Supply (After Stake)",
+        fig_size=(8, 6),
+        title="Validator Token Supply",
+    )
+
+    # Trainer Token Graphs
+    create_separated_graph(
+        data={**trainer_data, **validator_data, **challenger_data, **requestor_data},
+        output_file="combined/scenario-5-seperated.png",
+        num_cols=3,
+        num_rows=4,
+        x_axis_label="Time (Block Number)",
+        y_axis_label="Scatter Token Supply",
+        fig_size=(12, 8),
+        title="Node Token Supply",
+        subtitle_suffix="Token Supply",
+        base_line=100000,
+        base_line_label="Initial Token Supply",
+    )
+    create_overlayed_graph(
+        data={**trainer_data, **validator_data, **challenger_data, **requestor_data},
+        output_file="combined/scenario-5-overlayed.png",
+        x_axis_label="Time (Block Number)",
+        y_axis_label="Scatter Token Supply",
+        fig_size=(8, 7),
+        title="Node Token Supply",
+        base_line=100000,
+        base_line_label="Initial Token Supply",
+        secondary_base_line=75000,
+        secondary_base_line_label="Initial Token Supply (After Validator Stake)",
+    )
+
+
 if __name__ == "__main__":
-    # scenario_one_figures()
+    scenario_one_figures()
     # scenario_two_figures()
-    # scenario_three_figures()
+    scenario_three_figures()
     scenario_four_figures()
+    scenario_five_figures()

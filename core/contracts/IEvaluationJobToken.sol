@@ -36,4 +36,11 @@ interface IEvaluationJobToken {
         string memory topicName,
         address trainerAddress
     ) external view returns (uint);
+
+    function overrideEvaluationScore(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress,
+        address trainerAddress
+    ) external;
 }

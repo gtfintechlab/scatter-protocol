@@ -470,6 +470,19 @@ func SubmitEvaluationScore(node *utils.PeerNode, requestorAddress string, topicN
 	}
 }
 
+func RefrainFromEvaluation(node *utils.PeerNode, requestorAddress string, topicName string) {
+
+	var scatterProtocolContract = initScatterProtocolContract()
+
+	auth := getTransactor(node)
+
+	_, err := scatterProtocolContract.RefrainFromValidation(auth, common.HexToAddress(requestorAddress), topicName)
+
+	if err != nil {
+		RefrainFromEvaluation(node, requestorAddress, topicName)
+	}
+}
+
 func PublishModel(node *utils.PeerNode, modelPath string, requestorAddress string, topicName string) {
 
 	var scatterProtocolContract = initScatterProtocolContract()
@@ -570,8 +583,8 @@ func getTransactor(node *utils.PeerNode) *bind.TransactOpts {
 	gas, _ := ethereumClient.SuggestGasPrice(context.Background())
 	gasTip, _ := ethereumClient.SuggestGasTipCap(context.Background())
 
-	auth.GasPrice = new(big.Int).Mul(gas, big.NewInt(500))
-	auth.GasLimit = uint64(2000000)
+	auth.GasPrice = new(big.Int).Mul(gas, big.NewInt(1000))
+	auth.GasLimit = uint64(20000000)
 	auth.GasTipCap = gasTip
 
 	nonce, _ := ethereumClient.PendingNonceAt(context.Background(), auth.From)

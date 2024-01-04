@@ -362,10 +362,14 @@ func EvaluationRequestHandler(node *utils.PeerNode, topicName string) {
 	evaluationJobDataPath := peerDatabase.GetEvaluationJobDataFromAddressAndTopic(node, *node.BlockchainAddress, topicName)
 	zippedJobBytes, _ := networking.ZipFolder(evaluationJobDataPath)
 	zippedPath := fmt.Sprintf("%s/evaluation.zip", evaluationJobDataPath)
-	networking.WriteBytesToFile(
+	err := networking.WriteBytesToFile(
 		zippedPath,
 		zippedJobBytes.Bytes(),
 	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	PublishEvaluationData(node, zippedPath, topicName)
 	os.RemoveAll(zippedPath)
@@ -373,7 +377,13 @@ func EvaluationRequestHandler(node *utils.PeerNode, topicName string) {
 
 func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topicName string) {
 
-	if *node.DummyLoad {
+	if *node.DummyLoad && *node.LogMode {
+
+		if scatterlogs.IsNodeMalicious(node, requestorAddress) {
+			RefrainFromEvaluation(node, requestorAddress, topicName)
+			return
+		}
+
 		trainers := GetAllTrainersByAddressAndTopic(node, requestorAddress, topicName)
 		for _, trainer := range trainers {
 			var score *big.Int
@@ -388,10 +398,10 @@ func ModelValidationHandler(node *utils.PeerNode, requestorAddress string, topic
 			} else {
 				// If validator is malicious, submit bad score for good trainer
 				if scatterlogs.IsNodeMalicious(node, *node.BlockchainAddress) {
-					score = big.NewInt(utils.GetRandomNumber(30, 39))
+					score = big.NewInt(utils.GetRandomNumber(0, 39))
 
 				} else {
-					score = big.NewInt(utils.GetRandomNumber(80, 100))
+					score = big.NewInt(utils.GetRandomNumber(40, 100))
 				}
 			}
 
@@ -428,7 +438,7 @@ func UpdateTokenSupply(node *utils.PeerNode) {
 	}
 	opts := options.FindOneAndUpdate().SetUpsert(true)
 	tokenSupply := GetScatterTokenBalance(node).Int64()
-	update := bson.D{{"$set", bson.D{{"tokenSupply", tokenSupply}}}}
+	update := bson.D{{Key: "$set", Value: bson.D{{Key: "tokenSupply", Value: tokenSupply}}}}
 	var updatedDocument bson.M
 	client.Collection("protocolnodes").FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&updatedDocument)
 }

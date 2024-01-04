@@ -58,4 +58,21 @@ interface IVoteManager {
         address nodeToChallenge,
         address challengerAddress
     ) external view returns (bool);
+
+    function refrainFromValidation(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress
+    ) external;
+
+    function isMaliciousValidationJob(
+        address requestorAddress,
+        string memory topicName
+    ) external view returns (bool);
+
+    function isRefrainingFromValidation(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress
+    ) external view returns (bool);
 }
