@@ -1184,7 +1184,7 @@ contract ScatterProtocol is IScatterProtocol {
             uint(
                 keccak256(
                     abi.encodePacked(
-                        block.difficulty,
+                        block.prevrandao,
                         block.timestamp,
                         networkValidators,
                         randomNonce
