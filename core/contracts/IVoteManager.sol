@@ -40,13 +40,32 @@ interface IVoteManager {
         address challengerAddress
     ) external;
 
+    function submitChallengerChallenge(
+        address requestorAddress,
+        string memory topicName,
+        address challengedChallengerAddress,
+        bool isMalicious,
+        address challengerAddress
+    ) external;
+
     function isChallengeSuccessfulValidator(
         address requestorAddress,
         string memory topicName,
         address validatorAddress
     ) external view returns (bool);
 
+    function getChallengedChallengers(
+        address requestorAddress,
+        string memory topicName
+    ) external view returns (address[] memory);
+
     function isChallengeSuccessfulTrainer(
+        address requestorAddress,
+        string memory topicName,
+        address validatorAddress
+    ) external view returns (bool);
+
+    function isChallengeSuccessfulChallenger(
         address requestorAddress,
         string memory topicName,
         address validatorAddress

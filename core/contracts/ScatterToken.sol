@@ -51,6 +51,10 @@ contract ScatterToken is
     uint256 validatorPenaltyMultiplier = 2;
     mapping(address => uint256) validatorPenaltyCount;
 
+    uint256 challengerBasePenalty = 200;
+    uint256 challengerPenaltyMultiplier = 2;
+    mapping(address => uint256) challengerPenaltyCount;
+
     IScatterProtocol scatterProtocolContract;
     IReputationManager reputationManagerContract;
     IEvaluationJobToken evaluationJobTokenContract;
@@ -247,6 +251,37 @@ contract ScatterToken is
         }
     }
 
+    function punishRogueChallengers(
+        address requestorAddress,
+        string memory topicName
+    ) external onlyScatterProtocolContract {
+        address[] memory challengers = reputationManagerContract
+            .getMalevolentChallengers(requestorAddress, topicName);
+
+        for (uint i = 0; i < challengers.length; i++) {
+            if (challengers[i] == address(0)) {
+                break;
+            }
+            uint256 calculatedPenalty = challengerBasePenalty *
+                (challengerPenaltyMultiplier **
+                    challengerPenaltyCount[challengers[i]]);
+
+            uint256 punishmentAmount = Math.min(
+                addressToStake[challengers[i]],
+                calculatedPenalty
+            );
+
+            lotteryPool += punishmentAmount;
+            addressToStake[challengers[i]] -= punishmentAmount;
+            challengerPenaltyCount[challengers[i]] += 1;
+
+            // Automatically demote validators once their stake reaches 0 tokens
+            if (addressToStake[challengers[i]] <= 0) {
+                scatterProtocolContract.setRole(msg.sender, roles.NoRole);
+            }
+        }
+    }
+
     function rewardBenevolentTrainers(
         address requestorAddress,
         string memory topicName
@@ -370,8 +405,11 @@ contract ScatterToken is
         address[] memory validators = reputationManagerContract
             .getMalevolentValidators(requestorAddress, topicName);
 
+        address[] memory challengers = reputationManagerContract
+            .getMalevolentChallengers(requestorAddress, topicName);
+
         address[] memory rewardedChallengers = new address[](
-            trainers.length + validators.length
+            trainers.length + validators.length + challengers.length
         );
         uint numChallengers = 0;
         for (uint256 i = 0; i < trainers.length; i++) {
@@ -424,6 +462,16 @@ contract ScatterToken is
                     );
                 numChallengers += 1;
             }
+        }
+
+        for (uint k = 0; k < challengers.length; k++) {
+            if (challengers[k] == address(0x0)) {
+                break;
+            }
+
+            rewardedChallengers[numChallengers] = scatterProtocolContract
+                .getChallengeOwner(requestorAddress, topicName, challengers[k]);
+            numChallengers += 1;
         }
 
         for (uint256 k = 0; k < numChallengers; k++) {

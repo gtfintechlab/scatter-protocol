@@ -245,6 +245,33 @@ contract ReputationManager is IReputationManager, Ownable {
         return malevolentValidators;
     }
 
+    function getMalevolentChallengers(
+        address requestorAddress,
+        string memory topicName
+    ) external view returns (address[] memory) {
+        address[] memory challengers = voteManagerContract
+            .getChallengedChallengers(requestorAddress, topicName);
+        address[] memory malevolentChallengers = new address[](
+            challengers.length
+        );
+        uint numMalevolent = 0;
+
+        for (uint i = 0; i < challengers.length; i++) {
+            if (
+                voteManagerContract.isChallengeSuccessfulChallenger(
+                    requestorAddress,
+                    topicName,
+                    challengers[i]
+                )
+            ) {
+                malevolentChallengers[numMalevolent] = challengers[i];
+                numMalevolent += 1;
+            }
+        }
+
+        return malevolentChallengers;
+    }
+
     modifier onlyScatterProtocolContract() {
         require(
             msg.sender == address(scatterProtocolContract),

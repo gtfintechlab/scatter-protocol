@@ -23,6 +23,11 @@ interface IReputationManager {
         string memory topicName
     ) external view returns (address[] memory);
 
+    function getMalevolentChallengers(
+        address requestorAddress,
+        string memory topicName
+    ) external view returns (address[] memory);
+
     function trainerIsRogue(
         address requestorAddress,
         string memory topicName,

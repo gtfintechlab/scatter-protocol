@@ -339,6 +339,11 @@ contract ScatterProtocol is IScatterProtocol {
         address nodeToChallenge,
         bool isMalicious
     ) public isChallenger {
+        // Cannot challenge oneself
+        if (msg.sender == nodeToChallenge) {
+            return;
+        }
+
         if (
             voteManagerContract.hasChallengedNode(
                 requestorAddress,
@@ -374,6 +379,28 @@ contract ScatterProtocol is IScatterProtocol {
             }
         } else if (addressToRoles[nodeToChallenge] == roles.Trainer) {
             voteManagerContract.submitTrainerChallenge(
+                requestorAddress,
+                topicName,
+                nodeToChallenge,
+                isMalicious,
+                msg.sender
+            );
+            if (
+                isMalicious &&
+                challengeOwner[requestorAddress][topicName][nodeToChallenge] ==
+                address(0x0)
+            ) {
+                challengeOwner[requestorAddress][topicName][
+                    nodeToChallenge
+                ] = msg.sender;
+                emit ChallengeStarted(
+                    requestorAddress,
+                    topicName,
+                    nodeToChallenge
+                );
+            }
+        } else if (addressToRoles[nodeToChallenge] == roles.Challenger) {
+            voteManagerContract.submitChallengerChallenge(
                 requestorAddress,
                 topicName,
                 nodeToChallenge,
@@ -505,6 +532,10 @@ contract ScatterProtocol is IScatterProtocol {
                 topicName
             );
             scatterTokenContract.rewardChallengers(requestorAddress, topicName);
+            scatterTokenContract.punishRogueChallengers(
+                requestorAddress,
+                topicName
+            );
             scatterTokenContract.returnTokensToRequestor(
                 requestorAddress,
                 topicName

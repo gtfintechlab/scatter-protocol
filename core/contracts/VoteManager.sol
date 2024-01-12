@@ -64,6 +64,11 @@ contract VoteManager is Ownable, IVoteManager {
     mapping(address => mapping(string => mapping(address => uint256))) trainerChallengeMaliceCount;
     mapping(address => mapping(string => mapping(address => uint256))) trainerChallengeTotalCount;
 
+    mapping(address => mapping(string => mapping(address => mapping(address => bool)))) challengerChallenge;
+    mapping(address => mapping(string => mapping(address => uint256))) challengerChallengeMaliceCount;
+    mapping(address => mapping(string => mapping(address => uint256))) challengerChallengeTotalCount;
+    mapping(address => mapping(string => address[])) allChallengersChallenged;
+
     event ModelAccepted(
         address requestorAddress,
         string topicName,
@@ -248,6 +253,52 @@ contract VoteManager is Ownable, IVoteManager {
         ] += 1;
     }
 
+    function submitChallengerChallenge(
+        address requestorAddress,
+        string memory topicName,
+        address challengedChallengerAddress,
+        bool isMalicious,
+        address challengerAddress
+    ) external onlyScatterProtocol {
+        if (
+            challengerChallenge[requestorAddress][topicName][
+                challengedChallengerAddress
+            ][challengerAddress]
+        ) {
+            return;
+        }
+
+        challengerChallenge[requestorAddress][topicName][
+            challengedChallengerAddress
+        ][challengerAddress] = true;
+
+        // If its the first time its being submitted, add it to our list of challenged challengers
+        if (
+            challengerChallengeTotalCount[requestorAddress][topicName][
+                challengedChallengerAddress
+            ] == 0
+        ) {
+            allChallengersChallenged[requestorAddress][topicName].push(
+                challengedChallengerAddress
+            );
+        }
+        if (isMalicious) {
+            challengerChallengeMaliceCount[requestorAddress][topicName][
+                challengedChallengerAddress
+            ] += 1;
+        }
+        challengerChallengeTotalCount[requestorAddress][topicName][
+            challengedChallengerAddress
+        ] += 1;
+    }
+
+    function getChallengedChallengers(
+        address requestorAddress,
+        string memory topicName
+    ) external view returns (address[] memory) {
+        return allChallengersChallenged[requestorAddress][topicName];
+    }
+
     function isChallengeSuccessfulValidator(
         address requestorAddress,
         string memory topicName,
@@ -261,7 +312,7 @@ contract VoteManager is Ownable, IVoteManager {
             topicName
         ][validatorAddress];
 
-        return malicious != 0 && malicious >= (total * 2) / 3;
+        return malicious != 0 && malicious >= (total * 2) / 3 && total >= 2;
     }
 
     function isChallengeSuccessfulTrainer(
@@ -276,7 +327,22 @@ contract VoteManager is Ownable, IVoteManager {
         uint256 total = trainerChallengeTotalCount[requestorAddress][topicName][
             trainerAddress
         ];
-        return malicious != 0 && malicious >= (total * 2) / 3;
+        return malicious != 0 && malicious >= (total * 2) / 3 && total >= 2;
+    }
+
+    function isChallengeSuccessfulChallenger(
+        address requestorAddress,
+        string memory topicName,
+        address challengerAddress
+    ) external view returns (bool) {
+        uint256 malicious = challengerChallengeMaliceCount[requestorAddress][
+            topicName
+        ][challengerAddress];
+
+        uint256 total = challengerChallengeTotalCount[requestorAddress][
+            topicName
+        ][challengerAddress];
+        return malicious != 0 && malicious >= (total * 2) / 3 && total >= 2;
     }
 
     function submitScoreVote(

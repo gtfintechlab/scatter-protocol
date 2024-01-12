@@ -55,6 +55,11 @@ interface IScatterToken {
         string memory topicName
     ) external;
 
+    function punishRogueChallengers(
+        address requestorAddress,
+        string memory topicName
+    ) external;
+
     function getLotteryPoolExternal() external view returns (uint256);
 
     function returnTokensToRequestor(
