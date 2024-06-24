@@ -1,8 +1,8 @@
 # Scatter Protocol
 
-Scatter Protocol is an incentivized and trustless protocol for decentralized federated learning. The Scatter Protocol repository has two primary components to it:
-- **Core:** This contains all the core code for the client node and protocol. The client node consists of an HTTP server which allows you to interact with the node and protocol more broadly. Other components include a peer-to-peer server for inter-node communication, asynchrnous job queue, datastore, and event listeners. The protocol is defined through the smart contracts as provided by the `core/contracts` folder.
-- **Web Interface:** We provide a simple web interface to run simulations. This interface will allow you to control number of nodes, roles each node plays, steps to execute for each node, etc.
+Scatter Protocol is an incentivized and trustless protocol for decentralized, federated learning. The Scatter Protocol repository has two primary components to it:
+- **Core:** This contains all the core code for the client node and protocol. The client node consists of an HTTP server, which allows you to interact with the node and protocol more broadly. Other components include a peer-to-peer server for inter-node communication, an asynchronous job queue, a data store, and event listeners. The protocol is defined through smart contracts, as provided by the `core/contracts` folder.
+- **Web Interface:** We provide a simple web interface to run simulations. This interface allows you to control the number of nodes, roles each node plays, steps to execute for each node, etc.
 
 ## Technology Specifications
 - Blockchain: Any EVM Compatible Chain (Production) or Hardhat Network (Development)
@@ -14,14 +14,14 @@ Scatter Protocol is an incentivized and trustless protocol for decentralized fed
 
 ## Setup Repository Locally
 
-This repository requires Docker to run external resources (i.e., PostgreSQL, Hardhat Network, etc.). To setup these resources:
+This repository requires Docker to run external resources (i.e., PostgreSQL, Hardhat Network, etc.). To instantiate these resources:
 
 1. Install [Docker](https://docs.docker.com/engine/install/)
 2. Start the external resources with Docker Compose: `docker compose up`
 
-We reccommend interacting with the protocol via the web interface and the wrapper API we provide to control nodes. You can set this up as follows.
+We recommend interacting with the protocol via the web interface and the wrapper API we provide to control nodes. You can set this up as follows.
 
-**Step 1:** Install dependicies for the core module: 
+**Step 1:** Install dependencies for the core module: 
 ```
 cd core
 go mod download
@@ -30,7 +30,7 @@ go mod download
 ```
 go run main.go --util keygen
 ```
-**Step 3:** Modify the multiaddress for the bootstrap node (`BOOTSTRAP_NODE_MULTIADDR` in `core/utils/types.go`). The format of the multiaddress takes the following: `/ip4/127.0.0.1/tcp/{PORT NUMBER}/p2p/{NODE ID}`. The bootstrap node is current configured to automatically be on port 7001. For the node id, you can get this by spinning up the boostrap node and seeing the id in the console. You can do this with the following command:
+**Step 3:** Modify the multiaddress for the bootstrap node (`BOOTSTRAP_NODE_MULTIADDR` in `core/utils/types.go`). The format of the multiaddress takes the following: `/ip4/127.0.0.1/tcp/{PORT NUMBER}/p2p/{NODE ID}`. The bootstrap node is currently configured to be on port 7001 automatically. You can get the node ID by spinning up the bootstrap node and seeing the ID in the console. You can do this with the following command:
 ```
 go run main.go --type bootstrap
 > 2023/12/30 20:02:35 bootstrap_node.go:24: Bootstrap Node: QmSgdAwbFv5W1eLwCzmwFT8NqCnQTvWWrj3avtAfWPFjTm
