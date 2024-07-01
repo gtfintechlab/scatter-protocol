@@ -4,6 +4,21 @@ Scatter Protocol is an incentivized and trustless protocol for decentralized, fe
 - **Core:** This contains all the core code for the client node and protocol. The client node consists of an HTTP server, which allows you to interact with the node and protocol more broadly. Other components include a peer-to-peer server for inter-node communication, an asynchronous job queue, a data store, and event listeners. The protocol is defined through smart contracts, as provided by the `core/contracts` folder.
 - **Web Interface:** We provide a simple web interface to run simulations. This interface allows you to control the number of nodes, roles each node plays, steps to execute for each node, etc.
 
+If you find this project useful in your research, please use the following BibTeX entry for citation.
+```
+@INPROCEEDINGS{Saho2408:Scatter,
+    AUTHOR="Samrat Sahoo and Sudheer Chava",
+    TITLE="Scatter Protocol: An Incentivized and Trustless Protocol for Decentralized Federated Learning",
+    BOOKTITLE="2024 IEEE International Conference on Blockchain (Blockchain) (Blockchain-2024)",
+    ADDRESS="Copenhagen, Denmark",
+    PAGES=8,
+    DAYS=18,
+    MONTH=aug,
+    YEAR=2024,
+    ABSTRACT="Federated Learning is a form of privacy-preserving machine learning where multiple entities train local models, which are then aggregated into a global model. Current forms of federated learning rely on a centralized server to orchestrate the process, leading to issues such as requiring trust in the orchestrator, the necessity of a middleman, and a single point of failure. Blockchains provide a way to record information on a transparent, distributed ledger that is accessible and verifiable by any entity. We leverage these properties of blockchains to produce a decentralized, federated learning marketplace-style protocol for training models collaboratively.  Our core contributions are as follows: first, we introduce novel staking, incentivization, and penalization mechanisms to deter malicious nodes and encourage benign behavior. Second, we introduce a dual-layered validation mechanism to ensure the authenticity of the models trained. Third, we test different components of our system to verify sufficient incentivization, penalization, and resistance to malicious attacks."
+}
+```
+
 ## Technology Specifications
 - Blockchain: Any EVM Compatible Chain (Production) or Hardhat Network (Development)
 - Node Datastore: PostgreSQL
