@@ -3,7 +3,7 @@
 Scatter Protocol is an incentivized and trustless protocol for decentralized, federated learning. The Scatter Protocol repository has two primary components to it:
 - **Core:** This contains all the core code for the client node and protocol. The client node consists of an HTTP server, which allows you to interact with the node and protocol more broadly. Other components include a peer-to-peer server for inter-node communication, an asynchronous job queue, a data store, and event listeners. The protocol is defined through smart contracts, as provided by the `core/contracts` folder.
 - **Web Interface:** We provide a simple web interface to run simulations. This interface allows you to control the number of nodes, roles each node plays, steps to execute for each node, etc.
-
+  
 If you find this project useful in your research, please use the following BibTeX entry for citation.
 ```
 @INPROCEEDINGS{10664423,
@@ -17,6 +17,8 @@ If you find this project useful in your research, please use the following BibTe
   keywords={Training;Resistance;Protocols;Federated learning;Distributed ledger;Trustless services;Blockchains;Blockchains;Distributed Systems;Federated Learning;Smart Contracts;Ethereum;Tokenization},
   doi={10.1109/Blockchain62396.2024.00073}}
 ```
+
+You can read our paper [here](https://ieeexplore.ieee.org/document/10664423)
 
 ## Technology Specifications
 - Blockchain: Any EVM Compatible Chain (Production) or Hardhat Network (Development)
