@@ -6,17 +6,16 @@ Scatter Protocol is an incentivized and trustless protocol for decentralized, fe
 
 If you find this project useful in your research, please use the following BibTeX entry for citation.
 ```
-@INPROCEEDINGS{Saho2408:Scatter,
-    AUTHOR="Samrat Sahoo and Sudheer Chava",
-    TITLE="Scatter Protocol: An Incentivized and Trustless Protocol for Decentralized Federated Learning",
-    BOOKTITLE="2024 IEEE International Conference on Blockchain (Blockchain) (Blockchain-2024)",
-    ADDRESS="Copenhagen, Denmark",
-    PAGES=8,
-    DAYS=18,
-    MONTH=aug,
-    YEAR=2024,
-    ABSTRACT="Federated Learning is a form of privacy-preserving machine learning where multiple entities train local models, which are then aggregated into a global model. Current forms of federated learning rely on a centralized server to orchestrate the process, leading to issues such as requiring trust in the orchestrator, the necessity of a middleman, and a single point of failure. Blockchains provide a way to record information on a transparent, distributed ledger that is accessible and verifiable by any entity. We leverage these properties of blockchains to produce a decentralized, federated learning marketplace-style protocol for training models collaboratively.  Our core contributions are as follows: first, we introduce novel staking, incentivization, and penalization mechanisms to deter malicious nodes and encourage benign behavior. Second, we introduce a dual-layered validation mechanism to ensure the authenticity of the models trained. Third, we test different components of our system to verify sufficient incentivization, penalization, and resistance to malicious attacks."
-}
+@INPROCEEDINGS{10664423,
+  author={Sahoo, Samrat and Chava, Sudheer},
+  booktitle={2024 IEEE International Conference on Blockchain (Blockchain)}, 
+  title={Scatter Protocol: An Incentivized and Trustless Protocol for Decentralized Federated Learning}, 
+  year={2024},
+  volume={},
+  number={},
+  pages={497-504},
+  keywords={Training;Resistance;Protocols;Federated learning;Distributed ledger;Trustless services;Blockchains;Blockchains;Distributed Systems;Federated Learning;Smart Contracts;Ethereum;Tokenization},
+  doi={10.1109/Blockchain62396.2024.00073}}
 ```
 
 ## Technology Specifications
